@@ -95,7 +95,7 @@ export default function LotteryTicketsDialog({
     // 設置為 loading
     setTickets((prev) => {
       if (!prev || prev.length === 0) return prev
-      return prev.map((t) => (t.id === ticketId ? { ...t, state: 'loading' } : t))
+      return prev.map((t) => (t.id === ticketId ? { ...t, state: 'loading' as TicketState } : t))
     })
 
     // 生成獎品
@@ -107,7 +107,7 @@ export default function LotteryTicketsDialog({
         if (!prev || prev.length === 0) return prev
         
         const updated = prev.map((t) =>
-          t.id === ticketId ? { ...t, state: 'revealed', prize } : t
+          t.id === ticketId ? { ...t, state: 'revealed' as TicketState, prize } : t
         )
         
         // 檢查是否全部揭曉
@@ -134,9 +134,9 @@ export default function LotteryTicketsDialog({
 
     // 設置所有未揭曉的為 loading
     const updated = tickets.map((t) =>
-      t.state === 'ticket' ? { ...t, state: 'loading' } : t
+      t.state === 'ticket' ? { ...t, state: 'loading' as TicketState } : t
     )
-    setTickets(updated)
+    setTickets(updated as Ticket[])
 
     // 延遲後顯示所有結果
     setTimeout(() => {
@@ -145,7 +145,7 @@ export default function LotteryTicketsDialog({
         
         const final = prev.map((t) => {
           if (t.state === 'loading') {
-            return { ...t, state: 'revealed', prize: generatePrize() }
+            return { ...t, state: 'revealed' as TicketState, prize: generatePrize() }
           }
           return t
         })
