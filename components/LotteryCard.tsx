@@ -46,8 +46,8 @@ export default function LotteryCard({
   const boxShadow = useTransform(
     [shadowBlur, shadowOpacity],
     (values) => {
-      const blur = Array.isArray(values) ? values[0] : 0
-      const opacity = Array.isArray(values) ? values[1] : 0
+      const blur = Array.isArray(values) ? (values[0] as number) : 0
+      const opacity = Array.isArray(values) ? (values[1] as number) : 0
       return `0 ${blur}px ${blur * 2}px rgba(0, 0, 0, ${opacity})`
     }
   )
