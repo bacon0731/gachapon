@@ -1,12 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
 export default function ProfilePage() {
-  const { isAuthenticated, user } = useAuth()
+  const { isAuthenticated, user, isLoading } = useAuth()
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState({
@@ -18,8 +18,33 @@ export default function ProfilePage() {
   })
   const [isSaving, setIsSaving] = useState(false)
 
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push('/login')
+    }
+  }, [isAuthenticated, isLoading, router])
+
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name || '',
+        email: user.email || '',
+        phone: '',
+        address: '',
+        birthday: '',
+      })
+    }
+  }, [user])
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-neutral-100 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
+
   if (!isAuthenticated) {
-    router.push('/login')
     return null
   }
 

@@ -19,7 +19,7 @@ interface PaymentItem {
 }
 
 function PaymentContent() {
-  const { isAuthenticated, user } = useAuth()
+  const { isAuthenticated, user, isLoading } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(null)
@@ -31,7 +31,7 @@ function PaymentContent() {
   const [paymentItems, setPaymentItems] = useState<PaymentItem[]>([])
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isLoading && !isAuthenticated) {
       router.push('/login')
       return
     }
@@ -69,6 +69,14 @@ function PaymentContent() {
         router.push('/orders')
       }, 3000)
     }, 2000)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-neutral-100 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    )
   }
 
   if (!isAuthenticated) {
