@@ -14,7 +14,7 @@ const mockWonProducts = [
     prizeName: 'A賞 - 炭治郎 手辦',
     image: '/item.png',
     drawDate: '2024-01-15',
-    status: 'pending', // pending, shipping, delivered
+    status: 'unpaid', // unpaid, pending, shipping, delivered
     trackingNumber: null,
     deliveryAddress: '台北市信義區信義路五段7號',
   },
@@ -23,15 +23,25 @@ const mockWonProducts = [
     productName: '咒術迴戰 第二季 一番賞',
     prizeName: 'B賞 - 五條悟 立牌',
     image: '/item.png',
-    drawDate: '2024-01-10',
-    status: 'shipping',
-    trackingNumber: 'SF1234567890',
+    drawDate: '2024-01-14',
+    status: 'pending', // 已付款，待處理配送
+    trackingNumber: null,
     deliveryAddress: '台北市信義區信義路五段7號',
   },
   {
     id: '3',
     productName: '進擊的巨人 最終章 一番賞',
     prizeName: 'C賞 - 艾連 鑰匙圈',
+    image: '/item.png',
+    drawDate: '2024-01-10',
+    status: 'shipping',
+    trackingNumber: 'SF1234567890',
+    deliveryAddress: '台北市信義區信義路五段7號',
+  },
+  {
+    id: '4',
+    productName: '我的英雄學院 一番賞',
+    prizeName: 'D賞 - 綠谷出久 鑰匙圈',
     image: '/item.png',
     drawDate: '2024-01-05',
     status: 'delivered',
@@ -43,7 +53,7 @@ const mockWonProducts = [
 export default function WarehousePage() {
   const { isAuthenticated, user, isLoading } = useAuth()
   const router = useRouter()
-  const [selectedTab, setSelectedTab] = useState<'all' | 'pending' | 'shipping' | 'delivered'>('all')
+  const [selectedTab, setSelectedTab] = useState<'all' | 'unpaid' | 'pending' | 'shipping' | 'delivered'>('all')
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -69,6 +79,8 @@ export default function WarehousePage() {
 
   const getStatusText = (status: string) => {
     switch (status) {
+      case 'unpaid':
+        return '待付款'
       case 'pending':
         return '待處理'
       case 'shipping':
@@ -82,6 +94,8 @@ export default function WarehousePage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'unpaid':
+        return 'bg-red-100 text-red-800'
       case 'pending':
         return 'bg-yellow-100 text-yellow-800'
       case 'shipping':
@@ -103,10 +117,10 @@ export default function WarehousePage() {
 
         {/* 標籤頁 */}
         <div className="bg-white rounded-lg shadow-sm mb-6">
-          <div className="flex border-b border-neutral-200">
+          <div className="flex border-b border-neutral-200 overflow-x-auto">
             <button
               onClick={() => setSelectedTab('all')}
-              className={`px-6 py-4 font-medium transition-colors ${
+              className={`px-6 py-4 font-medium transition-colors whitespace-nowrap ${
                 selectedTab === 'all'
                   ? 'text-primary border-b-2 border-primary'
                   : 'text-neutral-600 hover:text-primary'
@@ -115,8 +129,18 @@ export default function WarehousePage() {
               全部 ({mockWonProducts.length})
             </button>
             <button
+              onClick={() => setSelectedTab('unpaid')}
+              className={`px-6 py-4 font-medium transition-colors whitespace-nowrap ${
+                selectedTab === 'unpaid'
+                  ? 'text-primary border-b-2 border-primary'
+                  : 'text-neutral-600 hover:text-primary'
+              }`}
+            >
+              待付款 ({mockWonProducts.filter(p => p.status === 'unpaid').length})
+            </button>
+            <button
               onClick={() => setSelectedTab('pending')}
-              className={`px-6 py-4 font-medium transition-colors ${
+              className={`px-6 py-4 font-medium transition-colors whitespace-nowrap ${
                 selectedTab === 'pending'
                   ? 'text-primary border-b-2 border-primary'
                   : 'text-neutral-600 hover:text-primary'
@@ -126,7 +150,7 @@ export default function WarehousePage() {
             </button>
             <button
               onClick={() => setSelectedTab('shipping')}
-              className={`px-6 py-4 font-medium transition-colors ${
+              className={`px-6 py-4 font-medium transition-colors whitespace-nowrap ${
                 selectedTab === 'shipping'
                   ? 'text-primary border-b-2 border-primary'
                   : 'text-neutral-600 hover:text-primary'
@@ -136,7 +160,7 @@ export default function WarehousePage() {
             </button>
             <button
               onClick={() => setSelectedTab('delivered')}
-              className={`px-6 py-4 font-medium transition-colors ${
+              className={`px-6 py-4 font-medium transition-colors whitespace-nowrap ${
                 selectedTab === 'delivered'
                   ? 'text-primary border-b-2 border-primary'
                   : 'text-neutral-600 hover:text-primary'
@@ -188,7 +212,7 @@ export default function WarehousePage() {
                       <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                       </svg>
-                      追蹤號碼：{product.status === 'pending' ? '處理中' : product.trackingNumber || '處理中'}
+                      追蹤號碼：{product.status === 'unpaid' || product.status === 'pending' ? '處理中' : product.trackingNumber || '處理中'}
                     </div>
                     <div className="flex items-start">
                       <svg className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -199,7 +223,7 @@ export default function WarehousePage() {
                     </div>
                   </div>
                   <div className="flex space-x-2 mt-auto">
-                    {product.status === 'pending' ? (
+                    {product.status === 'unpaid' ? (
                       <Link
                         href="/payment"
                         className="flex-1 text-center bg-primary text-white px-4 py-2 rounded-full hover:bg-primary-dark transition-colors text-sm font-medium"
@@ -214,9 +238,11 @@ export default function WarehousePage() {
                         查看商品
                       </Link>
                     )}
-                    <button className="flex-1 bg-neutral-100 text-neutral-700 px-4 py-2 rounded-full hover:bg-neutral-200 transition-colors text-sm font-medium">
-                      {product.status === 'pending' ? '申請配送' : '追蹤配送'}
-                    </button>
+                    {product.status !== 'unpaid' && (
+                      <button className="flex-1 bg-neutral-100 text-neutral-700 px-4 py-2 rounded-full hover:bg-neutral-200 transition-colors text-sm font-medium">
+                        {product.status === 'pending' ? '申請配送' : '追蹤配送'}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
