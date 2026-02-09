@@ -40,11 +40,11 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
       )}
     >
       {/* Shadow layer for depth */}
-      <div className="absolute inset-0 bg-black/10 rounded-xl blur-md translate-y-1 group-hover:translate-y-2 transition-transform" />
+      <div className="absolute inset-0 bg-black/10 rounded-3xl blur-md translate-y-1 group-hover:translate-y-2 transition-transform" />
 
       {/* Main Ticket Base */}
       <div className={cn(
-        "absolute inset-0 rounded-xl border-2 overflow-hidden shadow-xl transition-colors duration-300",
+        "absolute inset-0 rounded-3xl border-2 overflow-hidden shadow-xl transition-colors duration-300",
         isLastOne ? "bg-neutral-900 border-yellow-500" : "bg-[#2D3648] border-[#3E4A61]"
       )}>
         {/* Glossy overlay on base */}
@@ -76,11 +76,11 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
         <div className="absolute inset-y-0 left-[10%] right-[10%] mt-2.5 mb-2.5 flex items-center justify-center">
           {/* The Styled Ticket Shape */}
           <div className={cn(
-            "relative w-full h-full rounded-2xl shadow-inner overflow-hidden flex flex-col items-center justify-center border transition-colors duration-300",
+            "relative w-full h-full rounded-3xl shadow-inner overflow-hidden flex flex-col items-center justify-center border transition-colors duration-300",
             isLastOne ? "bg-gradient-to-br from-yellow-300 to-yellow-500 border-yellow-200" : "bg-[#F3F4F6] border-white/50"
           )}>
             {/* Dashed border inside */}
-            <div className="absolute inset-1.5 border-2 border-dashed border-black/5 rounded-xl pointer-events-none" />
+            <div className="absolute inset-1.5 border-2 border-dashed border-black/5 rounded-2xl pointer-events-none" />
             
             {/* The "Tab" on the left */}
             <div className={cn(

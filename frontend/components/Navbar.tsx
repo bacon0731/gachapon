@@ -133,6 +133,7 @@ function NavbarInner() {
       if (tab === 'topup-history') return '儲值紀錄';
       if (tab === 'follows') return '我的關注';
       if (tab === 'settings') return '設定';
+      return '個人中心';
     }
     return '';
   };
@@ -196,7 +197,7 @@ function NavbarInner() {
 
   return (
     <>
-      <nav className={cn("bg-white dark:bg-neutral-900 border-b border-neutral-100 dark:border-neutral-800 sticky top-0 z-50 transition-colors", pathname === '/profile' && "hidden md:block")}>
+      <nav className={cn("bg-white dark:bg-neutral-900 border-b border-neutral-100 dark:border-neutral-800 sticky top-0 z-50 transition-colors")}>
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14">
             {/* 左：Logo + 標語 / 返回按鈕 */}

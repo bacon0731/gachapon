@@ -31,7 +31,18 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
   // Confirmation & Purchase State
   const [showConfirm, setShowConfirm] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isRevealing, setIsRevealing] = useState(false);
+  const [isWaitingForReveal, setIsWaitingForReveal] = useState(false);
   const [drawnResults, setDrawnResults] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (isRevealing) {
+      const timer = setTimeout(() => {
+        setIsRevealing(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isRevealing]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -141,6 +152,11 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
 
   const handleOpenAll = () => {
     setDrawnResults(prev => prev.map(r => ({ ...r, isOpened: true })));
+    setIsWaitingForReveal(true);
+    setTimeout(() => {
+      setIsRevealing(true);
+      setIsWaitingForReveal(false);
+    }, 800);
   };
 
   if (isLoading) return <div className="min-h-[50vh] flex items-center justify-center">Loading...</div>;
@@ -148,16 +164,34 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
 
   // Prize Reveal View (Full Screen Overlay)
   if (drawnResults.length > 0) {
+    if (isRevealing) {
+      return (
+        <div className="fixed inset-0 z-[100] bg-neutral-900 flex flex-col items-center justify-center p-4">
+          <div className="flex flex-col items-center gap-6 animate-in fade-in zoom-in duration-500">
+            <div className="relative w-24 h-24 flex items-center justify-center">
+              <div className="absolute inset-0 border-4 border-white/20 rounded-full animate-[spin_3s_linear_infinite]" />
+              <div className="absolute inset-0 border-t-4 border-accent-yellow rounded-full animate-[spin_1s_linear_infinite]" />
+              <div className="text-4xl">🎁</div>
+            </div>
+            <div className="text-center space-y-2">
+              <h2 className="text-2xl font-black text-white">獎項結算中...</h2>
+              <p className="text-neutral-400 font-bold">恭喜中獎！</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     const allOpened = drawnResults.every(r => r.isOpened);
     
     return (
       <div className="fixed inset-0 z-[100] bg-neutral-900 flex flex-col items-center justify-center p-4 pb-safe overflow-hidden">
         <h2 className="text-white text-2xl font-black mb-4 shrink-0">
-          {allOpened ? '恭喜獲得' : '清單'}
+          {allOpened && !isWaitingForReveal ? '恭喜獲得' : '清單'}
         </h2>
         
         <div className="flex-1 w-full max-w-4xl overflow-y-auto p-4 custom-scrollbar pb-32">
-           {!allOpened ? (
+           {!allOpened || isWaitingForReveal ? (
              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                {drawnResults.map((result, idx) => (
                  <div key={idx} className="animate-in fade-in zoom-in duration-300" style={{ animationDelay: `${idx * 100}ms` }}>
@@ -170,6 +204,14 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
                        const newResults = [...drawnResults];
                        newResults[idx].isOpened = true;
                        setDrawnResults(newResults);
+
+                       if (newResults.every(r => r.isOpened)) {
+                         setIsWaitingForReveal(true);
+                         setTimeout(() => {
+                           setIsRevealing(true);
+                           setIsWaitingForReveal(false);
+                         }, 800);
+                       }
                      }}
                    />
                  </div>

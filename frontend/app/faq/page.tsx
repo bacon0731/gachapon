@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ChevronDown, ChevronUp, Mail, Phone, MessageCircle, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function FAQPage() {
+  const router = useRouter();
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   const toggleFAQ = (index: number) => {
@@ -60,7 +62,6 @@ export default function FAQPage() {
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 pb-20 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-        <h1 className="text-2xl font-black text-neutral-900 dark:text-white mb-6 tracking-tight">常見問題</h1>
         
         <div className="max-w-4xl mx-auto">
           {/* FAQ Section */}

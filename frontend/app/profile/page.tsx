@@ -126,11 +126,6 @@ function ProfileContent() {
     router.push(`/profile?tab=${tab}`, { scroll: false });
   };
 
-  const handleBackToMenu = () => {
-    setIsMobileDetailOpen(false);
-    router.push('/profile', { scroll: false });
-  };
-
   // Sync with URL on load
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -1057,12 +1052,6 @@ function ProfileContent() {
               </div>
               <div className="flex items-center gap-2">
                 <button 
-                  onClick={() => toast('通知中心開發中')}
-                  className="w-9 h-9 rounded-full bg-white shadow-soft flex items-center justify-center text-neutral-400 hover:text-primary transition-colors border border-neutral-100"
-                >
-                  <Bell className="w-4.5 h-4.5" />
-                </button>
-                <button 
                   onClick={() => handleTabChange('settings')}
                   className="w-9 h-9 rounded-full bg-white shadow-soft flex items-center justify-center text-neutral-400 hover:text-primary transition-colors border border-neutral-100"
                 >
@@ -1160,14 +1149,6 @@ function ProfileContent() {
 
           {/* 2. Mobile Detail View (Only shown on mobile when a tab is active) */}
           <div className={cn("md:hidden col-span-1", !isMobileDetailOpen && "hidden")}>
-             <div className="flex items-center gap-2 mb-4 px-2">
-                <button onClick={handleBackToMenu} className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center">
-                   <ChevronRight className="w-4 h-4 rotate-180" />
-                </button>
-                <h2 className="text-lg font-black text-neutral-900">
-                   {navItems.find(i => i.id === activeTab)?.label || '個人中心'}
-                </h2>
-             </div>
             <div className="bg-white rounded-2xl shadow-card border border-neutral-100 min-h-[500px] overflow-hidden">
               {renderTabContent()}
             </div>
