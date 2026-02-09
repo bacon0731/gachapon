@@ -1,0 +1,470 @@
+'use client';
+
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
+import { Database } from '@/types/database.types';
+import { Button } from '@/components/ui';
+import ProductCard from '@/components/ProductCard';
+import ProductDetailSkeleton from '@/components/ProductDetailSkeleton';
+import { Modal } from '@/components/ui/Modal';
+import { useAuth } from '@/contexts/AuthContext';
+import { ArrowLeft, Share2, Heart, ShieldCheck, Trophy, ChevronRight, AlertTriangle, FileCheck, Copy, Info, Flame } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
+
+import { TicketSelectionFlow } from '@/components/shop/TicketSelectionFlow';
+
+export default function ProductDetailPage() {
+  const params = useParams();
+  const router = useRouter();
+  const { user } = useAuth();
+  const supabase = createClient();
+
+  const [product, setProduct] = useState<Database['public']['Tables']['products']['Row'] | null>(null);
+  const [prizes, setPrizes] = useState<Database['public']['Tables']['prizes']['Row'][]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [isFollowed, setIsFollowed] = useState(false);
+  const [viewingPrize, setViewingPrize] = useState<{ name: string; image_url?: string; grade: string; quantity: number; remaining: number } | null>(null);
+  const [recommendations, setRecommendations] = useState<Database['public']['Tables']['products']['Row'][]>([]);
+  
+  // Modal state for desktop ticket selection
+  const [isSelectModalOpen, setIsSelectModalOpen] = useState(false);
+
+  const handleDrawClick = () => {
+    if (window.innerWidth >= 768) {
+      setIsSelectModalOpen(true);
+    } else {
+      router.push(`/shop/${params.id}/select`);
+    }
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const productId = parseInt(params.id as string);
+        if (isNaN(productId)) return;
+
+        // Fetch Product
+        const { data: productData, error: productError } = await supabase
+          .from('products')
+          .select('*')
+          .eq('id', productId)
+          .single();
+        
+        if (productError) throw productError;
+        setProduct(productData);
+
+        // Fetch Prizes
+        const { data: prizesData, error: prizesError } = await supabase
+          .from('prizes')
+          .select('*')
+          .eq('product_id', productId)
+          .order('grade', { ascending: true });
+        
+        if (prizesError) throw prizesError;
+        setPrizes(prizesData || []);
+
+        // Fetch Recommendations
+        const { data: recData } = await supabase
+          .from('products')
+          .select('*')
+          .neq('id', productId)
+          .eq('status', 'active')
+          .limit(4);
+        
+        if (recData) setRecommendations(recData);
+
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [params.id]);
+
+  if (isLoading) {
+    return <ProductDetailSkeleton />;
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-neutral-50 dark:bg-neutral-950 p-4">
+        <h1 className="text-2xl font-black text-neutral-900 dark:text-neutral-50 mb-2">找不到商品</h1>
+        <p className="text-neutral-500 dark:text-neutral-400 font-bold mb-6">您查看的商品可能已經下架或不存在。</p>
+        <Link href="/shop">
+          <Button size="lg">返回商店</Button>
+        </Link>
+      </div>
+    );
+  }
+
+  // Calculate total remaining items from real prizes
+  const totalRemaining = product.remaining_count;
+  const totalItems = product.total_count;
+
+  return (
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 pb-20 md:pb-12">
+      <div className="max-w-7xl mx-auto px-2 py-2 sm:py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 lg:gap-6 items-start">
+          {/* Left Column: Product Card (Sticky) */}
+          <div className="lg:col-span-4 lg:sticky lg:top-24">
+            <div className="bg-white dark:bg-neutral-900 rounded-3xl shadow-card border border-neutral-100 dark:border-neutral-800 overflow-hidden">
+              {/* Image Section */}
+              <div className="relative aspect-square bg-neutral-100 dark:bg-neutral-800">
+                <div className="w-full h-full flex items-center justify-center text-white/20 group-hover:scale-105 transition-transform duration-500">
+                  {product.image_url ? (
+                    <img 
+                      src={product.image_url} 
+                      alt={product.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+                      <svg className="w-16 h-16 text-neutral-300 dark:text-neutral-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Status Badges & Action Buttons */}
+                <div className="absolute top-4 left-4 right-4 z-10 flex items-start justify-between">
+                  {product.is_hot ? (
+                    <span className="px-3.5 py-1.5 text-sm font-black text-white bg-accent-red rounded-full shadow-lg shadow-accent-red/20 uppercase tracking-wider flex items-center gap-1.5">
+                      <Flame className="w-4 h-4 fill-current" />
+                      熱賣中
+                    </span>
+                  ) : <div />}
+                </div>
+              </div>
+              
+              {/* Content Section */}
+              <div className="p-3 sm:p-6 space-y-2 sm:space-y-5">
+                <h1 className="text-lg sm:text-2xl font-black text-neutral-900 dark:text-neutral-50 leading-tight tracking-tight">
+                  {product.name}
+                </h1>
+                
+                <div className="hidden lg:flex items-end justify-between gap-2 pb-5 border-b border-neutral-50 dark:border-neutral-800">
+                  <div className="flex items-baseline gap-2">
+                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-accent-yellow shadow-sm">
+                      <span className="text-sm text-white font-black leading-none">G</span>
+                    </div>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-4xl font-black text-accent-red font-amount tracking-tighter leading-none">{product.price.toLocaleString()}</span>
+                      <span className="text-sm text-neutral-400 font-black uppercase tracking-widest">/ 抽</span>
+                    </div>
+                  </div>
+                  <div className="text-sm font-black text-neutral-500 leading-none mb-1 text-right">
+                    優惠前：<span className="line-through font-amount">{Math.round(product.price * 1.2).toLocaleString()}</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 hidden lg:block">
+                  <div className="flex items-center gap-3">
+                    <Button 
+                      onClick={handleDrawClick}
+                      size="lg"
+                      className="flex-1 h-[44px] text-lg font-black rounded-xl shadow-xl shadow-accent-red/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                      variant="danger"
+                      disabled={product.remaining_count === 0}
+                    >
+                      {product.remaining_count === 0 ? '已售完' : '立即抽獎'}
+                    </Button>
+
+                    <button className="w-[44px] h-[44px] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-400 hover:text-primary hover:border-primary/50 rounded-xl flex items-center justify-center transition-all shadow-sm active:scale-95">
+                      <Share2 className="w-5 h-5 stroke-[2.5]" />
+                    </button>
+                    
+                    <button 
+                      onClick={() => setIsFollowed(!isFollowed)}
+                      className={cn(
+                        "w-[44px] h-[44px] rounded-xl flex items-center justify-center transition-all shadow-sm active:scale-95 border",
+                        isFollowed 
+                          ? "bg-accent-red text-white border-accent-red shadow-accent-red/20" 
+                          : "bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-400 hover:text-accent-red hover:border-accent-red/50"
+                      )}
+                    >
+                      <Heart className={cn("w-5 h-5 stroke-[2.5]", isFollowed && "fill-current")} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Odds, Fairness, Info, Recommendations */}
+          <div className="lg:col-span-8 space-y-2 sm:space-y-5">
+            {/* Store Odds Card */}
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl sm:rounded-3xl shadow-card border border-neutral-100 dark:border-neutral-800 overflow-hidden">
+              <div className="p-2 sm:p-4 border-b border-neutral-50 dark:border-neutral-800 bg-neutral-50/30 dark:bg-neutral-800/30">
+                <h2 className="text-sm sm:text-lg font-black text-neutral-900 dark:text-neutral-50 tracking-tight uppercase tracking-wider">店家配率表</h2>
+              </div>
+              
+              <div className="overflow-x-auto custom-scrollbar">
+                <table className="w-full text-left">
+                  <thead className="bg-neutral-50/50 dark:bg-neutral-800/50 text-[13px] sm:text-sm font-black text-neutral-400 dark:text-neutral-500 border-b border-neutral-50 dark:border-neutral-800">
+                    <tr>
+                      <th className="px-2 sm:px-6 py-2 sm:py-3 uppercase tracking-widest">獎項名稱</th>
+                      <th className="px-2 sm:px-6 py-2 sm:py-3 text-right uppercase tracking-widest">剩餘 / 總數</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-50 dark:divide-neutral-800">
+                    {prizes.map((prize, index) => (
+                      <tr 
+                        key={index} 
+                        className={cn(
+                          "hover:bg-neutral-50/50 dark:hover:bg-neutral-800/50 transition-colors group cursor-pointer",
+                          prize.quantity === 0 && "opacity-50"
+                        )}
+                        onClick={() => setViewingPrize({
+                          name: prize.name,
+                          image_url: prize.image_url || undefined,
+                          grade: prize.grade,
+                          quantity: prize.quantity,
+                          remaining: prize.quantity // Should probably be a separate field if quantity is total
+                        })}
+                      >
+                        <td className="px-2 sm:px-6 py-2 sm:py-3.5">
+                          <div className="flex items-center gap-2 sm:gap-3">
+                            <span className="text-[13px] text-primary font-black uppercase tracking-widest bg-primary/5 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-lg border border-primary/10 whitespace-nowrap">
+                              {prize.grade}賞
+                            </span>
+                            <div className="font-black text-neutral-900 dark:text-neutral-50 text-[13px] sm:text-sm leading-tight tracking-tight whitespace-nowrap">{prize.name}</div>
+                          </div>
+                        </td>
+                        <td className="px-2 sm:px-6 py-2 sm:py-3.5 text-right">
+                          <span className="font-black text-sm sm:text-base tracking-tighter text-neutral-900 dark:text-neutral-50">
+                            {prize.quantity.toLocaleString()}<span className="text-neutral-200 dark:text-neutral-700 mx-1">/</span>{prize.quantity.toLocaleString()}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot className="border-t-2 border-neutral-50 dark:border-neutral-800">
+                    <tr className="bg-accent-red/5 dark:bg-accent-red/10">
+                      <td className="px-2 sm:px-6 py-2 sm:py-4 font-black text-accent-red text-sm sm:text-base tracking-widest uppercase">合計</td>
+                      <td className="px-2 sm:px-6 py-2 sm:py-4 text-right">
+                        <span className="text-lg sm:text-2xl font-black text-accent-red tracking-tighter">
+                          {totalRemaining.toLocaleString()}<span className="text-accent-red/30 mx-1">/</span>{totalItems.toLocaleString()}
+                        </span>
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+
+            {/* Fairness Verification Card */}
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl sm:rounded-3xl shadow-card border border-neutral-100 dark:border-neutral-800 p-3 sm:p-6 space-y-3 sm:space-y-6">
+              <div className="flex items-center gap-3 sm:gap-4 border-b border-neutral-50 dark:border-neutral-800 pb-3 sm:pb-5">
+                <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-accent-emerald/10 flex items-center justify-center flex-shrink-0">
+                  <ShieldCheck className="w-5 h-5 sm:w-7 sm:h-7 text-accent-emerald stroke-[2.5]" />
+                </div>
+                <div>
+                  <h2 className="text-base sm:text-xl font-black text-neutral-900 dark:text-neutral-50 tracking-tight">公平性驗證</h2>
+                  <p className="text-[13px] sm:text-sm text-neutral-400 dark:text-neutral-500 font-black uppercase tracking-widest mt-0.5">確保抽獎過程的透明與公正</p>
+                </div>
+              </div>
+
+              <div className="bg-primary/5 border border-primary/10 rounded-2xl p-3 sm:p-5 space-y-3 sm:space-y-4">
+                <div className="flex items-center gap-2 text-primary font-black text-[13px] sm:text-sm uppercase tracking-widest">
+                  <Info className="w-3.5 h-3.5 stroke-[3]" />
+                  第三方驗證工具
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <Link href="#" className="text-[13px] sm:text-sm text-accent-red font-black hover:text-accent-red/80 transition-colors flex items-center gap-1.5 group">
+                    SHA256 哈希驗證工具 
+                    <Share2 className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                  </Link>
+                  <p className="text-[13px] sm:text-sm text-neutral-500 dark:text-neutral-400 font-bold leading-relaxed">
+                    此工具可驗證 TXID 與 TXID Hash 的一致性，確保公平性，TXID 將於完抽後公布。
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-5 pt-1 sm:pt-2">
+                <div className="space-y-1.5 sm:space-y-2.5">
+                  <div className="text-[13px] sm:text-sm font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest flex items-center gap-2">
+                    <Trophy className="w-3.5 h-3.5" /> 隨機種子 (TXID)
+                  </div>
+                  <div className="bg-neutral-50 dark:bg-neutral-800 border border-neutral-100 dark:border-neutral-700 rounded-2xl px-3 sm:px-5 py-3 sm:py-4 text-[13px] sm:text-sm text-neutral-400 dark:text-neutral-500 font-black tracking-widest uppercase">
+                    完抽後公布
+                  </div>
+                </div>
+                
+                <div className="space-y-1.5 sm:space-y-2.5">
+                  <div className="text-[13px] sm:text-sm font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest flex items-center gap-2">
+                    <FileCheck className="w-3.5 h-3.5" /> 哈希值 (TXID Hash)
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 bg-neutral-50 dark:bg-neutral-800 border border-neutral-100 dark:border-neutral-700 rounded-2xl px-3 sm:px-5 py-3 sm:py-4 text-[13px] sm:text-sm font-amount text-neutral-600 dark:text-neutral-400 break-all font-bold leading-relaxed">
+                      c7111dd8...
+                    </code>
+                    <button className="p-3 sm:p-4 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-2xl text-neutral-400 dark:text-neutral-500 transition-colors shrink-0 group shadow-soft bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800">
+                      <Copy className="w-3.5 h-3.5 group-active:scale-90 transition-transform" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Product Meta Info */}
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl sm:rounded-3xl shadow-card border border-neutral-100 dark:border-neutral-800 p-3 sm:p-6 space-y-3 sm:space-y-6">
+              <h3 className="font-black text-neutral-900 dark:text-neutral-50 text-base sm:text-xl tracking-tight border-b border-neutral-50 dark:border-neutral-800 pb-3 sm:pb-5">商品資訊</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 sm:gap-y-5 gap-x-12">
+                <div className="flex justify-between items-center text-sm py-1 sm:py-2 border-b border-dashed border-neutral-100 dark:border-neutral-800">
+                  <span className="text-neutral-500 dark:text-neutral-400 font-black uppercase tracking-widest text-[13px] sm:text-[13px]">上市時間</span>
+                  <span className="text-neutral-900 dark:text-neutral-50 font-black">
+                    {product.release_date ? new Date(product.release_date).toLocaleDateString('zh-TW', { year: 'numeric', month: 'long' }) : '未定'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-sm py-1 sm:py-2 border-b border-dashed border-neutral-100 dark:border-neutral-800">
+                  <span className="text-neutral-500 dark:text-neutral-400 font-black uppercase tracking-widest text-[13px] sm:text-[13px]">代理商</span>
+                  <span className="text-neutral-900 dark:text-neutral-50 font-black">萬代南夢宮娛樂</span>
+                </div>
+                <div className="flex justify-between items-center text-sm py-1 sm:py-2 border-b border-dashed border-neutral-100 dark:border-neutral-800">
+                  <span className="text-neutral-500 dark:text-neutral-400 font-black uppercase tracking-widest text-[13px] sm:text-[13px]">稀有度</span>
+                  <div className="flex gap-1">
+                    {[1,2,3,4,5].map(i => (
+                      <div key={i} className="w-2 h-4 sm:w-2.5 sm:h-5 bg-accent-red rounded-sm shadow-sm shadow-accent-red/20" />
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="pt-3 sm:pt-6 mt-3 sm:mt-6 border-t border-neutral-50 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-800/50 -mx-3 sm:-mx-6 px-3 sm:px-6 pb-3 sm:pb-6 rounded-b-[24px] sm:rounded-b-[32px]">
+                <h4 className="text-[13px] sm:text-[13px] font-black text-neutral-900 dark:text-neutral-50 mb-2 sm:mb-4 flex items-center gap-2 uppercase tracking-widest">
+                  <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent-yellow fill-current" />
+                  抽獎注意事項
+                </h4>
+                <ul className="text-[13px] sm:text-sm text-neutral-500 dark:text-neutral-400 space-y-2 sm:space-y-3.5 font-bold">
+                  <li className="flex gap-2 sm:gap-3">
+                    <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-accent-red mt-1.5 shrink-0" />
+                    <span>每抽價格為 <div className="inline-flex items-center justify-center w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-accent-yellow shadow-sm mx-0.5 sm:mx-1"><span className="text-[13px] sm:text-[11px] text-white font-black">G</span></div> <span className="text-neutral-900 dark:text-neutral-50 font-black font-amount text-sm sm:text-base leading-none">{product.price.toLocaleString()}</span>，抽獎結果隨機產生。</span>
+                  </li>
+                  <li className="flex gap-2 sm:gap-3">
+                    <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-accent-red mt-1.5 shrink-0" />
+                    <span>所有獎項均為正版授權商品，請放心抽選。</span>
+                  </li>
+                  <li className="flex gap-2 sm:gap-3">
+                    <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-accent-red mt-1.5 shrink-0" />
+                    <span>商品庫庫存會即時更新，售完為止。</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Recommendations Section */}
+            <div className="pt-2 sm:pt-8">
+              <div className="flex items-center justify-between mb-2 sm:mb-8 px-1">
+                <h2 className="text-base sm:text-2xl font-black text-neutral-900 dark:text-neutral-50 tracking-tight">猜你喜歡</h2>
+                <Link href="/shop" className="text-[13px] sm:text-sm font-black text-primary hover:text-primary/80 uppercase tracking-widest">查看更多</Link>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-5">
+                {recommendations.map((item) => (
+                  <ProductCard 
+                    key={item.id} 
+                    id={item.id}
+                    name={item.name}
+                    image={item.image_url || ''}
+                    price={item.price}
+                    remaining={item.remaining_count}
+                    total={item.total_count}
+                    isHot={item.is_hot || false}
+                    category={item.category || ''}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Prize Image Modal */}
+      <Modal
+        isOpen={!!viewingPrize}
+        onClose={() => setViewingPrize(null)}
+        title="獎項詳情"
+        className="max-w-lg"
+      >
+        <div className="space-y-5">
+          <div className="relative aspect-square bg-neutral-100 dark:bg-neutral-800 rounded-3xl overflow-hidden shadow-card max-h-[50vh] mx-auto">
+            <img 
+              src={viewingPrize?.image_url} 
+              alt={viewingPrize?.name} 
+              className="w-full h-full object-cover"
+            />
+          </div>
+          
+          <div className="bg-neutral-50 dark:bg-neutral-900 rounded-2xl p-5 border border-neutral-100 dark:border-neutral-800">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="px-2.5 py-1 bg-primary text-white text-[13px] font-black rounded-lg shadow-sm uppercase tracking-wider whitespace-nowrap flex-shrink-0">
+                  {viewingPrize?.grade}賞
+                </span>
+                <h3 className="text-lg font-black text-neutral-900 dark:text-neutral-50 truncate tracking-tight">
+                  {viewingPrize?.name}
+                </h3>
+              </div>
+              <div className="flex-shrink-0 text-right">
+                <div className="text-[13px] font-black text-neutral-400 uppercase tracking-widest mb-0.5">剩餘 / 總數</div>
+                <div className="text-xl font-black text-neutral-900 dark:text-white leading-none tracking-tighter">
+                  {viewingPrize?.remaining?.toLocaleString()}<span className="text-neutral-300 mx-1">/</span>{viewingPrize?.quantity?.toLocaleString()}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <Button 
+            onClick={() => setViewingPrize(null)}
+            className="w-full py-5 text-base font-black bg-neutral-900 dark:bg-neutral-700 hover:bg-neutral-800 dark:hover:bg-neutral-600 rounded-2xl transition-all active:scale-[0.98]"
+          >
+            關閉視窗
+          </Button>
+        </div>
+      </Modal>
+
+      {/* Mobile Fixed Action Bar */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl border-t border-neutral-100 dark:border-neutral-800 h-16 px-4 flex items-center lg:hidden z-50 shadow-modal">
+        <div className="flex items-center gap-4 w-full">
+          <div className="flex flex-col items-center justify-center pl-2">
+            <div className="text-[13px] font-black text-neutral-500 dark:text-neutral-400 leading-none mb-1 whitespace-nowrap">
+              優惠前：<span className="line-through font-amount">{Math.round(product.price * 1.2).toLocaleString()}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="flex items-center justify-center w-4 h-4 rounded-full bg-accent-yellow shadow-sm">
+                <span className="text-[13px] text-white font-black leading-none">G</span>
+              </div>
+              <div className="flex items-baseline gap-0.5">
+                <span className="text-[28px] font-black text-accent-red font-amount leading-none tracking-tighter">{product.price.toLocaleString()}</span>
+                <span className="text-sm font-black text-neutral-400 dark:text-neutral-500 leading-none uppercase tracking-widest">/抽</span>
+              </div>
+            </div>
+          </div>
+          <Button 
+            onClick={() => router.push(`/shop/${params.id}/select`)}
+            size="lg"
+            className="flex-1 h-[44px] text-base font-black rounded-xl shadow-xl shadow-accent-red/20 transition-all active:scale-[0.95]"
+            variant="danger"
+            disabled={product.remaining_count === 0}
+          >
+            {product.remaining_count === 0 ? '已售完' : '立即抽獎'}
+          </Button>
+        </div>
+      </div>
+
+      {/* Desktop Ticket Selection Modal */}
+      {isSelectModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-neutral-900 w-full max-w-5xl h-[85vh] rounded-3xl overflow-hidden shadow-2xl relative flex flex-col animate-in zoom-in-95 duration-200 border border-neutral-100 dark:border-neutral-800">
+            <TicketSelectionFlow isModal={true} onClose={() => setIsSelectModalOpen(false)} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
