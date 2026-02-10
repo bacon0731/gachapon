@@ -97,6 +97,15 @@ function RegisterContent() {
                 className="bg-neutral-50/50 dark:bg-neutral-800/50 border-transparent focus:bg-white dark:focus:bg-neutral-800 transition-all"
               />
 
+              <Input
+                label="邀請碼 (選填)"
+                name="inviteCode"
+                type="text"
+                placeholder="輸入好友的邀請碼"
+                leftIcon={<User className="w-4 h-4" />}
+                className="bg-neutral-50/50 dark:bg-neutral-800/50 border-transparent focus:bg-white dark:focus:bg-neutral-800 transition-all font-mono uppercase"
+              />
+
               <div className="flex items-center pt-1">
                 <input
                   id="terms"

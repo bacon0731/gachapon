@@ -14,10 +14,10 @@ import { useRouter } from 'next/navigation'
 
 // Extended Product type to include prizes and local properties
 type DbProduct = Database['public']['Tables']['products']['Row']
-type DbPrize = Database['public']['Tables']['prizes']['Row']
+type DbPrize = Database['public']['Tables']['product_prizes']['Row']
 
 interface Product extends DbProduct {
-  prizes: (DbPrize & { remaining: number; total: number })[]
+  prizes: DbPrize[]
   majorPrizes?: string[]
   // Mapped properties for compatibility
   productCode: string
@@ -46,43 +46,35 @@ export default function ProductsPage() {
           .from('products')
           .select(`
             *,
-            prizes (*)
+            product_prizes (*)
           `)
           .order('created_at', { ascending: false })
 
         if (productsError) throw productsError
 
-        // Fetch draw history (lightweight, just needed fields)
-        // In a real app with millions of rows, we should use count(*) grouped by product/prize
-        // For now, fetching all to calculate local stats as requested "restore"
+        // Fetch draw records (lightweight, just needed fields)
         const { data: drawsData, error: drawsError } = await supabase
-          .from('draw_history')
-          .select('id, product_id, prize_id, prizes(grade)')
+          .from('draw_records')
+          .select('id, product_id, product_prize_id')
         
         if (drawsError) throw drawsError
         
         setDraws(drawsData || [])
 
-        // Process products to include remaining counts
+        // Process products
         const processedProducts: Product[] = (productsData || []).map((p: any) => {
-          // Calculate remaining for each prize
-          const productDraws = (drawsData || []).filter((d: any) => d.product_id === p.id)
-          
-          const prizesWithStats = (p.prizes || []).map((prize: any) => {
-            const drawnCount = productDraws.filter((d: any) => d.prize_id === prize.id).length
-            return {
-              ...prize,
-              total: prize.quantity,
-              remaining: Math.max(0, prize.quantity - drawnCount)
-            }
+          // Use product_prizes directly
+          const prizes = (p.product_prizes || []).sort((a: DbPrize, b: DbPrize) => {
+             // Basic sort by level if possible, or just keep as is
+             return a.level.localeCompare(b.level)
           })
 
-          // Normalize prize levels
-          const normalizedPrizes = normalizePrizeLevels(prizesWithStats)
+          // Normalize prize levels (if needed, but product_prizes has 'level')
+          const normalizedPrizes = normalizePrizeLevels(prizes)
 
           return {
             ...p,
-            prizes: normalizedPrizes,
+            prizes: normalizedPrizes, // Keep original structure
             productCode: p.product_code || '',
             createdAt: p.created_at,
             startedAt: p.release_date || p.created_at, // Map release_date to startedAt
@@ -150,7 +142,7 @@ export default function ProductsPage() {
   const isMajorDepleted = (product: Product): boolean => {
     const majorPrizes = product.majorPrizes || ['A賞', 'Last One']
     const majorRemaining = product.prizes
-      .filter(prize => majorPrizes.includes(prize.grade))
+      .filter(prize => majorPrizes.includes(prize.level))
       .reduce((sum, prize) => sum + prize.remaining, 0)
     return majorRemaining === 0
   }
@@ -196,7 +188,7 @@ export default function ProductsPage() {
       const matchesStatus = selectedStatus === 'all' || product.status === selectedStatus
       
       // Stock check
-      const totalRemaining = product.remaining_count // Use DB column
+      const totalRemaining = product.remaining // Use DB column
       const totalCount = product.total_count
       const isLowStock = totalRemaining / totalCount < 0.2
       const matchesLowStock = !selectedLowStock || isLowStock

@@ -14,6 +14,7 @@ export { default as DatePicker } from './DatePicker'
 export { default as YearMonthPicker } from './YearMonthPicker'
 export { default as DateTimePicker } from './DateTimePicker'
 export { default as ShippingProgress } from './ShippingProgress'
+export { default as TagSelector } from './TagSelector'
 
 // UI Kit - 基礎組件
 export * from './ui'

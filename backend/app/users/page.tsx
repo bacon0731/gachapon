@@ -17,11 +17,11 @@ import DateRangePicker from '@/components/DateRangePicker'
 import { supabase } from '@/lib/supabaseClient'
 
 interface User {
-  id: number
+  id: string
   userId: string
+  inviteCode: string | null
   name: string
   email: string
-  password?: string
   phone: string
   tokens: number
   registerDate: string
@@ -48,9 +48,9 @@ export default function UsersPage() {
   const [selectedUsers, setSelectedUsers] = useState<Set<number | string>>(new Set())
   const [visibleColumns, setVisibleColumns] = useState({
     userId: true,
+    inviteCode: true,
     name: true,
     email: true,
-    password: true,
     phone: true,
     tokens: true,
     totalDraws: true,
@@ -74,7 +74,7 @@ export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([])
   
   // 使用者狀態管理（用於開關切換）
-  const [userStatuses, setUserStatuses] = useState<{ [key: number]: 'active' | 'inactive' }>({})
+  const [userStatuses, setUserStatuses] = useState<{ [key: string]: 'active' | 'inactive' }>({})
 
   // Fetch users from Supabase
   useEffect(() => {
@@ -96,10 +96,10 @@ export default function UsersPage() {
           // TODO: 修復 users 和 orders 的關聯後恢復 orders(count)
           const mappedUsers: User[] = data.map((u: any) => ({
             id: u.id,
-            userId: u.user_id,
+            userId: u.id, // Changed to use UUID
+            inviteCode: u.invite_code,
             name: u.name,
             email: u.email,
-            password: u.password,
             phone: u.phone || '',
             tokens: u.tokens,
             registerDate: u.created_at,
@@ -113,7 +113,7 @@ export default function UsersPage() {
           setUsers(mappedUsers)
 
           // Update statuses map
-          const statuses: { [key: number]: 'active' | 'inactive' } = {}
+          const statuses: { [key: string]: 'active' | 'inactive' } = {}
           mappedUsers.forEach(user => {
             statuses[user.id] = user.status
           })
@@ -143,6 +143,7 @@ export default function UsersPage() {
       const query = searchQuery.toLowerCase()
       result = result.filter(u =>
         u.userId.includes(query) ||
+        (u.inviteCode && u.inviteCode.toLowerCase().includes(query)) ||
         u.name.toLowerCase().includes(query) ||
         u.email.toLowerCase().includes(query) ||
         u.phone.includes(query)
@@ -286,11 +287,11 @@ export default function UsersPage() {
   // 表格欄位定義
   const columns: Column<User>[] = [
     {
-      key: 'userId',
-      label: '使用者ID',
+      key: 'inviteCode',
+      label: '邀請碼',
       sortable: true,
-      visible: visibleColumns.userId,
-      render: (user) => <span className="font-mono whitespace-nowrap">{user.userId}</span>
+      visible: visibleColumns.inviteCode,
+      render: (user) => <span className="font-mono font-bold text-primary">{user.inviteCode || '-'}</span>
     },
     {
       key: 'name',
@@ -303,13 +304,6 @@ export default function UsersPage() {
       label: '電子郵件',
       sortable: true,
       visible: visibleColumns.email
-    },
-    {
-      key: 'password',
-      label: '密碼',
-      sortable: false,
-      visible: visibleColumns.password,
-      render: (user) => <span className="font-mono whitespace-nowrap">{user.password || '-'}</span>
     },
     {
       key: 'phone',
@@ -400,6 +394,13 @@ export default function UsersPage() {
       render: (user) => <span className="font-mono whitespace-nowrap">{formatDateTime(user.lastLoginDate)}</span>
     },
     {
+      key: 'userId',
+      label: '使用者ID',
+      sortable: true,
+      visible: visibleColumns.userId,
+      render: (user) => <span className="font-mono text-xs text-gray-400 whitespace-nowrap">{user.userId}</span>
+    },
+    {
       key: 'operations',
       label: '操作',
       visible: visibleColumns.operations,
@@ -466,7 +467,7 @@ export default function UsersPage() {
         {/* 表格區域 */}
         <PageCard>
           <SearchToolbar
-            searchPlaceholder="搜尋使用者ID、名稱、電子郵件..."
+            searchPlaceholder="搜尋ID、推薦碼、名稱、電子郵件..."
             searchValue={searchQuery}
             onSearchChange={setSearchQuery}
             showExportCSV={true}
@@ -507,10 +508,9 @@ export default function UsersPage() {
             ]}
             showColumnToggle={true}
             columns={[
-              { key: 'userId', label: '使用者ID', visible: visibleColumns.userId },
+              { key: 'inviteCode', label: '邀請碼', visible: visibleColumns.inviteCode },
               { key: 'name', label: '使用者名稱', visible: visibleColumns.name },
               { key: 'email', label: '電子郵件', visible: visibleColumns.email },
-              { key: 'password', label: '密碼', visible: visibleColumns.password },
               { key: 'phone', label: '電話', visible: visibleColumns.phone },
               { key: 'tokens', label: '代幣餘額(代幣)', visible: visibleColumns.tokens },
               { key: 'totalDraws', label: '抽獎數', visible: visibleColumns.totalDraws },
@@ -518,6 +518,7 @@ export default function UsersPage() {
               { key: 'status', label: '狀態', visible: visibleColumns.status },
               { key: 'registerDate', label: '註冊時間', visible: visibleColumns.registerDate },
               { key: 'lastLoginDate', label: '最後登入', visible: visibleColumns.lastLoginDate },
+              { key: 'userId', label: '使用者ID', visible: visibleColumns.userId },
               { key: 'operations', label: '操作', visible: visibleColumns.operations }
             ]}
             onColumnToggle={(key, visible) => setVisibleColumns(prev => ({ ...prev, [key]: visible }))}

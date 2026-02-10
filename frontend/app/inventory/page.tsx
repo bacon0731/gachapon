@@ -7,25 +7,26 @@ import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
+import { Modal } from '@/components/ui/Modal'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
 
 // Types for our inventory items
 interface InventoryItem {
-  id: string
-  ticket_no: string | null
+  id: number
+  ticket_number: number
   status: 'in_warehouse' | 'pending_delivery' | 'shipped' | 'exchanged'
-  cost: number
   created_at: string
   products: {
     name: string
     image_url: string | null
   } | null
-  prizes: {
-    grade: string
+  product_prizes: {
+    level: string
     name: string
     image_url: string | null
+    recycle_value: number
   } | null
 }
 
@@ -42,7 +43,7 @@ export default function InventoryPage() {
   const [isLoading, setIsLoading] = useState(true)
   
   // Shipment Selection State
-  const [selectedItems, setSelectedItems] = useState<string[]>([])
+  const [selectedItems, setSelectedItems] = useState<number[]>([])
   const [isSelectionMode, setIsSelectionMode] = useState(false)
   const [showShipmentModal, setShowShipmentModal] = useState(false)
   
@@ -52,22 +53,27 @@ export default function InventoryPage() {
   const [recipientAddress, setRecipientAddress] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // Dismantle State
+  const [showDismantleModal, setShowDismantleModal] = useState(false)
+  const [dismantleSummary, setDismantleSummary] = useState({ count: 0, totalValue: 0 })
+
   // Fetch Inventory Data
   const fetchInventory = async () => {
     try {
       setIsLoading(true)
       const { data, error } = await supabase
-        .from('draw_history')
+        .from('draw_records')
         .select(`
           *,
           products (
             name,
             image_url
           ),
-          prizes (
-            grade,
+          product_prizes (
+            level,
             name,
-            image_url
+            image_url,
+            recycle_value
           )
         `)
         .order('created_at', { ascending: false })
@@ -87,22 +93,22 @@ export default function InventoryPage() {
     if (user) {
       fetchInventory()
       // Pre-fill user profile data if available
-      if (user.user_metadata?.recipient_name) setRecipientName(user.user_metadata.recipient_name)
-      if (user.user_metadata?.recipient_phone) setRecipientPhone(user.user_metadata.recipient_phone)
-      if (user.user_metadata?.recipient_address) setRecipientAddress(user.user_metadata.recipient_address)
+      if (user.recipient_name) setRecipientName(user.recipient_name)
+      if (user.recipient_phone) setRecipientPhone(user.recipient_phone)
+      if (user.recipient_address) setRecipientAddress(user.recipient_address)
     }
   }, [user])
 
   // Filter items logic
   const filteredItems = items.filter((item) => {
     const productName = item.products?.name || ''
-    const prizeName = item.prizes?.name || ''
-    const prizeGrade = item.prizes?.grade || ''
+    const prizeName = item.product_prizes?.name || ''
+    const prizeLevel = item.product_prizes?.level || ''
     
     const matchesSearch = 
       productName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       prizeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      prizeGrade.toLowerCase().includes(searchQuery.toLowerCase())
+      prizeLevel.toLowerCase().includes(searchQuery.toLowerCase())
 
     if (!matchesSearch) return false
 
@@ -119,7 +125,7 @@ export default function InventoryPage() {
   })
 
   // Selection Logic
-  const toggleSelection = (id: string) => {
+  const toggleSelection = (id: number) => {
     if (selectedItems.includes(id)) {
       setSelectedItems(selectedItems.filter(item => item !== id))
     } else {
@@ -154,27 +160,31 @@ export default function InventoryPage() {
     try {
       setIsSubmitting(true)
 
-      // 1. Create Delivery Order
+      // Generate Order Number
+      const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`
+
+      // 1. Create Order
       const { data: orderData, error: orderError } = await supabase
-        .from('delivery_orders')
+        .from('orders')
         .insert({
+          order_number: orderNumber,
           user_id: user?.id,
           recipient_name: recipientName,
           recipient_phone: recipientPhone,
-          recipient_address: recipientAddress,
-          status: 'pending'
+          address: recipientAddress,
+          status: 'submitted'
         })
         .select()
         .single()
 
       if (orderError) throw orderError
 
-      // 2. Update Draw History Items
+      // 2. Update Draw Records
       const { error: updateError } = await supabase
-        .from('draw_history')
+        .from('draw_records')
         .update({
           status: 'pending_delivery',
-          delivery_order_id: orderData.id
+          order_id: orderData.id
         })
         .in('id', selectedItems)
 
@@ -194,6 +204,48 @@ export default function InventoryPage() {
     }
   }
 
+  // Dismantle Logic
+  const handleDismantleClick = () => {
+    if (selectedItems.length === 0) return;
+    
+    // Calculate summary
+    let total = 0;
+    selectedItems.forEach(id => {
+      const item = items.find(i => i.id === id);
+      if (item && item.product_prizes?.recycle_value) {
+        total += item.product_prizes.recycle_value;
+      }
+    });
+    
+    setDismantleSummary({ count: selectedItems.length, totalValue: total });
+    setShowDismantleModal(true);
+  }
+
+  const handleDismantleConfirm = async () => {
+    try {
+      setIsSubmitting(true);
+      const { data, error } = await supabase.rpc('dismantle_prizes', {
+        p_record_ids: selectedItems,
+        p_user_id: user?.id
+      });
+      
+      if (error) throw error;
+      
+      toast.success(`成功分解 ${selectedItems.length} 個獎品，獲得 ${dismantleSummary.totalValue} 代幣`);
+      setShowDismantleModal(false);
+      setSelectedItems([]);
+      setIsSelectionMode(false);
+      fetchInventory();
+      // Reload page to refresh user tokens in header
+      window.location.reload(); 
+    } catch (err) {
+      console.error('Dismantle error:', err);
+      toast.error('分解失敗，請稍後再試');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'in_warehouse':
@@ -204,6 +256,8 @@ export default function InventoryPage() {
         return <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">已出貨</span>
       case 'exchanged':
         return <span className="bg-neutral-100 text-neutral-500 text-xs font-bold px-2 py-0.5 rounded-full">已交換</span>
+      case 'dismantled':
+        return <span className="bg-neutral-100 text-neutral-400 text-xs font-bold px-2 py-0.5 rounded-full">已分解</span>
       default:
         return null
     }
@@ -301,6 +355,14 @@ export default function InventoryPage() {
               </div>
               <Button 
                 disabled={selectedItems.length === 0}
+                onClick={handleDismantleClick}
+                variant="danger"
+                className="rounded-xl px-6 mr-3"
+              >
+                分解回收
+              </Button>
+              <Button 
+                disabled={selectedItems.length === 0}
                 onClick={() => setShowShipmentModal(true)}
                 className="rounded-xl px-6"
               >
@@ -350,8 +412,8 @@ export default function InventoryPage() {
 
                 <div className="aspect-[4/3] bg-neutral-100 dark:bg-neutral-900 relative overflow-hidden">
                   <img 
-                    src={item.prizes?.image_url || item.products?.image_url || 'https://placehold.co/400x300'} 
-                    alt={item.prizes?.name} 
+                    src={item.product_prizes?.image_url || item.products?.image_url || '/images/item.png'} 
+                    alt={item.product_prizes?.name} 
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute top-3 left-3">
@@ -364,15 +426,15 @@ export default function InventoryPage() {
                       {item.products?.name}
                     </span>
                     <span className="text-xs font-mono text-neutral-300">
-                      #{item.ticket_no}
+                      #{item.ticket_number}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-sm font-black text-primary bg-primary/10 px-1.5 py-0.5 rounded">
-                      {item.prizes?.grade}賞
+                      {item.product_prizes?.level}賞
                     </span>
                     <h3 className="font-bold text-neutral-900 dark:text-white line-clamp-1">
-                      {item.prizes?.name}
+                      {item.product_prizes?.name}
                     </h3>
                   </div>
                   <div className="text-[10px] text-neutral-400">
@@ -400,72 +462,54 @@ export default function InventoryPage() {
 
       {/* Shipment Modal */}
       {showShipmentModal && (
-        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4 sm:p-6">
-          <div 
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
-            onClick={() => setShowShipmentModal(false)}
-          />
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="relative bg-white dark:bg-neutral-900 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden"
-          >
-            <div className="p-6 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between">
-              <h2 className="text-xl font-black text-neutral-900 dark:text-white">
-                申請出貨
-              </h2>
-              <button 
-                onClick={() => setShowShipmentModal(false)}
-                className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="p-6 space-y-4">
-              <div className="bg-primary/5 p-4 rounded-xl flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                <div className="text-sm text-neutral-600 dark:text-neutral-300">
-                  您即將申請出貨 <span className="font-bold text-primary">{selectedItems.length}</span> 件商品。
-                  請確認收件資訊是否正確，提交後將無法修改。
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div>
-                  <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-1.5 block">
-                    收件人姓名
-                  </label>
-                  <Input 
-                    value={recipientName}
-                    onChange={(e) => setRecipientName(e.target.value)}
-                    placeholder="請輸入真實姓名" 
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-1.5 block">
-                    聯絡電話
-                  </label>
-                  <Input 
-                    value={recipientPhone}
-                    onChange={(e) => setRecipientPhone(e.target.value)}
-                    placeholder="請輸入手機號碼" 
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-1.5 block">
-                    收件地址
-                  </label>
-                  <Input 
-                    value={recipientAddress}
-                    onChange={(e) => setRecipientAddress(e.target.value)}
-                    placeholder="請輸入完整收件地址" 
-                  />
-                </div>
+        <Modal
+          isOpen={showShipmentModal}
+          onClose={() => setShowShipmentModal(false)}
+          title="申請出貨"
+        >
+          <div className="space-y-4">
+            <div className="bg-primary/5 p-4 rounded-xl flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+              <div className="text-sm text-neutral-600 dark:text-neutral-300">
+                您即將申請出貨 <span className="font-bold text-primary">{selectedItems.length}</span> 件商品。
+                請確認收件資訊是否正確，提交後將無法修改。
               </div>
             </div>
 
-            <div className="p-6 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50 flex gap-3">
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-1.5 block">
+                  收件人姓名
+                </label>
+                <Input 
+                  value={recipientName}
+                  onChange={(e) => setRecipientName(e.target.value)}
+                  placeholder="請輸入真實姓名" 
+                />
+              </div>
+              <div>
+                <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-1.5 block">
+                  聯絡電話
+                </label>
+                <Input 
+                  value={recipientPhone}
+                  onChange={(e) => setRecipientPhone(e.target.value)}
+                  placeholder="請輸入手機號碼" 
+                />
+              </div>
+              <div>
+                <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-1.5 block">
+                  收件地址
+                </label>
+                <Input 
+                  value={recipientAddress}
+                  onChange={(e) => setRecipientAddress(e.target.value)}
+                  placeholder="請輸入完整收件地址" 
+                />
+              </div>
+            </div>
+
+            <div className="pt-4 flex gap-3">
               <Button 
                 variant="outline" 
                 className="flex-1"
@@ -491,8 +535,63 @@ export default function InventoryPage() {
                 )}
               </Button>
             </div>
-          </motion.div>
-        </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Dismantle Modal */}
+      {showDismantleModal && (
+        <Modal
+          isOpen={showDismantleModal}
+          onClose={() => setShowDismantleModal(false)}
+          title="分解回收確認"
+        >
+          <div className="space-y-6">
+            <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-xl flex items-start gap-3 border border-red-100 dark:border-red-900/50">
+              <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+              <div className="text-sm text-neutral-600 dark:text-neutral-300">
+                <p className="font-bold text-red-600 dark:text-red-400 mb-1">注意：分解後無法復原！</p>
+                您選擇了 <span className="font-bold text-neutral-900 dark:text-white">{dismantleSummary.count}</span> 件商品進行分解。
+                這些商品將從您的背包中移除，並轉換為代幣。
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center justify-center py-4 bg-neutral-50 dark:bg-neutral-800 rounded-2xl border border-neutral-100 dark:border-neutral-700">
+              <span className="text-sm text-neutral-500 dark:text-neutral-400 font-bold mb-1">預計獲得代幣</span>
+              <span className="text-4xl font-black text-primary font-amount tracking-tighter">
+                {dismantleSummary.totalValue.toLocaleString()}
+              </span>
+            </div>
+
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={() => setShowDismantleModal(false)}
+              >
+                取消
+              </Button>
+              <Button 
+                variant="danger"
+                className="flex-1"
+                disabled={isSubmitting}
+                onClick={handleDismantleConfirm}
+              >
+                {isSubmitting ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                    處理中...
+                  </>
+                ) : (
+                  <>
+                    確認分解
+                    <RefreshCw className="w-4 h-4 ml-1" />
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   )

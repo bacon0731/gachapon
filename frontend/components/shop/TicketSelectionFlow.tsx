@@ -60,14 +60,14 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
         setProduct(productData);
 
         const { data: historyData, error: historyError } = await supabase
-          .from('draw_history')
-          .select('ticket_no')
+          .from('draw_records')
+          .select('ticket_number')
           .eq('product_id', productId);
         
         if (historyError) throw historyError;
         
         const sold = historyData
-          .map(h => parseInt(h.ticket_no || '0'))
+          .map(h => h.ticket_number || 0)
           .filter(n => n > 0);
         setSoldTickets(sold);
 
@@ -239,7 +239,7 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
         
         <div className="absolute bottom-0 left-0 right-0 bg-[#1A202C]/90 backdrop-blur-xl border-t border-white/10 pb-safe z-50">
           <div className="p-4 w-full max-w-md mx-auto">
-            {!allOpened ? (
+            {!allOpened || isWaitingForReveal ? (
                <Button 
                  onClick={handleOpenAll} 
                  className="w-full bg-white text-neutral-900 hover:bg-neutral-100 font-black h-[44px] rounded-xl text-base"

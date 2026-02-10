@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -13,6 +13,9 @@ interface Banner {
 
 export default function HeroBanner({ banners }: { banners: Banner[] }) {
   const [current, setCurrent] = useState(0);
+  const touchStart = useRef<number | null>(null);
+  const touchEnd = useRef<number | null>(null);
+  const minSwipeDistance = 50;
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -24,8 +27,36 @@ export default function HeroBanner({ banners }: { banners: Banner[] }) {
   const next = () => setCurrent((prev) => (prev + 1) % banners.length);
   const prev = () => setCurrent((prev) => (prev - 1 + banners.length) % banners.length);
 
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchEnd.current = null;
+    touchStart.current = e.targetTouches[0].clientX;
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    touchEnd.current = e.targetTouches[0].clientX;
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart.current || !touchEnd.current) return;
+    const distance = touchStart.current - touchEnd.current;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe) {
+      next();
+    }
+    if (isRightSwipe) {
+      prev();
+    }
+  };
+
   return (
-    <div className="relative w-full aspect-[21/9] sm:aspect-[21/9] md:aspect-[3/1] lg:aspect-[4/1] bg-neutral-100 overflow-hidden rounded-3xl shadow-card group">
+    <div 
+      className="relative w-full aspect-[21/9] sm:aspect-[21/9] md:aspect-[3/1] lg:aspect-[4/1] bg-neutral-100 overflow-hidden rounded-3xl shadow-card group"
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
       {banners.map((banner, index) => (
         <div
           key={banner.id}
@@ -34,7 +65,7 @@ export default function HeroBanner({ banners }: { banners: Banner[] }) {
           }`}
         >
           <Link href={banner.link} className="block w-full h-full relative">
-            <img src={banner.image} alt="Banner" className="w-full h-full object-cover" />
+            <img src={banner.image || '/images/banner.png'} alt="Banner" className="w-full h-full object-cover select-none" draggable={false} />
             {/* Gradient Overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
           </Link>
@@ -44,13 +75,13 @@ export default function HeroBanner({ banners }: { banners: Banner[] }) {
       {/* Controls */}
       <button
         onClick={prev}
-        className="absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-2xl bg-white/20 text-white hover:bg-white/40 backdrop-blur-md transition-all opacity-0 group-hover:opacity-100 flex items-center justify-center border border-white/20 active:scale-90"
+        className="hidden md:flex absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-2xl bg-white/20 text-white hover:bg-white/40 backdrop-blur-md transition-all opacity-0 group-hover:opacity-100 items-center justify-center border border-white/20 active:scale-90"
       >
         <ChevronLeft className="w-6 h-6 stroke-[3]" />
       </button>
       <button
         onClick={next}
-        className="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-2xl bg-white/20 text-white hover:bg-white/40 backdrop-blur-md transition-all opacity-0 group-hover:opacity-100 flex items-center justify-center border border-white/20 active:scale-90"
+        className="hidden md:flex absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-2xl bg-white/20 text-white hover:bg-white/40 backdrop-blur-md transition-all opacity-0 group-hover:opacity-100 items-center justify-center border border-white/20 active:scale-90"
       >
         <ChevronRight className="w-6 h-6 stroke-[3]" />
       </button>

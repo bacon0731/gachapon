@@ -31,16 +31,17 @@ export default function CategoriesPage() {
   const fetchData = async () => {
     try {
       setIsLoading(true)
+      // 暫時移除 products(count) 避免因關聯或權限問題導致查詢失敗
       const { data, error } = await supabase
         .from('categories')
-        .select('*, products(count)')
+        .select('*')
         .order('sort_order', { ascending: true })
       
       if (error) throw error
       setCategories(data || [])
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching categories:', error)
-      // alert('載入分類失敗')
+      alert(`載入菜單失敗: ${error.message}`)
     } finally {
       setIsLoading(false)
     }
@@ -179,13 +180,15 @@ export default function CategoriesPage() {
   const columns: Column<Category>[] = [
     {
       key: 'name',
-      label: '分類名稱',
+      label: '菜單名稱',
       sortable: true,
+      className: 'align-middle',
       render: (category: Category) => <span className="font-medium text-neutral-900">{category.name}</span>
     },
     {
       key: 'product_count',
       label: '商品數量',
+      className: 'align-middle',
       render: (category: Category) => (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
           {category.products?.[0]?.count || 0}
@@ -196,11 +199,13 @@ export default function CategoriesPage() {
       key: 'sort_order',
       label: '排序',
       sortable: true,
+      className: 'align-middle',
       render: (category: Category) => <span>{category.sort_order}</span>
     },
     {
       key: 'is_active',
       label: '狀態',
+      className: 'align-middle',
       render: (category: Category) => (
         <span className={`px-2 py-1 text-xs rounded-full ${
           category.is_active 
@@ -215,12 +220,14 @@ export default function CategoriesPage() {
       key: 'created_at',
       label: '建立時間',
       sortable: true,
-      render: (category: Category) => <span className="text-neutral-500 text-sm">{formatDateTime(category.created_at)}</span>
+      className: 'align-middle whitespace-nowrap',
+      render: (category: Category) => <span className="text-neutral-700 text-sm font-mono">{formatDateTime(category.created_at)}</span>
     },
     {
       key: 'actions',
       label: '操作',
       sticky: true,
+      className: 'align-middle',
       render: (category: Category) => (
         <div className="flex items-center gap-2">
           <button
@@ -241,10 +248,15 @@ export default function CategoriesPage() {
   ]
 
   return (
-    <AdminLayout pageTitle="分類管理" pageSubtitle="管理商品分類">
+    <AdminLayout
+      pageTitle="菜單管理"
+      breadcrumbs={[
+        { label: '菜單管理', href: undefined }
+      ]}
+    >
       <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-bold text-neutral-800">分類列表</h2>
+          <h2 className="text-xl font-bold text-neutral-800">菜單列表</h2>
           <button
             onClick={handleAdd}
             className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors flex items-center gap-2"
@@ -252,7 +264,7 @@ export default function CategoriesPage() {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            新增分類
+            新增菜單
           </button>
         </div>
 
@@ -264,25 +276,26 @@ export default function CategoriesPage() {
             sortField={sortField}
             sortDirection={sortDirection}
             onSort={handleSort}
+            emptyMessage="沒有找到符合條件的菜單"
           />
         </PageCard>
 
         <Modal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          title={editingCategory ? '編輯分類' : '新增分類'}
+          title={editingCategory ? '編輯菜單' : '新增菜單'}
         >
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">
-                分類名稱
+                菜單名稱
               </label>
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="請輸入分類名稱"
+                placeholder="請輸入菜單名稱"
               />
             </div>
 

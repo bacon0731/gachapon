@@ -58,7 +58,6 @@ export default function DrawsPage() {
       setRecords(data || [])
     } catch (error) {
       console.error('Error fetching draw records:', error)
-      alert('載入抽獎紀錄失敗')
     } finally {
       setIsLoading(false)
     }

@@ -27,7 +27,9 @@ import {
   ChevronDown,
   X,
   Loader2,
-  CreditCard
+  CreditCard,
+  Copy,
+  Ticket
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -76,7 +78,19 @@ interface FollowedProduct {
   status: 'selling' | 'soldout' | 'coming_soon';
 }
 
-type TabType = 'warehouse' | 'delivery' | 'draw-history' | 'topup-history' | 'follows' | 'settings';
+interface Coupon {
+  id: string;
+  title: string;
+  description: string;
+  discountType: 'fixed' | 'percentage';
+  discountValue: number;
+  minSpend: number;
+  expiryDate: string;
+  status: 'unused' | 'used' | 'expired';
+  code?: string;
+}
+
+type TabType = 'warehouse' | 'delivery' | 'draw-history' | 'topup-history' | 'follows' | 'coupons' | 'settings';
 
 function ProfileContent() {
   const { user, logout, refreshProfile, isLoading: isAuthLoading } = useAuth();
@@ -99,6 +113,7 @@ function ProfileContent() {
   const [drawHistory, setDrawHistory] = useState<DrawHistoryItem[]>([]);
   const [topupHistory, setTopupHistory] = useState<any[]>([]); 
   const [followedProducts, setFollowedProducts] = useState<FollowedProduct[]>([]);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [isMobileDetailOpen, setIsMobileDetailOpen] = useState(false);
 
@@ -129,7 +144,7 @@ function ProfileContent() {
   // Sync with URL on load
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['warehouse', 'delivery', 'draw-history', 'topup-history', 'follows', 'settings'].includes(tab)) {
+    if (tab && ['warehouse', 'delivery', 'draw-history', 'topup-history', 'follows', 'coupons', 'settings'].includes(tab)) {
       setActiveTab(tab as TabType);
       setIsMobileDetailOpen(true);
     } else {
@@ -164,13 +179,13 @@ function ProfileContent() {
     try {
       if (activeTab === 'warehouse') {
         const { data, error } = await supabase
-          .from('draw_history')
+          .from('draw_records')
           .select(`
             id,
-            ticket_no,
+            ticket_number,
             created_at,
             status,
-            prizes ( grade, name, image_url ),
+            product_prizes ( level, name, image_url ),
             products ( name )
           `)
           .eq('user_id', user.id)
@@ -181,23 +196,23 @@ function ProfileContent() {
 
         const items = data.map((item: any) => ({
           id: item.id,
-          name: item.prizes?.name || '未知獎品',
+          name: item.product_prizes?.name || '未知獎品',
           series: item.products?.name || '未知系列',
-          grade: item.prizes?.grade || '?',
+          grade: item.product_prizes?.level || '?',
           status: item.status,
-          image: item.prizes?.image_url || 'https://placehold.co/400',
+          image: item.product_prizes?.image_url || 'https://placehold.co/400',
           date: new Date(item.created_at).toLocaleDateString('zh-TW'),
-          ticketNo: item.ticket_no
+          ticketNo: item.ticket_number?.toString() || ''
         }));
         setWarehouseItems(items);
       } 
       else if (activeTab === 'delivery') {
         const { data, error } = await supabase
-          .from('delivery_orders')
+          .from('orders')
           .select(`
             *,
-            draw_history (
-              prizes ( grade, name )
+            draw_records (
+              product_prizes ( level, name )
             )
           `)
           .eq('user_id', user.id)
@@ -207,28 +222,27 @@ function ProfileContent() {
 
         const orders = data.map((order: any) => ({
           id: order.id,
-          itemsCount: order.draw_history?.length || 0,
-          items: order.draw_history?.map((dh: any) => ({
-            grade: dh.prizes?.grade,
-            name: dh.prizes?.name
+          itemsCount: order.draw_records?.length || 0,
+          items: order.draw_records?.map((dh: any) => ({
+            grade: dh.product_prizes?.level,
+            name: dh.product_prizes?.name
           })) || [],
           status: order.status,
           date: new Date(order.created_at).toLocaleDateString('zh-TW'),
           tracking: order.tracking_number || '-',
-          method: order.shipping_method === 'standard' ? '標準配送' : order.shipping_method,
+          method: '標準配送',
           arrivalDate: order.status === 'completed' ? '已送達' : '-'
         }));
         setDeliveryHistory(orders);
       }
       else if (activeTab === 'draw-history') {
          const { data, error } = await supabase
-          .from('draw_history')
+          .from('draw_records')
           .select(`
             id,
-            ticket_no,
+            ticket_number,
             created_at,
-            cost,
-            prizes ( grade, name ),
+            product_prizes ( level, name ),
             products ( name )
           `)
           .eq('user_id', user.id)
@@ -240,9 +254,9 @@ function ProfileContent() {
           id: item.id,
           product: item.products?.name,
           date: new Date(item.created_at).toLocaleString('zh-TW'),
-          tickets: [item.ticket_no],
-          cost: item.cost || 0,
-          items: [{ grade: item.prizes?.grade, name: item.prizes?.name }]
+          tickets: [item.ticket_number?.toString()],
+          cost: 0,
+          items: [{ grade: item.product_prizes?.level, name: item.product_prizes?.name }]
         }));
         setDrawHistory(history);
       }
@@ -277,6 +291,33 @@ function ProfileContent() {
         }));
         setFollowedProducts(follows);
       }
+      else if (activeTab === 'coupons') {
+        const { data, error } = await supabase
+          .from('user_coupons')
+          .select(`
+            id,
+            status,
+            expiry_date,
+            coupons ( id, title, description, discount_type, discount_value, min_spend, code )
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        const myCoupons = data.map((item: any) => ({
+          id: item.id,
+          title: item.coupons.title,
+          description: item.coupons.description,
+          discountType: item.coupons.discount_type,
+          discountValue: item.coupons.discount_value,
+          minSpend: item.coupons.min_spend,
+          expiryDate: item.expiry_date,
+          status: item.status,
+          code: item.coupons.code
+        }));
+        setCoupons(myCoupons);
+      }
     } catch (err) {
       console.error('Error fetching data:', err);
       // toast.error('無法載入資料'); // Suppress error for now as tables might not exist yet
@@ -296,28 +337,31 @@ function ProfileContent() {
     setIsSubmittingDelivery(true);
 
     try {
+      // Generate Order Number
+      const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
       // 1. Create Delivery Order
       const { data: order, error: orderError } = await supabase
-        .from('delivery_orders')
+        .from('orders')
         .insert({
+          order_number: orderNumber,
           user_id: user!.id,
           recipient_name: settingsForm.recipientName,
           recipient_phone: settingsForm.recipientPhone,
-          recipient_address: settingsForm.recipientAddress,
-          status: 'pending',
-          shipping_method: 'standard'
+          address: settingsForm.recipientAddress,
+          status: 'submitted',
         })
         .select()
         .single();
 
       if (orderError) throw orderError;
 
-      // 2. Update Draw History Items
+      // 2. Update Draw Records
       const { error: updateError } = await supabase
-        .from('draw_history')
+        .from('draw_records')
         .update({ 
           status: 'pending_delivery',
-          delivery_order_id: order.id 
+          order_id: order.id 
         })
         .in('id', selectedForDelivery);
 
@@ -341,15 +385,14 @@ function ProfileContent() {
 
     try {
       const updates: any = {
-        full_name: settingsForm.nickname,
-        updated_at: new Date().toISOString(),
+        name: settingsForm.nickname,
         recipient_name: settingsForm.recipientName,
         recipient_phone: settingsForm.recipientPhone,
-        recipient_address: settingsForm.recipientAddress,
+        address: settingsForm.recipientAddress,
       };
 
       const { error } = await supabase
-        .from('profiles')
+        .from('users')
         .update(updates)
         .eq('id', user!.id);
 
@@ -385,6 +428,8 @@ function ProfileContent() {
     { id: 'delivery', label: '配送訂單', icon: Truck, color: 'text-accent-emerald' },
     { id: 'draw-history', label: '抽獎紀錄', icon: Trophy, color: 'text-accent-yellow' },
     { id: 'topup-history', label: '儲值紀錄', icon: Wallet, color: 'text-blue-500' },
+    { id: 'coupons', label: '我的優惠券', icon: Ticket, color: 'text-pink-500' },
+    { id: 'settings', label: '設定', icon: Settings, color: 'text-neutral-500' },
   ];
 
   const renderTabContent = () => {
@@ -439,7 +484,7 @@ function ProfileContent() {
                         className={cn("bg-white rounded-2xl border p-3 space-y-3 shadow-sm relative overflow-hidden transition-all active:scale-95", isSelected ? "border-accent-emerald ring-2 ring-accent-emerald/20" : "border-neutral-100")}
                       >
                         <div className="aspect-square bg-[#28324E] rounded-xl overflow-hidden relative">
-                          <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                          <img src={item.image || '/images/item.png'} alt={item.name} className="w-full h-full object-cover" />
                           <div className="absolute top-2 right-2">
                              <div className={cn("w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all bg-white", isSelected ? "border-accent-emerald bg-accent-emerald" : "border-neutral-200")}>
                               {isSelected && <CheckCircle2 className="w-3 h-3 text-white" />}
@@ -486,7 +531,7 @@ function ProfileContent() {
                             <td className="px-4 lg:px-6 py-4 lg:py-5">
                               <div className="flex items-center gap-3 lg:gap-4">
                                 <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl lg:rounded-2xl bg-[#28324E] overflow-hidden flex-shrink-0 border border-neutral-100 p-0.5 shadow-soft">
-                                  <img src={item.image} alt={item.name} className="w-full h-full object-cover rounded-[10px] lg:rounded-[14px] group-hover:scale-110 transition-transform duration-700 opacity-80 group-hover:opacity-100" />
+                                  <img src={item.image || '/images/item.png'} alt={item.name} className="w-full h-full object-cover rounded-[10px] lg:rounded-[14px] group-hover:scale-110 transition-transform duration-700 opacity-80 group-hover:opacity-100" />
                                 </div>
                                 <div className="space-y-0.5 lg:space-y-1 min-w-0">
                                   <div className="text-[13px] lg:text-[14px] font-black text-neutral-900 leading-tight truncate tracking-tight">{item.name}</div>
@@ -906,10 +951,67 @@ function ProfileContent() {
                  {/* Product Cards would go here */}
                  {followedProducts.map(product => (
                     <div key={product.id} className="bg-white p-4 rounded-2xl border border-neutral-100 shadow-sm">
-                       <img src={product.image} className="w-full aspect-square object-cover rounded-xl mb-3 bg-neutral-100" />
+                       <img src={product.image || '/images/item.png'} className="w-full aspect-square object-cover rounded-xl mb-3 bg-neutral-100" />
                        <h4 className="font-black text-neutral-900 text-sm truncate">{product.name}</h4>
                     </div>
                  ))}
+              </div>
+            )}
+          </div>
+        );
+      case 'coupons':
+        return (
+          <div className="p-3 lg:p-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 lg:mb-8">
+              <div className="hidden md:block">
+                <h3 className="text-3xl font-black text-neutral-900 tracking-tight">我的優惠券</h3>
+                <p className="text-sm text-neutral-400 font-black uppercase tracking-widest mt-2">查看與使用您的優惠券</p>
+              </div>
+              <div className="px-3 py-1 bg-neutral-50 rounded-xl lg:rounded-2xl border border-neutral-100 text-[11px] lg:text-[13px] font-black text-neutral-400 uppercase tracking-widest w-fit">
+                共 {coupons.length} 張優惠券
+              </div>
+            </div>
+
+            {coupons.length === 0 ? (
+              <div className="py-20 text-center text-neutral-400">
+                <Ticket className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                <p className="font-black text-sm uppercase tracking-widest">目前沒有可用的優惠券</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {coupons.map((coupon) => (
+                  <div key={coupon.id} className="bg-white rounded-2xl border border-neutral-100 p-4 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+                    {/* Background Pattern */}
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-pink-500/5 rounded-full blur-2xl group-hover:bg-pink-500/10 transition-all" />
+                    
+                    <div className="relative z-10">
+                      <span className={cn(
+                        "absolute top-0 right-0 px-2 py-1 rounded-lg text-[13px] font-black uppercase tracking-wider",
+                        coupon.status === 'unused' ? "bg-emerald-50 text-emerald-600" : "bg-neutral-100 text-neutral-400"
+                      )}>
+                        {coupon.status === 'unused' ? '可使用' : coupon.status === 'used' ? '已使用' : '已過期'}
+                      </span>
+                      
+                      <h4 className="text-lg font-black text-neutral-900 mb-1 pr-16 pt-1">{coupon.title}</h4>
+                      <p className="text-[13px] text-neutral-500 font-bold mb-3">{coupon.description}</p>
+                      
+                      <div className="pt-3 border-t border-dashed border-neutral-200 flex items-center justify-between">
+                        <div className="flex flex-col">
+                          <span className="text-[13px] text-neutral-400 font-black uppercase tracking-wider">折扣內容</span>
+                          <span className="text-lg font-black text-pink-500 font-amount">
+                            {coupon.discountType === 'fixed' ? `$${coupon.discountValue}` : `${coupon.discountValue}% OFF`}
+                          </span>
+                        </div>
+                         <div className="flex flex-col text-right">
+                          <span className="text-[13px] text-neutral-400 font-black uppercase tracking-wider">有效期限</span>
+                          <span className="text-[13px] font-bold text-neutral-600 font-mono">
+                             {coupon.expiryDate ? new Date(coupon.expiryDate).toLocaleDateString() : '無期限'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -1008,7 +1110,7 @@ function ProfileContent() {
                 </div>
               </div>
 
-              <div className="pt-4 flex justify-end">
+              <div className="pt-4 hidden md:flex justify-end">
                 <button 
                   type="submit" 
                   disabled={isUpdatingProfile}
@@ -1016,6 +1118,19 @@ function ProfileContent() {
                 >
                   {isUpdatingProfile ? '儲存中...' : '儲存變更'}
                 </button>
+              </div>
+
+              {/* Mobile Fixed Action Bar */}
+              <div className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl border-t border-neutral-100 dark:border-neutral-800 h-16 px-4 flex items-center md:hidden z-50 shadow-modal">
+                 <div className="w-full">
+                   <button 
+                      type="submit" 
+                      disabled={isUpdatingProfile}
+                      className="w-full h-[48px] bg-primary text-white text-lg rounded-xl font-black shadow-xl shadow-primary/20 transition-all active:scale-[0.98] flex items-center justify-center disabled:opacity-50"
+                    >
+                      {isUpdatingProfile ? '儲存中...' : '儲存變更'}
+                    </button>
+                 </div>
               </div>
             </form>
           </div>
@@ -1043,10 +1158,21 @@ function ProfileContent() {
                   <img src={user.avatar_url || 'https://github.com/shadcn.png'} alt={user.name} className="w-full h-full object-cover" />
                 </div>
                 <div>
-                  <h2 className="text-base font-black text-neutral-900 leading-tight">{user.name}</h2>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <span className="text-[13px] font-bold text-neutral-400 uppercase tracking-widest">已驗證會員</span>
+                  <div className="flex items-center gap-1.5">
+                    <h2 className="text-base font-black text-neutral-900 leading-tight">{user.name}</h2>
                     <CheckCircle2 className="w-3.5 h-3.5 text-accent-emerald" />
+                  </div>
+                  <div className="flex items-center gap-2 mt-1.5" onClick={() => {
+                    if (user.invite_code) {
+                      navigator.clipboard.writeText(user.invite_code);
+                      toast.success('邀請碼已複製');
+                    }
+                  }}>
+                    <div className="flex items-center gap-1.5 bg-neutral-100 px-2 py-1 rounded-lg active:scale-95 transition-transform cursor-pointer">
+                      <span className="text-[13px] font-black text-neutral-400">邀請碼：</span>
+                      <span className="text-[13px] font-mono font-black text-primary">{user.invite_code || '-'}</span>
+                      <Copy className="w-3.5 h-3.5 text-neutral-400" />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1168,16 +1294,30 @@ function ProfileContent() {
                   <div className="flex-1 min-w-0 text-center lg:text-left">
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center justify-center lg:justify-between gap-2">
-                        <h2 className="text-lg lg:text-xl font-black text-neutral-900 dark:text-white truncate tracking-tight">{user.name}</h2>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <h2 className="text-lg lg:text-xl font-black text-neutral-900 dark:text-white truncate tracking-tight">{user.name}</h2>
+                          <CheckCircle2 className="w-4 h-4 text-accent-emerald flex-shrink-0" />
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-center lg:justify-start">
+                         <div className="flex items-center gap-2 bg-neutral-50 dark:bg-neutral-800 px-2.5 py-1 rounded-lg border border-neutral-100 dark:border-neutral-700 cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors group/invite" onClick={() => {
+                           if (user.invite_code) {
+                             navigator.clipboard.writeText(user.invite_code);
+                             toast.success('邀請碼已複製');
+                           }
+                        }}>
+                          <span className="text-[13px] font-black text-neutral-400 uppercase tracking-wider">邀請碼：</span>
+                          <span className="text-[13px] font-mono font-black text-primary group-hover/invite:text-primary/80 transition-colors">{user.invite_code || '-'}</span>
+                          <Copy className="w-3.5 h-3.5 text-neutral-300 group-hover/invite:text-primary transition-colors" />
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-center lg:justify-between">
                         <div className="hidden lg:flex items-center gap-2 bg-neutral-50 dark:bg-neutral-800 px-3 py-1.5 rounded-2xl border border-neutral-100/50 dark:border-neutral-700/50 flex-shrink-0">
                           <div className="flex items-center justify-center w-4 h-4 rounded-full bg-accent-yellow shadow-sm">
                             <span className="text-[11px] text-white font-black leading-none">G</span>
                           </div>
                           <span className="text-lg font-black text-accent-red font-amount leading-none tracking-tighter">{user.points.toLocaleString()}</span>
                         </div>
-                      </div>
-                      <div className="flex items-center justify-center lg:justify-between">
-                        <p className="text-[12px] lg:text-[13px] text-neutral-400 font-black uppercase tracking-widest truncate max-w-[120px]">{user.email}</p>
                         <Link href="/topup" className="hidden lg:block text-sm font-black text-primary hover:text-primary/80 transition-colors uppercase tracking-widest">儲值</Link>
                       </div>
                     </div>
@@ -1186,7 +1326,6 @@ function ProfileContent() {
               </div>
               <div className="bg-white dark:bg-neutral-900 rounded-3xl lg:rounded-4xl shadow-card border border-neutral-100 dark:border-neutral-800 p-3 lg:p-4 overflow-hidden">
                 <div className="flex items-center gap-3 mb-3 lg:mb-4 px-3 pt-2">
-                  <Settings className="w-4 h-4 lg:w-5 h-5 text-primary stroke-[2.5]" />
                   <h3 className="text-[12px] lg:text-sm font-black text-neutral-900 dark:text-white uppercase tracking-widest">帳戶選單</h3>
                 </div>
                 <div className="space-y-0.5 lg:space-y-1">

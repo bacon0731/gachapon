@@ -11,7 +11,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/types/database.types'
 
 type DbProduct = Database['public']['Tables']['products']['Insert']
-type DbPrize = Database['public']['Tables']['prizes']['Insert']
+type DbPrize = Database['public']['Tables']['product_prizes']['Insert']
 
 export default function NewProductPage() {
   const router = useRouter()
@@ -119,7 +119,7 @@ export default function NewProductPage() {
         name: formData.name,
         category: formData.category,
         price: parseInt(formData.price) || 0,
-        remaining_count: calculatedRemaining,
+        remaining: calculatedRemaining,
         status: formData.status as 'active' | 'pending' | 'ended',
         is_hot: formData.isHot,
         total_count: calculatedTotalCount,
@@ -170,17 +170,17 @@ export default function NewProductPage() {
 
         return {
           product_id: newProduct.id,
-          grade: prize.level,
+          level: prize.level,
           name: prize.name,
           image_url: prizeImageUrl,
-          quantity: prize.total,
-          probability: prize.probability,
-          created_at: new Date().toISOString()
+          total: prize.total,
+          remaining: prize.total, // Initialize remaining equal to total
+          probability: prize.probability
         }
       }))
 
       const { error: prizesError } = await supabase
-        .from('prizes')
+        .from('product_prizes')
         .insert(prizesData)
 
       if (prizesError) throw prizesError

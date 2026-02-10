@@ -1,6 +1,7 @@
 'use client'
 
 import { AdminLayout, PageCard, Modal, DataTable, type Column } from '@/components'
+import { Switch } from '@/components/ui'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { formatDateTime } from '@/utils/dateFormat'
@@ -224,11 +225,34 @@ export default function BannersPage() {
       key: 'is_active',
       label: '狀態',
       render: (item) => (
-        <span className={`px-2 py-1 rounded text-xs ${
-          item.is_active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'
-        }`}>
-          {item.is_active ? '啟用' : '停用'}
-        </span>
+        <Switch
+          checked={item.is_active}
+          onCheckedChange={async (checked) => {
+            // Optimistic update
+            setBanners(prev => prev.map(b => 
+              b.id === item.id ? { ...b, is_active: checked } : b
+            ))
+
+            try {
+              const res = await fetch(`/api/banners/${item.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_active: checked }),
+              })
+
+              if (!res.ok) {
+                throw new Error('Update failed')
+              }
+            } catch (error) {
+              console.error('Error updating banner status:', error)
+              alert('更新狀態失敗')
+              // Revert on error
+              setBanners(prev => prev.map(b => 
+                b.id === item.id ? { ...b, is_active: !checked } : b
+              ))
+            }
+          }}
+        />
       )
     },
     {

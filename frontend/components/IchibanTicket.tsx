@@ -124,18 +124,18 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
         <AnimatePresence>
           {!isOpened && (
             <motion.div
-              drag="x"
-              dragConstraints={{ left: 0, right: 300 }}
+              drag="y"
+              dragConstraints={{ top: -300, bottom: 0 }}
               dragElastic={0.1}
               onDragEnd={(_, info) => {
-                if (info.offset.x > 100 || info.velocity.x > 500) {
+                if (info.offset.y < -100 || info.velocity.y < -500) {
                   handleOpen();
                 }
               }}
               onClick={handleOpen}
               exit={{ 
-                rotateY: -110,
-                x: '110%',
+                rotateX: 110,
+                y: '-110%',
                 z: 400,
                 opacity: 0,
                 transition: { 
@@ -180,12 +180,15 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
                 </svg>
 
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <div className="text-white/30 font-black text-[10px] tracking-[0.4em] uppercase">
+                  <div className="text-white/30 font-black text-[10px] tracking-[0.4em] uppercase mb-2">
                     Ichiban Kuji
                   </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
-                    <span className="text-[9px] text-white/40 font-bold uppercase tracking-[0.2em]">Peel to Reveal</span>
+                  <div className="flex flex-col items-center gap-2 animate-bounce">
+                    <img 
+                      src="/images/up.svg" 
+                      alt="Swipe Up" 
+                      className="w-8 h-8 opacity-60 drop-shadow-lg"
+                    />
                   </div>
                 </div>
               </div>

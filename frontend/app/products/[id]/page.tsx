@@ -12,7 +12,7 @@ import { Database } from '@/types/database.types'
 import { generateTXID, calculateTXIDHash } from '@/utils/drawLogicClient'
 
 type DbProduct = Database['public']['Tables']['products']['Row']
-type DbPrize = Database['public']['Tables']['prizes']['Row']
+type DbPrize = Database['public']['Tables']['product_prizes']['Row']
 
 export default function EditProductPage() {
   const router = useRouter()
@@ -134,10 +134,10 @@ export default function EditProductPage() {
 
         // Fetch prizes
         const { data: dbPrizes, error: prizesError } = await supabase
-          .from('prizes')
+          .from('product_prizes')
           .select('*')
           .eq('product_id', productId)
-          .order('created_at', { ascending: true })
+          .order('level', { ascending: true })
 
         if (prizesError) throw prizesError
 
@@ -152,7 +152,7 @@ export default function EditProductPage() {
           imagePreview: product.image_url || '',
           status: product.status,
           category: product.category || '一番賞',
-          remaining: product.remaining_count.toString(),
+          remaining: product.remaining.toString(),
           totalCount: product.total_count.toString(),
           isHot: product.is_hot || false,
           releaseYear: releaseDate.getFullYear().toString(),
@@ -169,15 +169,15 @@ export default function EditProductPage() {
 
         // Set prizes
         setPrizes(dbPrizes.map(p => ({
-          id: p.id,
-          dbId: p.id,
+          id: p.id.toString(), // product_prizes id is number
+          dbId: p.id.toString(),
           name: p.name,
-          level: p.grade,
+          level: p.level,
           image: p.image_url,
           imageFile: null,
           imagePreview: p.image_url || '',
-          total: p.quantity,
-          remaining: p.quantity, // Note: This might need to be adjusted if we track remaining separately per prize in real-time
+          total: p.total,
+          remaining: p.remaining, 
           probability: p.probability || 0
         })))
 
@@ -291,7 +291,7 @@ export default function EditProductPage() {
         status: formData.status as 'active' | 'pending' | 'ended',
         is_hot: formData.isHot,
         total_count: calculatedTotalCount,
-        remaining_count: calculatedRemaining, // Caution: updating remaining count directly
+        remaining: calculatedRemaining, // Caution: updating remaining count directly
         release_date: formData.startedAt || new Date().toISOString(),
         image_url: productImageUrl,
         major_prizes: formData.majorPrizes,
@@ -311,9 +311,9 @@ export default function EditProductPage() {
 
       // 3. Handle Prizes
       // Identify deleted prizes
-      const currentPrizeIds = prizes.filter(p => p.dbId).map(p => p.dbId)
+      const currentPrizeIds = prizes.filter(p => p.dbId).map(p => parseInt(p.dbId!))
       const { data: existingPrizes } = await supabase
-        .from('prizes')
+        .from('product_prizes')
         .select('id')
         .eq('product_id', productId)
       
@@ -321,7 +321,7 @@ export default function EditProductPage() {
       const idsToDelete = existingIds.filter(id => !currentPrizeIds.includes(id))
 
       if (idsToDelete.length > 0) {
-        await supabase.from('prizes').delete().in('id', idsToDelete)
+        await supabase.from('product_prizes').delete().in('id', idsToDelete)
       }
 
       // Upsert prizes (update existing, insert new)
@@ -345,25 +345,24 @@ export default function EditProductPage() {
 
         const prizeData = {
           product_id: parseInt(productId),
-          grade: prize.level,
+          level: prize.level,
           name: prize.name,
           image_url: prizeImageUrl,
-          quantity: prize.total,
+          total: prize.total,
           probability: prize.probability,
-          // remaining: prize.remaining // Database trigger might handle this or we shouldn't update it if we track individual items?
-          // Assuming simple model where we just update the definition.
+          remaining: prize.remaining 
         }
 
         if (prize.dbId) {
           // Update
           await supabase
-            .from('prizes')
+            .from('product_prizes')
             .update(prizeData)
-            .eq('id', prize.dbId)
+            .eq('id', parseInt(prize.dbId))
         } else {
           // Insert
           await supabase
-            .from('prizes')
+            .from('product_prizes')
             .insert(prizeData)
         }
       }

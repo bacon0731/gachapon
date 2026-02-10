@@ -9,6 +9,59 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      users: {
+        Row: {
+          id: string
+          user_id: number
+          name: string | null
+          email: string | null
+          phone: string | null
+          tokens: number
+          status: 'active' | 'inactive'
+          total_draws: number
+          total_spent: number
+          address: string | null
+          recipient_name: string | null
+          recipient_phone: string | null
+          created_at: string
+          last_login_at: string | null
+          invite_code: string | null
+        }
+        Insert: {
+          id: string
+          user_id?: number
+          name?: string | null
+          email?: string | null
+          phone?: string | null
+          tokens?: number
+          status?: 'active' | 'inactive'
+          total_draws?: number
+          total_spent?: number
+          address?: string | null
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          created_at?: string
+          last_login_at?: string | null
+          invite_code?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: number
+          name?: string | null
+          email?: string | null
+          phone?: string | null
+          tokens?: number
+          status?: 'active' | 'inactive'
+          total_draws?: number
+          total_spent?: number
+          address?: string | null
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          created_at?: string
+          last_login_at?: string | null
+          invite_code?: string | null
+        }
+      }
       profiles: {
         Row: {
           id: string
@@ -64,7 +117,7 @@ export interface Database {
           status: 'active' | 'pending' | 'ended'
           is_hot: boolean
           total_count: number
-          remaining_count: number
+          remaining: number
           release_date: string | null
           created_at: string
           major_prizes: string[] | null
@@ -73,6 +126,7 @@ export interface Database {
           txid_hash: string | null
           seed: string | null
           ended_at: string | null
+          type: 'ichiban' | 'blindbox' | 'gacha' | 'custom'
         }
         Insert: {
           id?: number
@@ -84,7 +138,7 @@ export interface Database {
           status?: 'active' | 'pending' | 'ended'
           is_hot?: boolean
           total_count?: number
-          remaining_count?: number
+          remaining?: number
           release_date?: string | null
           created_at?: string
           major_prizes?: string[] | null
@@ -93,6 +147,7 @@ export interface Database {
           txid_hash?: string | null
           seed?: string | null
           ended_at?: string | null
+          type?: 'ichiban' | 'blindbox' | 'gacha' | 'custom'
         }
         Update: {
           id?: number
@@ -104,7 +159,7 @@ export interface Database {
           status?: 'active' | 'pending' | 'ended'
           is_hot?: boolean
           total_count?: number
-          remaining_count?: number
+          remaining?: number
           release_date?: string | null
           created_at?: string
           major_prizes?: string[] | null
@@ -113,6 +168,135 @@ export interface Database {
           txid_hash?: string | null
           seed?: string | null
           ended_at?: string | null
+          type?: 'ichiban' | 'blindbox' | 'gacha' | 'custom'
+        }
+      }
+      product_tags: {
+        Row: {
+          product_id: number
+          category_id: string
+          created_at: string
+        }
+        Insert: {
+          product_id: number
+          category_id: string
+          created_at?: string
+        }
+        Update: {
+          product_id?: number
+          category_id?: string
+          created_at?: string
+        }
+      }
+      product_prizes: {
+        Row: {
+          id: number
+          product_id: number
+          level: string
+          name: string
+          image_url: string | null
+          total: number
+          remaining: number
+          probability: number | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: number
+          product_id: number
+          level: string
+          name: string
+          image_url?: string | null
+          total: number
+          remaining: number
+          probability?: number | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: number
+          product_id?: number
+          level?: string
+          name?: string
+          image_url?: string | null
+          total?: number
+          remaining?: number
+          probability?: number | null
+          created_at?: string | null
+        }
+      }
+      draw_records: {
+        Row: {
+          id: number
+          user_id: string | null
+          product_id: number | null
+          prize_level: string | null
+          ticket_number: number | null
+          status: 'in_warehouse' | 'pending_delivery' | 'shipped' | 'exchanged'
+          order_id: string | null
+          product_prize_id: number | null
+          created_at: string
+          txid_nonce: number | null
+          txid_hash: string | null
+          profit_rate: number | null
+          random_value: number | null
+        }
+        Insert: {
+          id?: number
+          user_id?: string | null
+          product_id?: number | null
+          prize_level?: string | null
+          ticket_number?: number | null
+          status?: 'in_warehouse' | 'pending_delivery' | 'shipped' | 'exchanged'
+          order_id?: string | null
+          product_prize_id?: number | null
+          created_at?: string
+          txid_nonce?: number | null
+          txid_hash?: string | null
+          profit_rate?: number | null
+          random_value?: number | null
+        }
+        Update: {
+          id?: number
+          user_id?: string | null
+          product_id?: number | null
+          prize_level?: string | null
+          ticket_number?: number | null
+          status?: 'in_warehouse' | 'pending_delivery' | 'shipped' | 'exchanged'
+          order_id?: string | null
+          product_prize_id?: number | null
+          created_at?: string
+          txid_nonce?: number | null
+          txid_hash?: string | null
+          profit_rate?: number | null
+          random_value?: number | null
+        }
+      }
+      recharge_records: {
+        Row: {
+          id: number
+          order_number: string | null
+          user_id: string | null
+          amount: number | null
+          bonus: number | null
+          status: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: number
+          order_number?: string | null
+          user_id?: string | null
+          amount?: number | null
+          bonus?: number | null
+          status?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: number
+          order_number?: string | null
+          user_id?: string | null
+          amount?: number | null
+          bonus?: number | null
+          status?: string | null
+          created_at?: string
         }
       }
       prizes: {
@@ -321,6 +505,93 @@ export interface Database {
           link_url?: string | null
           sort_order?: number
           is_active?: boolean
+          created_at?: string
+        }
+      }
+      coupons: {
+        Row: {
+          id: string
+          code: string | null
+          title: string
+          description: string | null
+          discount_type: 'fixed' | 'percentage'
+          discount_value: number
+          min_spend: number
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          code?: string | null
+          title: string
+          description?: string | null
+          discount_type: 'fixed' | 'percentage'
+          discount_value: number
+          min_spend?: number
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          code?: string | null
+          title?: string
+          description?: string | null
+          discount_type?: 'fixed' | 'percentage'
+          discount_value?: number
+          min_spend?: number
+          is_active?: boolean
+          created_at?: string
+        }
+      }
+      user_coupons: {
+        Row: {
+          id: string
+          user_id: string
+          coupon_id: string
+          status: 'unused' | 'used' | 'expired'
+          used_at: string | null
+          expiry_date: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          coupon_id: string
+          status?: 'unused' | 'used' | 'expired'
+          used_at?: string | null
+          expiry_date?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          coupon_id?: string
+          status?: 'unused' | 'used' | 'expired'
+          used_at?: string | null
+          expiry_date?: string | null
+          created_at?: string
+        }
+      }
+      referrals: {
+        Row: {
+          id: string
+          referrer_id: string | null
+          referee_id: string | null
+          status: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          referrer_id?: string | null
+          referee_id?: string | null
+          status?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          referrer_id?: string | null
+          referee_id?: string | null
+          status?: string
           created_at?: string
         }
       }

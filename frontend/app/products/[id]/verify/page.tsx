@@ -8,9 +8,9 @@ import { Database } from '@/types/database.types'
 import { generateTXID, calculateTXIDHash, generateRandomValue, determinePrize } from '@/utils/drawLogicClient'
 
 type DbProduct = Database['public']['Tables']['products']['Row']
-type DbPrize = Database['public']['Tables']['prizes']['Row']
-type DbDrawHistory = Database['public']['Tables']['draw_history']['Row'] & {
-  prizes: DbPrize | null
+type DbPrize = Database['public']['Tables']['product_prizes']['Row']
+type DbDrawRecord = Database['public']['Tables']['draw_records']['Row'] & {
+  product_prizes: DbPrize | null
 }
 
 interface ProductWithPrizes extends DbProduct {
@@ -29,8 +29,8 @@ interface DrawRecord {
 // 計算調整後的獎項機率（用於驗證）
 function calculateAdjustedPrizes(product: ProductWithPrizes, profitRate: number) {
   const majorPrizeLevels = product.major_prizes || ['A賞']
-  const majorPrizes = product.prizes.filter(p => majorPrizeLevels.includes(p.grade))
-  const minorPrizes = product.prizes.filter(p => !majorPrizeLevels.includes(p.grade))
+  const majorPrizes = product.prizes.filter(p => majorPrizeLevels.includes(p.level))
+  const minorPrizes = product.prizes.filter(p => !majorPrizeLevels.includes(p.level))
   
   const majorOriginalTotal = majorPrizes.reduce((sum, p) => sum + (p.probability || 0), 0)
   const minorOriginalTotal = minorPrizes.reduce((sum, p) => sum + (p.probability || 0), 0)
@@ -43,14 +43,14 @@ function calculateAdjustedPrizes(product: ProductWithPrizes, profitRate: number)
     : 1.0
   
   return product.prizes.map(prize => {
-    const isMajor = majorPrizeLevels.includes(prize.grade)
+    const isMajor = majorPrizeLevels.includes(prize.level)
     const currentProb = prize.probability || 0
     const adjustedProbability = isMajor 
       ? currentProb * profitRate
       : currentProb * minorAdjustmentFactor
     
     return {
-      level: prize.grade,
+      level: prize.level,
       name: prize.name,
       probability: currentProb,
       adjustedProbability
@@ -95,10 +95,10 @@ export default function ProductVerifyPage() {
 
         // Fetch prizes
         const { data: prizesData, error: prizesError } = await supabase
-          .from('prizes')
+          .from('product_prizes')
           .select('*')
           .eq('product_id', productId)
-          .order('created_at', { ascending: true }) // Should probably sort by probability or grade if needed, but created_at is fine for list
+          .order('level', { ascending: true }) // Sort by level
 
         if (prizesError) throw prizesError
 
@@ -108,22 +108,22 @@ export default function ProductVerifyPage() {
         }
         setProduct(fullProduct)
 
-        // Fetch draw history
+        // Fetch draw records
         const { data: historyData, error: historyError } = await supabase
-          .from('draw_history')
-          .select('*, prizes(*)')
+          .from('draw_records')
+          .select('*, product_prizes(*)')
           .eq('product_id', productId)
           .order('created_at', { ascending: true })
 
         if (historyError) throw historyError
 
         const mappedDraws: DrawRecord[] = (historyData as any[]).map((d: any) => ({
-          nonce: parseInt(d.ticket_no || '0'),
-          drawId: d.id,
-          prize: d.prizes ? `${d.prizes.grade} ${d.prizes.name}` : 'Unknown',
-          ticketNumber: parseInt(d.ticket_no || '0'),
-          txidHash: undefined, // Draw history doesn't store txidHash currently
-          profitRate: 1.0 // Default to 1.0 as it's not stored
+          nonce: d.ticket_number || 0,
+          drawId: d.id.toString(),
+          prize: d.product_prizes ? `${d.product_prizes.level} ${d.product_prizes.name}` : (d.prize_level || 'Unknown'),
+          ticketNumber: d.ticket_number || 0,
+          txidHash: undefined, // Draw records doesn't store txidHash currently
+          profitRate: 1.0 // Default to 1.0
         }))
 
         setDraws(mappedDraws)
@@ -148,7 +148,7 @@ export default function ProductVerifyPage() {
 const seed = '${seed}';
 
 // 總共幾個大賞
-const majorPrizeCount = ${product.prizes.filter(p => (product.major_prizes || ['A賞']).includes(p.grade)).length};
+const majorPrizeCount = ${product.prizes.filter(p => (product.major_prizes || ['A賞']).includes(p.level)).length};
 
 // 總共幾個籤數（總抽獎次數）
 const totalDraws = ${draws.length};
@@ -161,10 +161,10 @@ const majorPrizeLevels = ${JSON.stringify(product.major_prizes || ['A賞'])};
 
 // 獎項列表（包含機率）
 const prizes = ${JSON.stringify(product.prizes.map(p => ({
-  level: p.grade,
+  level: p.level,
   name: p.name,
   probability: p.probability,
-  total: p.quantity
+  total: p.total
 })))};
 
 // 驗證函數
@@ -306,7 +306,7 @@ verifyDraws().then(results => {
       // 追蹤每個獎項的已生成數量
       const prizeCounts: { [level: string]: number } = {}
       product.prizes.forEach(prize => {
-        prizeCounts[prize.grade] = 0
+        prizeCounts[prize.level] = 0
       })
       
       const sortedDraws = [...draws].sort((a, b) => a.nonce - b.nonce)
@@ -317,7 +317,7 @@ verifyDraws().then(results => {
           const adjustedPrizes = calculateAdjustedPrizes(product, profitRate)
           
           const availablePrizes = adjustedPrizes.filter(prize => {
-            const targetCount = product.prizes.find(p => p.grade === prize.level)?.quantity || 0
+            const targetCount = product.prizes.find(p => p.level === prize.level)?.total || 0
             const currentCount = prizeCounts[prize.level] || 0
             return currentCount < targetCount
           })

@@ -348,7 +348,7 @@ export default function AdminLayout({ children, pageTitle, pageSubtitle, breadcr
   const menuItems = [
     { name: '儀表板', path: '/dashboard', icon: IconDashboard },
     { name: '商品管理', path: '/products', icon: IconProducts },
-    { name: '分類管理', path: '/categories', icon: IconCategories },
+    { name: '菜單管理', path: '/categories', icon: IconCategories },
     { name: '配送管理', path: '/orders', icon: IconOrders },
     { name: '會員管理', path: '/users', icon: IconUsers },
     { name: '抽獎管理', path: '/draws', icon: IconDraws },

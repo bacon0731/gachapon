@@ -63,8 +63,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
     // Check role
     const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
+      .from('users')
+      .select('*')
       .eq('id', data.user.id)
       .single()
 

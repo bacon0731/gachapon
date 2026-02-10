@@ -9,6 +9,7 @@ import ProductCard from '@/components/ProductCard';
 import ProductDetailSkeleton from '@/components/ProductDetailSkeleton';
 import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/components/ui/Toast';
 import { ArrowLeft, Share2, Heart, ShieldCheck, Trophy, ChevronRight, AlertTriangle, FileCheck, Copy, Info, Flame } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
@@ -19,14 +20,15 @@ export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const supabase = createClient();
 
   const [product, setProduct] = useState<Database['public']['Tables']['products']['Row'] | null>(null);
-  const [prizes, setPrizes] = useState<Database['public']['Tables']['prizes']['Row'][]>([]);
+  const [prizes, setPrizes] = useState<Database['public']['Tables']['product_prizes']['Row'][]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const [isFollowed, setIsFollowed] = useState(false);
-  const [viewingPrize, setViewingPrize] = useState<{ name: string; image_url?: string; grade: string; quantity: number; remaining: number } | null>(null);
+  const [viewingPrize, setViewingPrize] = useState<{ name: string; image_url?: string; level: string; total: number; remaining: number } | null>(null);
   const [recommendations, setRecommendations] = useState<Database['public']['Tables']['products']['Row'][]>([]);
   
   // Modal state for desktop ticket selection
@@ -58,10 +60,10 @@ export default function ProductDetailPage() {
 
         // Fetch Prizes
         const { data: prizesData, error: prizesError } = await supabase
-          .from('prizes')
+          .from('product_prizes')
           .select('*')
           .eq('product_id', productId)
-          .order('grade', { ascending: true });
+          .order('level', { ascending: true });
         
         if (prizesError) throw prizesError;
         setPrizes(prizesData || []);
@@ -86,6 +88,70 @@ export default function ProductDetailPage() {
     fetchData();
   }, [params.id]);
 
+  // Realtime subscription for inventory updates
+  useEffect(() => {
+    const productId = parseInt(params.id as string);
+    if (isNaN(productId)) return;
+
+    console.log('Setting up realtime subscription for product:', productId);
+
+    const channel = supabase
+      .channel(`product-${productId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'products',
+          filter: `id=eq.${productId}`,
+        },
+        (payload) => {
+          const newProduct = payload.new as Database['public']['Tables']['products']['Row'];
+          setProduct((prev) => (prev ? { ...prev, ...newProduct } : null));
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'product_prizes',
+          filter: `product_id=eq.${productId}`,
+        },
+        (payload) => {
+          const newPrize = payload.new as Database['public']['Tables']['product_prizes']['Row'];
+          
+          setPrizes((prev) => {
+            // Find the prize to compare remaining count
+            const currentPrize = prev.find(p => p.id === newPrize.id);
+            
+            // If prize exists and remaining count decreased, show toast
+            if (currentPrize && newPrize.remaining < currentPrize.remaining) {
+              // Use setTimeout to avoid state update warning during render phase
+              setTimeout(() => {
+                showToast(
+                  <span className="flex items-center gap-2">
+                    <span className="bg-accent-red text-white text-[10px] px-1.5 py-0.5 rounded font-black">{newPrize.level}賞</span>
+                    <span>被抽走了！剩餘 {newPrize.remaining} 個</span>
+                  </span>,
+                  'info'
+                );
+              }, 0);
+            }
+
+            return prev.map((prize) =>
+              prize.id === newPrize.id ? { ...prize, ...newPrize } : prize
+            );
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [params.id, supabase, showToast]);
+
   if (isLoading) {
     return <ProductDetailSkeleton />;
   }
@@ -103,8 +169,22 @@ export default function ProductDetailPage() {
   }
 
   // Calculate total remaining items from real prizes
-  const totalRemaining = product.remaining_count;
-  const totalItems = product.total_count;
+  // Filter out Last One prize from the count as it's a bonus, not a ticket
+  const validPrizes = prizes.filter(p => 
+    p.level !== 'Last One' && 
+    p.level !== 'LAST ONE' && 
+    !p.level.includes('最後賞')
+  );
+  
+  // If no prizes found yet (loading or empty), fallback to product data
+  // But usually we should trust prizes if loaded
+  const totalRemaining = prizes.length > 0 
+    ? validPrizes.reduce((acc, prize) => acc + prize.remaining, 0)
+    : product.remaining;
+
+  const totalItems = prizes.length > 0
+    ? validPrizes.reduce((acc, prize) => acc + prize.total, 0)
+    : product.total_count;
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 pb-20 md:pb-12">
@@ -116,19 +196,11 @@ export default function ProductDetailPage() {
               {/* Image Section */}
               <div className="relative aspect-square bg-neutral-100 dark:bg-neutral-800">
                 <div className="w-full h-full flex items-center justify-center text-white/20 group-hover:scale-105 transition-transform duration-500">
-                  {product.image_url ? (
                     <img 
-                      src={product.image_url} 
+                      src={product.image_url || '/images/item.png'} 
                       alt={product.name}
                       className="w-full h-full object-cover"
                     />
-                  ) : (
-                    <div className="w-full h-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-                      <svg className="w-16 h-16 text-neutral-300 dark:text-neutral-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                  )}
                 </div>
                 
                 {/* Status Badges & Action Buttons */}
@@ -170,9 +242,9 @@ export default function ProductDetailPage() {
                       size="lg"
                       className="flex-1 h-[44px] text-lg font-black rounded-xl shadow-xl shadow-accent-red/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
                       variant="danger"
-                      disabled={product.remaining_count === 0}
+                      disabled={totalRemaining === 0}
                     >
-                      {product.remaining_count === 0 ? '已售完' : '立即抽獎'}
+                      {totalRemaining === 0 ? '已售完' : '立即抽獎'}
                     </Button>
 
                     <button className="w-[44px] h-[44px] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-400 hover:text-primary hover:border-primary/50 rounded-xl flex items-center justify-center transition-all shadow-sm active:scale-95">
@@ -218,27 +290,27 @@ export default function ProductDetailPage() {
                         key={index} 
                         className={cn(
                           "hover:bg-neutral-50/50 dark:hover:bg-neutral-800/50 transition-colors group cursor-pointer",
-                          prize.quantity === 0 && "opacity-50"
+                          prize.remaining === 0 && "opacity-50"
                         )}
                         onClick={() => setViewingPrize({
                           name: prize.name,
                           image_url: prize.image_url || undefined,
-                          grade: prize.grade,
-                          quantity: prize.quantity,
-                          remaining: prize.quantity // Should probably be a separate field if quantity is total
+                          level: prize.level,
+                          total: prize.total,
+                          remaining: prize.remaining
                         })}
                       >
                         <td className="px-2 sm:px-6 py-2 sm:py-3.5">
                           <div className="flex items-center gap-2 sm:gap-3">
                             <span className="text-[13px] text-primary font-black uppercase tracking-widest bg-primary/5 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-lg border border-primary/10 whitespace-nowrap">
-                              {prize.grade}賞
+                              {prize.level}賞
                             </span>
                             <div className="font-black text-neutral-900 dark:text-neutral-50 text-[13px] sm:text-sm leading-tight tracking-tight whitespace-nowrap">{prize.name}</div>
                           </div>
                         </td>
                         <td className="px-2 sm:px-6 py-2 sm:py-3.5 text-right">
                           <span className="font-black text-sm sm:text-base tracking-tighter text-neutral-900 dark:text-neutral-50">
-                            {prize.quantity.toLocaleString()}<span className="text-neutral-200 dark:text-neutral-700 mx-1">/</span>{prize.quantity.toLocaleString()}
+                            {prize.remaining.toLocaleString()}<span className="text-neutral-200 dark:text-neutral-700 mx-1">/</span>{prize.total.toLocaleString()}
                           </span>
                         </td>
                       </tr>
@@ -372,7 +444,7 @@ export default function ProductDetailPage() {
                     name={item.name}
                     image={item.image_url || ''}
                     price={item.price}
-                    remaining={item.remaining_count}
+                    remaining={item.remaining}
                     total={item.total_count}
                     isHot={item.is_hot || false}
                     category={item.category || ''}
@@ -404,7 +476,7 @@ export default function ProductDetailPage() {
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3 min-w-0">
                 <span className="px-2.5 py-1 bg-primary text-white text-[13px] font-black rounded-lg shadow-sm uppercase tracking-wider whitespace-nowrap flex-shrink-0">
-                  {viewingPrize?.grade}賞
+                  {viewingPrize?.level}賞
                 </span>
                 <h3 className="text-lg font-black text-neutral-900 dark:text-neutral-50 truncate tracking-tight">
                   {viewingPrize?.name}
@@ -413,7 +485,7 @@ export default function ProductDetailPage() {
               <div className="flex-shrink-0 text-right">
                 <div className="text-[13px] font-black text-neutral-400 uppercase tracking-widest mb-0.5">剩餘 / 總數</div>
                 <div className="text-xl font-black text-neutral-900 dark:text-white leading-none tracking-tighter">
-                  {viewingPrize?.remaining?.toLocaleString()}<span className="text-neutral-300 mx-1">/</span>{viewingPrize?.quantity?.toLocaleString()}
+                  {viewingPrize?.remaining?.toLocaleString()}<span className="text-neutral-300 mx-1">/</span>{viewingPrize?.total?.toLocaleString()}
                 </div>
               </div>
             </div>
@@ -450,9 +522,9 @@ export default function ProductDetailPage() {
             size="lg"
             className="flex-1 h-[44px] text-base font-black rounded-xl shadow-xl shadow-accent-red/20 transition-all active:scale-[0.95]"
             variant="danger"
-            disabled={product.remaining_count === 0}
+            disabled={product.remaining === 0}
           >
-            {product.remaining_count === 0 ? '已售完' : '立即抽獎'}
+            {product.remaining === 0 ? '已售完' : '立即抽獎'}
           </Button>
         </div>
       </div>

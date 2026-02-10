@@ -69,15 +69,28 @@ export default function OrdersPage() {
     operations: true
   })
 
+  const [shipModal, setShipModal] = useState<{
+    isOpen: boolean
+    orderId: number | null
+    orderNumber: string
+    trackingNumber: string
+  }>({
+    isOpen: false,
+    orderId: null,
+    orderNumber: '',
+    trackingNumber: ''
+  })
+
   const fetchOrders = async () => {
     try {
       const { data, error } = await supabase
         .from('orders')
         .select(`
           *,
-          items:order_items(
+          items:draw_records(
             *,
-            product:products(name, image_url)
+            product_prizes(name, level, image_url),
+            products(name, image_url)
           ),
           user:users(email, name)
         `)
@@ -97,23 +110,55 @@ export default function OrdersPage() {
           userName: order.user?.name || 'Unknown',
           recipientName: order.recipient_name,
           recipientPhone: order.recipient_phone,
+          address: order.address,
+          trackingNumber: order.tracking_number || '',
           date: order.submitted_at?.split('T')[0] || '',
           submittedAt: order.submitted_at ? formatDateTime(order.submitted_at) : '',
           shippedAt: order.shipped_at ? formatDateTime(order.shipped_at) : null,
           days: order.submitted_at ? calculateDaysSinceSubmission(order.submitted_at) : 0,
           status: order.status,
-          address: order.address,
-          trackingNumber: order.tracking_number || '',
-          items: order.items.map((item: any) => ({
-            product: item.product_name || item.product?.name || 'Unknown Product',
-            prize: item.prize_level && item.prize_name ? `${item.prize_level}賞 ${item.prize_name}` : 'Unknown Prize',
-            imageUrl: item.image_url || item.product?.image_url || 'https://placehold.co/100'
+          items: (order.items || []).map((item: any) => ({
+            product: item.products?.name || 'Unknown Product',
+            prize: item.product_prizes ? `${item.product_prizes.level}賞 ${item.product_prizes.name}` : 'Unknown Prize',
+            imageUrl: item.product_prizes?.image_url || item.products?.image_url || 'https://placehold.co/100'
           }))
         }))
         setLocalShipments(mappedShipments)
       }
     } catch (error) {
       console.error('Error in fetchOrders:', error)
+    }
+  }
+
+  const handleShipOrder = async () => {
+    if (!shipModal.orderId) return
+
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ 
+          status: 'shipping',
+          tracking_number: shipModal.trackingNumber,
+          shipped_at: new Date().toISOString()
+        })
+        .eq('id', shipModal.orderId)
+
+      if (error) throw error
+
+      setLocalShipments(prev => prev.map(s => 
+        s.id === shipModal.orderId ? { 
+          ...s, 
+          status: 'shipping' as const,
+          trackingNumber: shipModal.trackingNumber,
+          shippedAt: formatDateTime(new Date().toISOString())
+        } : s
+      ))
+
+      addLog('訂單出貨', '配送管理', `訂單 ${shipModal.orderNumber} 已出貨，物流單號：${shipModal.trackingNumber}`, 'success')
+      setShipModal({ isOpen: false, orderId: null, orderNumber: '', trackingNumber: '' })
+    } catch (error) {
+      console.error('Error shipping order:', error)
+      alert('出貨失敗')
     }
   }
 
@@ -913,6 +958,50 @@ export default function OrdersPage() {
 
   return (
     <AdminLayout pageTitle="配送管理" breadcrumbs={[{ label: '配送管理', href: '/orders' }]}>
+      {/* 出貨彈窗 */}
+      <Modal
+        isOpen={shipModal.isOpen}
+        onClose={() => setShipModal({ isOpen: false, orderId: null, orderNumber: '', trackingNumber: '' })}
+        title={`訂單出貨 - ${shipModal.orderNumber}`}
+        size="md"
+        footer={
+          <>
+            <button
+              onClick={() => setShipModal({ isOpen: false, orderId: null, orderNumber: '', trackingNumber: '' })}
+              className="px-4 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-50 transition-colors"
+            >
+              取消
+            </button>
+            <button
+              onClick={handleShipOrder}
+              disabled={!shipModal.trackingNumber}
+              className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              確認出貨
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
+              物流單號
+            </label>
+            <input
+              type="text"
+              value={shipModal.trackingNumber}
+              onChange={(e) => setShipModal({ ...shipModal, trackingNumber: e.target.value })}
+              placeholder="請輸入物流單號"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              autoFocus
+            />
+          </div>
+          <p className="text-sm text-neutral-500">
+            輸入物流單號並確認後，訂單狀態將更新為「配送中」，並記錄出貨時間。
+          </p>
+        </div>
+      </Modal>
+
       {/* 圖片彈窗 */}
       <Modal
         isOpen={imageModal.isOpen}
@@ -1409,8 +1498,15 @@ export default function OrdersPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredShipments.slice(0, displayCount).map((shipment, index) => {
-                    const isHighlighted = highlightedOrderId === shipment.orderId
+                  {filteredShipments.length === 0 ? (
+                    <tr>
+                      <td colSpan={12} className="py-12 text-center text-neutral-500">
+                        沒有找到符合條件的訂單
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredShipments.slice(0, displayCount).map((shipment, index) => {
+                      const isHighlighted = highlightedOrderId === shipment.orderId
                     return (
                       <Fragment key={shipment.id}>
                         <tr 
@@ -1518,6 +1614,24 @@ export default function OrdersPage() {
                               詳情
                             </Link>
                             
+                            {/* 手動出貨按鈕 - 顯示在已提交或處理中 */}
+                            {(shipment.status === 'submitted' || shipment.status === 'processing') && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setShipModal({
+                                    isOpen: true,
+                                    orderId: shipment.id,
+                                    orderNumber: shipment.orderId,
+                                    trackingNumber: shipment.trackingNumber || ''
+                                  })
+                                }}
+                                className="text-green-600 hover:text-green-800 text-sm font-medium whitespace-nowrap flex-shrink-0"
+                              >
+                                手動出貨
+                              </button>
+                            )}
+
                             {/* 已提交：生成物流單號 */}
                             {shipment.status === 'submitted' && (
                               <button
@@ -1660,7 +1774,7 @@ export default function OrdersPage() {
                     )}
                       </Fragment>
                     )
-                  })}
+                  }))}
                 </tbody>
               </table>
               {displayCount < filteredShipments.length && (

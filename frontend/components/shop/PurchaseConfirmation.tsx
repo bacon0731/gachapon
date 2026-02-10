@@ -46,13 +46,11 @@ export function PurchaseConfirmation({
         {/* Header: Product Info */}
         <div className="p-3 pb-2 flex gap-3">
           <div className="w-12 h-12 bg-neutral-100 dark:bg-neutral-800 rounded-lg overflow-hidden shrink-0 shadow-sm border border-neutral-100 dark:border-neutral-700">
-            {product.image_url && (
-              <img 
-                src={product.image_url} 
-                alt={product.name}
-                className="w-full h-full object-cover"
-              />
-            )}
+            <img 
+              src={product.image_url || '/images/item.png'} 
+              alt={product.name}
+              className="w-full h-full object-cover"
+            />
           </div>
           <div className="flex-1 min-w-0 py-0.5 flex flex-col justify-between">
             <div>

@@ -1,7 +1,7 @@
 'use client'
 
 import AdminLayout from '@/components/AdminLayout'
-import { YearMonthPicker, DatePicker, Modal, Input } from '@/components'
+import { YearMonthPicker, DatePicker, Modal, Input, TagSelector } from '@/components'
 import { useLog } from '@/contexts/LogContext'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -22,6 +22,8 @@ export default function NewProductPage() {
     status: 'active',
     category: '',
     categoryId: '',
+    selectedTagIds: [] as string[],
+    type: 'ichiban', // Default type
     remaining: '',
     totalCount: '',  // 商品總數（用於自動計算原始機率）
     isHot: false,
@@ -68,13 +70,7 @@ export default function NewProductPage() {
       
       if (data && data.length > 0) {
         setCategories(data)
-        // Set default category
-        const defaultCat = data.find(c => c.name === '一番賞') || data[0]
-        setFormData(prev => ({
-          ...prev,
-          category: defaultCat.name,
-          categoryId: defaultCat.id
-        }))
+        // Default select nothing or first one? Let's leave it empty for user to choose
       }
     }
     fetchCategories()
@@ -179,6 +175,7 @@ export default function NewProductPage() {
         name: formData.name,
         category: formData.category,
         category_id: formData.categoryId,
+        type: formData.type,
         price: parseInt(formData.price) || 0,
         remaining: remaining,
         status: formData.status,
@@ -211,6 +208,20 @@ export default function NewProductPage() {
         .from('products')
         .update({ product_code: newProductCode })
         .eq('id', newProductId)
+
+      // 3.5 Insert Product Tags
+      if (formData.selectedTagIds.length > 0) {
+        const tagInserts = formData.selectedTagIds.map(tagId => ({
+          product_id: newProductId,
+          category_id: tagId
+        }))
+        
+        const { error: tagError } = await supabase
+          .from('product_tags')
+          .insert(tagInserts)
+        
+        if (tagError) console.error('Error inserting tags:', tagError)
+      }
 
       // 4. Upload Prize Images and Insert Prizes
       const prizeInserts = await Promise.all(prizes.map(async (prize) => {
@@ -295,7 +306,7 @@ export default function NewProductPage() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1.5">
                 價格（代幣） <span className="text-red-500">*</span>
@@ -313,27 +324,18 @@ export default function NewProductPage() {
 
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-                分類 <span className="text-red-500">*</span>
+                商品類型 <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <select
-                  value={formData.categoryId}
-                  onChange={(e) => {
-                    const selectedId = e.target.value
-                    const selectedCat = categories.find(c => c.id === selectedId)
-                    if (selectedCat) {
-                      setFormData({ 
-                        ...formData, 
-                        categoryId: selectedCat.id,
-                        category: selectedCat.name 
-                      })
-                    }
-                  }}
+                  value={formData.type}
+                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                   className="w-full px-3 py-2 pr-10 bg-white border-2 border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 hover:border-neutral-300 shadow-sm appearance-none cursor-pointer"
                 >
-                  {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
+                  <option value="ichiban">一番賞</option>
+                  <option value="blindbox">盒玩 (盲盒)</option>
+                  <option value="gacha">轉蛋</option>
+                  <option value="custom">自製賞</option>
                 </select>
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
                   <svg className="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -341,6 +343,29 @@ export default function NewProductPage() {
                   </svg>
                 </div>
               </div>
+            </div>
+
+            <div className="col-span-1">
+              <TagSelector
+                options={categories}
+                value={formData.selectedTagIds}
+                onChange={(newTags) => {
+                  setFormData(prev => {
+                    // Also update legacy category/categoryId fields for backward compatibility
+                    // Use the first selected tag or empty
+                    const firstTagId = newTags[0]
+                    const firstTagName = categories.find(c => c.id === firstTagId)?.name || ''
+                    
+                    return {
+                      ...prev,
+                      selectedTagIds: newTags,
+                      categoryId: firstTagId || '',
+                      category: firstTagName
+                    }
+                  })
+                }}
+                label="顯示菜單"
+              />
             </div>
           </div>
 

@@ -7,8 +7,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
-import { ArrowLeft, Search, Bell, LogOut, User as UserIcon, Wallet, ChevronDown, X, History, Flame, Plus, Truck, Sparkles, Clock, Heart, CheckCircle2, Sun, Moon, Filter, Share2 } from 'lucide-react';
+import { ArrowLeft, Search, Bell, LogOut, User as UserIcon, ChevronDown, X, History, Flame, Truck, Sparkles, Clock, Heart, CheckCircle2, Sun, Moon, Filter, Share2, Copy } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useToast } from '@/components/ui/Toast';
 
 export default function Navbar() {
   return (
@@ -22,6 +23,7 @@ function NavbarInner() {
   const [query, setQuery] = useState('');
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { showToast } = useToast();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false); // Mobile full screen
@@ -451,10 +453,24 @@ function NavbarInner() {
                         <img src={user.avatar_url || 'https://github.com/shadcn.png'} alt={user.name} className="w-full h-full object-cover" />
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-[14px] font-black text-neutral-900 dark:text-white leading-tight">{user.name}</span>
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <span className="text-[12px] font-black text-neutral-400 uppercase tracking-widest leading-none">已驗證會員</span>
-                          <CheckCircle2 className="w-3 h-3 text-accent-emerald" />
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[14px] font-black text-neutral-900 dark:text-white leading-tight">{user.name}</span>
+                          <CheckCircle2 className="w-3.5 h-3.5 text-accent-emerald" />
+                        </div>
+                        {/* Invite Code Display */}
+                        <div 
+                          className="flex items-center gap-1.5 mt-1.5 bg-neutral-50 dark:bg-neutral-800 px-2 py-0.5 rounded-md cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors group/invite w-fit"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (user.invite_code) {
+                              navigator.clipboard.writeText(user.invite_code);
+                              showToast('邀請碼已複製', 'success');
+                            }
+                          }}
+                        >
+                          <span className="text-[13px] font-black text-neutral-400">邀請碼：</span>
+                          <span className="text-[13px] font-mono font-black text-primary group-hover/invite:text-primary/80 transition-colors">{user.invite_code || '-'}</span>
+                          <Copy className="w-3.5 h-3.5 text-neutral-300 group-hover/invite:text-primary transition-colors" />
                         </div>
                       </div>
                     </div>
@@ -502,9 +518,11 @@ function NavbarInner() {
                   </div>
                 </div>
               ) : (
-                <Link href="/login" className={cn("bg-primary text-white px-5 h-9 flex items-center rounded-xl hover:bg-primary/90 transition-all text-[13px] font-black shadow-lg shadow-primary/20 active:scale-95 whitespace-nowrap", isProductDetailPage && "hidden md:flex")}>
-                  登入
-                </Link>
+                !['/login', '/register', '/forgot-password'].includes(pathname) && (
+                  <Link href="/login" className={cn("bg-primary text-white px-5 h-9 flex items-center rounded-xl hover:bg-primary/90 transition-all text-[13px] font-black shadow-lg shadow-primary/20 active:scale-95 whitespace-nowrap", isProductDetailPage && "hidden md:flex")}>
+                    登入
+                  </Link>
+                )
               )}
             </div>
           </div>

@@ -13,9 +13,14 @@ export interface Product {
   name: string
   category: string
   categoryId?: string // FK to categories table
+  type?: 'ichiban' | 'blindbox' | 'gacha' | 'custom'
   categories?: {
     name: string
   }
+  tags?: {
+    id: string
+    name: string
+  }[]
   price: number
   remaining: number
   status: string

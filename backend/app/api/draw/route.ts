@@ -11,11 +11,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '缺少必要參數' }, { status: 400 })
     }
 
-    // 2. 獲取使用者資訊 (轉換 userId string -> id bigint)
+    // 2. 獲取使用者資訊 (驗證 UUID)
     const { data: user, error: userError } = await supabase
       .from('users')
       .select('id')
-      .eq('user_id', body.userId)
+      .eq('id', body.userId)
       .single()
 
     if (userError || !user) {

@@ -15,9 +15,10 @@ function ShopContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const activeCategory = searchParams.get('category') || 'all';
+  const activeType = searchParams.get('type') || 'all';
   const searchQuery = searchParams.get('search') || '';
   const [sortBy, setSortBy] = useState<'newest' | 'price-asc' | 'price-desc'>('newest');
-  const [products, setProducts] = useState<Database['public']['Tables']['products']['Row'][]>([]);
+  const [products, setProducts] = useState<(Database['public']['Tables']['products']['Row'] & { product_tags: { category_id: string }[] })[]>([]);
   const [categories, setCategories] = useState<Database['public']['Tables']['categories']['Row'][]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const supabase = createClient();
@@ -32,14 +33,16 @@ function ShopContent() {
       try {
         setIsLoading(true);
         const [productsRes, categoriesRes] = await Promise.all([
-          supabase.from('products').select('*'),
+          supabase.from('products').select('*, product_tags(category_id)'),
           supabase.from('categories').select('*').eq('is_active', true).order('sort_order', { ascending: true })
         ]);
 
         if (productsRes.error) throw productsRes.error;
         if (categoriesRes.error) throw categoriesRes.error;
 
-        setProducts(productsRes.data || []);
+        // Transform the data to match the expected type if needed, 
+        // though Supabase return should match if relation exists
+        setProducts(productsRes.data as any || []);
         setCategories(categoriesRes.data || []);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -55,15 +58,27 @@ function ShopContent() {
     ...categories
   ], [categories]);
 
+  const productTypes = [
+    { id: 'all', name: '全部商品' },
+    { id: 'ichiban', name: '一番賞' },
+    { id: 'blindbox', name: '盒玩' },
+    { id: 'gacha', name: '轉蛋' },
+    { id: 'custom', name: '自製賞' },
+  ];
+
   const filteredProducts = useMemo(() => {
     let result = [...products];
 
-    // Filter by category
+    // Filter by type
+    if (activeType !== 'all') {
+      result = result.filter((p) => p.type === activeType);
+    }
+
+    // Filter by category (Tag)
     if (activeCategory !== 'all') {
-      const currentCategory = categories.find(c => c.id === activeCategory);
-      if (currentCategory) {
-        result = result.filter((p) => p.category === currentCategory.name);
-      }
+      result = result.filter((p) => 
+        p.product_tags?.some(tag => tag.category_id === activeCategory)
+      );
     }
 
     // Filter by search
@@ -87,12 +102,28 @@ function ShopContent() {
     }
 
     return result;
-  }, [activeCategory, searchQuery, sortBy, products, categories]);
+  }, [activeCategory, activeType, searchQuery, sortBy, products, categories]);
 
   const handleCategoryChange = (id: string) => {
     const params = new URLSearchParams(searchParams);
-    if (id === 'all') params.delete('category');
-    else params.set('category', id);
+    if (id === 'all') {
+      params.delete('category');
+    } else {
+      params.set('category', id);
+      params.delete('type'); // Reset type when selecting category (Mutually Exclusive)
+    }
+    router.push(`/shop?${params.toString()}`);
+  };
+
+  const handleTypeChange = (id: string) => {
+    const params = new URLSearchParams(searchParams);
+    if (id === 'all') {
+      params.delete('type');
+      params.delete('category'); // Reset category when selecting "All Products"
+    } else {
+      params.set('type', id);
+      params.delete('category'); // Reset category when selecting specific type
+    }
     router.push(`/shop?${params.toString()}`);
   };
 
@@ -196,6 +227,26 @@ function ShopContent() {
           </div>
         </div>
 
+        {/* Mobile Type Tabs (Scrollable) */}
+        <div className="md:hidden -mx-2 px-2 mb-2 overflow-x-auto pb-1 scrollbar-hide">
+          <div className="flex gap-2">
+            {productTypes.map((type) => (
+              <button
+                key={type.id}
+                onClick={() => handleTypeChange(type.id)}
+                className={cn(
+                  "whitespace-nowrap px-4 py-2 rounded-xl text-[13px] font-black transition-all border active:scale-95",
+                  activeType === type.id
+                    ? "bg-primary border-primary text-white shadow-md shadow-primary/20"
+                    : "bg-white dark:bg-neutral-900 border-neutral-100 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                )}
+              >
+                {type.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* 2. Mobile Category Tabs (Scrollable) */}
         <div className="md:hidden -mx-2 px-2 mb-2 overflow-x-auto pb-1 scrollbar-hide">
           <div className="flex gap-2">
@@ -228,8 +279,17 @@ function ShopContent() {
 
             <div className="flex items-center justify-end gap-2 w-auto">
               {/* Filter Tags Container (Desktop only) - Moved here */}
-              {(activeCategory !== 'all' || !!searchQuery) && (
+              {(activeCategory !== 'all' || activeType !== 'all' || !!searchQuery) && (
                 <div className="flex flex-wrap items-center gap-2 animate-in fade-in slide-in-from-right-2 mr-2">
+                  {activeType !== 'all' && (
+                    <button
+                      onClick={() => handleTypeChange('all')}
+                      className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black bg-primary/10 text-primary hover:bg-primary/20 transition-all border border-primary/5 uppercase tracking-wider group"
+                    >
+                      {productTypes.find((t) => t.id === activeType)?.name ?? '種類'}
+                      <span className="text-primary/40 group-hover:text-primary transition-colors">×</span>
+                    </button>
+                  )}
                   {activeCategory !== 'all' && (
                     <button
                       onClick={() => handleCategoryChange('all')}
@@ -296,21 +356,50 @@ function ShopContent() {
           {/* Sidebar Filters (Desktop) */}
           <aside className="hidden md:block w-64 flex-shrink-0 sticky top-24">
             <div className="bg-white dark:bg-neutral-900 rounded-3xl lg:rounded-4xl p-4 lg:p-6 shadow-card border border-neutral-100 dark:border-neutral-800 transition-colors space-y-8">
-              {/* Categories */}
+              {/* Unified Menu */}
               <div>
                 <div className="flex items-center gap-3 mb-4 lg:mb-6 px-1">
                   <Filter className="w-4 h-4 lg:w-5 h-5 text-primary stroke-[2.5]" />
-                  <h2 className="text-[12px] lg:text-sm font-black text-neutral-900 dark:text-white uppercase tracking-widest">商品分類</h2>
+                  <h2 className="text-[12px] lg:text-sm font-black text-neutral-900 dark:text-white uppercase tracking-widest">商品列表</h2>
                 </div>
                 <div className="space-y-1 lg:space-y-1.5">
+                  {/* Fixed Types */}
+                  {productTypes.map((type) => (
+                    <button
+                      key={type.id}
+                      onClick={() => handleTypeChange(type.id)}
+                      className={cn(
+                        "w-full text-left px-3 lg:px-4 py-3 lg:py-3.5 rounded-xl lg:rounded-2xl text-[13px] lg:text-sm font-black transition-all flex items-center justify-between group",
+                        // Active state logic:
+                        // 1. If type.id is 'all', it's active if both activeType is 'all' AND activeCategory is 'all'
+                        // 2. Otherwise, it's active if activeType matches type.id
+                        (type.id === 'all' ? (activeType === 'all' && activeCategory === 'all') : activeType === type.id)
+                          ? "bg-primary text-white shadow-lg shadow-primary/20"
+                          : "text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white"
+                      )}
+                    >
+                      <span className="truncate">{type.name}</span>
+                      <ChevronDown className={cn(
+                        "w-3.5 h-3.5 lg:w-4 h-4 transition-transform -rotate-90 shrink-0",
+                        (type.id === 'all' ? (activeType === 'all' && activeCategory === 'all') : activeType === type.id) ? "text-white/50" : "text-neutral-300 group-hover:text-neutral-400"
+                      )} />
+                    </button>
+                  ))}
+
+                  {/* Divider */}
+                  <div className="py-2 flex items-center justify-center">
+                    <div className="w-full border-t border-dashed border-neutral-200 dark:border-neutral-800"></div>
+                  </div>
+
+                  {/* Dynamic Categories (Tags) */}
                   {isLoading ? (
-                    Array.from({ length: 6 }).map((_, index) => (
+                    Array.from({ length: 4 }).map((_, index) => (
                       <div key={index} className="px-3 lg:px-4 py-3 lg:py-3.5">
                          <Skeleton className="h-5 w-full rounded-lg" />
                       </div>
                     ))
                   ) : (
-                    allCategories.map((cat) => (
+                    allCategories.filter(c => c.id !== 'all').map((cat) => (
                       <button
                         key={cat.id}
                         onClick={() => handleCategoryChange(cat.id)}
@@ -387,7 +476,7 @@ function ShopContent() {
                     price={product.price}
                     isHot={product.is_hot}
                     category={product.category}
-                    remaining={product.remaining_count}
+                    remaining={product.remaining}
                     total={product.total_count}
                   />
                 ))}

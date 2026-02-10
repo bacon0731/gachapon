@@ -97,14 +97,14 @@ export default function AdminLayout({ children, pageTitle, pageSubtitle, breadcr
 
     products.forEach(product => {
       // Low stock alert (remaining < 5)
-      if (product.status === 'active' && product.remaining_count > 0 && product.remaining_count < 5) {
+      if (product.status === 'active' && product.remaining > 0 && product.remaining < 5) {
         alertList.push({
           type: 'low-stock',
           product: product.name,
           productId: product.id,
-          remaining: product.remaining_count,
+          remaining: product.remaining,
           threshold: 5,
-          severity: product.remaining_count < 3 ? 'high' : 'medium'
+          severity: product.remaining < 3 ? 'high' : 'medium'
         })
       }
 

@@ -800,8 +800,15 @@ export default function ProductsPage() {
                 </tr>
               </thead>
               <tbody>
-                {sortedProducts.slice(0, displayCount).map((product) => {
-                  const isHighlighted = highlightedProductId === product.id
+                {sortedProducts.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className="py-12 text-center text-neutral-500">
+                      沒有找到符合條件的商品
+                    </td>
+                  </tr>
+                ) : (
+                  sortedProducts.slice(0, displayCount).map((product) => {
+                    const isHighlighted = highlightedProductId === product.id
                   return (
                     <>
                       <tr 
@@ -1024,7 +1031,7 @@ export default function ProductsPage() {
                     )}
                     </>
                   )
-                })}
+                }))}
               </tbody>
             </table>
             {displayCount < sortedProducts.length && (

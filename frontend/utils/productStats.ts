@@ -1,7 +1,11 @@
 import { Database } from '@/types/database.types'
 
-type Product = Database['public']['Tables']['products']['Row'] & {
-  prizes: Database['public']['Tables']['prizes']['Row'][]
+type DbProduct = Database['public']['Tables']['products']['Row']
+type DbPrize = Database['public']['Tables']['prizes']['Row']
+type DbProductPrize = Database['public']['Tables']['product_prizes']['Row']
+
+type Product = DbProduct & {
+  prizes: (DbPrize | DbProductPrize)[]
 }
 
 /**
@@ -23,6 +27,8 @@ export function calculateProductStatsFromDraws(
     let prizeLevel = ''
     if (draw.prizes && draw.prizes.grade) {
       prizeLevel = draw.prizes.grade
+    } else if (draw.product_prizes && draw.product_prizes.level) {
+      prizeLevel = draw.product_prizes.level
     } else if (draw.prize_level) {
       prizeLevel = draw.prize_level
     } else if (draw.prize) {
@@ -58,8 +64,8 @@ export function getProductPrizeStats(
   
   if (product.prizes) {
     product.prizes.forEach(prize => {
-      const prizeLevel = prize.grade
-      const total = prize.quantity
+      const prizeLevel = (prize as any).grade || (prize as any).level
+      const total = (prize as any).quantity || (prize as any).total || 0
       const drawn = drawnStats[prizeLevel] || 0
       const remaining = Math.max(0, total - drawn)
       

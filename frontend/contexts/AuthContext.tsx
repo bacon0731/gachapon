@@ -17,6 +17,7 @@ interface Profile {
   recipient_phone?: string | null;
   recipient_address?: string | null;
   role?: string;
+  invite_code?: string | null;
 }
 
 interface AuthContextType {
@@ -40,12 +41,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchProfile = async (userId: string, email: string) => {
     try {
       const { data, error } = await supabase
-        .from('profiles')
+        .from('users')
         .select('*')
         .eq('id', userId)
         .single();
 
       if (error) {
+        // If error is "Row not found" (PGRST116), we can fallback to session data
+        // But we need to know the error code. 
+        // Supabase JS v2 usually returns error object with code.
+        if (error.code === 'PGRST116') {
+             console.warn('Profile not found in public.users, falling back to session data');
+             return {
+                id: userId,
+                name: email.split('@')[0],
+                full_name: null,
+                avatar_url: null,
+                points: 0,
+                email: email,
+                role: 'user',
+             } as Profile;
+        }
+        
         console.error('Error fetching profile:', error);
         return null;
       }
@@ -53,15 +70,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (data) {
         return {
           id: data.id,
-          name: data.full_name || email.split('@')[0], // Fallback to email prefix
-          full_name: data.full_name,
-          avatar_url: data.avatar_url,
-          points: data.points,
+          name: data.name || email.split('@')[0], // Fallback to email prefix
+          full_name: data.name,
+          avatar_url: null, // users table currently doesn't have avatar_url
+          points: data.tokens || 0,
           email: email,
           recipient_name: data.recipient_name,
           recipient_phone: data.recipient_phone,
-          recipient_address: data.recipient_address,
-          role: data.role,
+          recipient_address: data.address,
+          role: data.role || 'user',
+          invite_code: data.invite_code,
         } as Profile;
       }
     } catch (error) {

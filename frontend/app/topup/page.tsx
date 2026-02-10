@@ -69,35 +69,18 @@ export default function TopupPage() {
     try {
       if (!user) throw new Error('User not found');
 
-      const totalPoints = selectedPlan.points + selectedPlan.bonus;
-      
-      // 1. Create Order
-      const { error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          user_id: user.id,
-          amount: selectedPlan.amount,
-          points: totalPoints,
-          payment_method: selectedMethod,
-          status: 'paid' // Simulating instant success
-        });
+      // Call the RPC to process topup immediately for testing
+      const { data, error } = await supabase.rpc('process_topup', {
+        p_amount: selectedPlan.amount,
+        p_bonus: selectedPlan.bonus
+      });
 
-      if (orderError) throw orderError;
+      if (error) throw error;
 
-      // 2. Update User Points
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ 
-          points: user.points + totalPoints,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
-
-      if (profileError) throw profileError;
-
-      // 3. Refresh local profile state
+      // Refresh local profile state
       await refreshProfile();
       
+      const totalPoints = selectedPlan.points + selectedPlan.bonus;
       showToast(<span>成功儲值 <span className="font-amount">{totalPoints.toLocaleString()}</span> G幣！</span>, 'success');
       
       setTimeout(() => {
@@ -318,7 +301,7 @@ export default function TopupPage() {
                   onClick={handleTopup}
                   isLoading={isProcessing}
                   size="lg"
-                  className="w-full py-6 md:py-8 text-lg md:text-xl font-black rounded-xl md:rounded-2xl shadow-xl shadow-primary/20"
+                  className="hidden md:flex w-full py-6 md:py-8 text-lg md:text-xl font-black rounded-xl md:rounded-2xl shadow-xl shadow-primary/20 items-center justify-center"
                 >
                   前往付款
                 </Button>
@@ -330,6 +313,29 @@ export default function TopupPage() {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Mobile Fixed Action Bar */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl border-t border-neutral-100 dark:border-neutral-800 h-16 px-4 flex items-center md:hidden z-50 shadow-modal">
+        <div className="flex items-center gap-4 w-full">
+          <div className="flex flex-col items-center justify-center pl-2 min-w-[80px]">
+             <div className="text-[11px] font-black text-neutral-400 uppercase tracking-widest">應付總額</div>
+             <div className="flex items-baseline gap-0.5">
+                <span className="text-[10px] font-black text-neutral-400 mr-0.5 font-amount">TWD</span>
+                <span className="text-xl font-black text-neutral-900 font-amount tracking-tighter">
+                  ${selectedPlan.amount.toLocaleString()}
+                </span>
+             </div>
+          </div>
+          <Button 
+            onClick={handleTopup}
+            isLoading={isProcessing}
+            size="lg"
+            className="flex-1 h-[48px] text-lg font-black rounded-xl shadow-xl shadow-primary/20 transition-all active:scale-[0.98] flex items-center justify-center"
+          >
+            前往付款
+          </Button>
         </div>
       </div>
     </div>

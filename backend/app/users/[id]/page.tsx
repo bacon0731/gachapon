@@ -10,8 +10,9 @@ import { formatDateTime } from '@/utils/dateFormat'
 
 // Define interfaces for local state
 interface User {
-  id: number
+  id: string // UUID
   userId: string
+  inviteCode: string | null
   name: string
   email: string
   password: string
@@ -114,7 +115,8 @@ export default function UserDetailPage() {
 
         const mappedUser: User = {
           id: userData.id,
-          userId: userData.user_id,
+          userId: userData.id, // Use UUID as userId
+          inviteCode: userData.invite_code,
           name: userData.name,
           email: userData.email,
           password: userData.password,
@@ -372,7 +374,7 @@ export default function UserDetailPage() {
       pageTitle="會員詳情"
       breadcrumbs={[
           { label: '會員管理', href: '/users' },
-          { label: user.userId, href: undefined }
+          { label: `${user.name} (${user.inviteCode || '-'})`, href: undefined }
       ]}
     >
       <div className="space-y-6">
@@ -450,6 +452,30 @@ export default function UserDetailPage() {
                 </div>
                 
                 <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-sm text-neutral-500 mb-1">邀請碼</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-neutral-900 font-mono text-lg">{user.inviteCode || '-'}</p>
+                      {user.inviteCode && (
+                        <button
+                          onClick={() => handleCopy(user.inviteCode!, 'inviteCode')}
+                          className="p-1 hover:bg-neutral-100 rounded transition-colors"
+                          title="複製"
+                        >
+                          {copiedField === 'inviteCode' ? (
+                            <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          ) : (
+                            <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
                   <div>
                     <p className="text-sm text-neutral-500 mb-1">用戶ID</p>
                     <div className="flex items-center gap-2">

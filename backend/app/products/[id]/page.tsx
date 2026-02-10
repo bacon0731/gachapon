@@ -1,7 +1,7 @@
 'use client'
 
 import AdminLayout from '@/components/AdminLayout'
-import { YearMonthPicker, DatePicker, Modal, Input } from '@/components'
+import { YearMonthPicker, DatePicker, Modal, Input, TagSelector } from '@/components'
 import { useLog } from '@/contexts/LogContext'
 import { normalizePrizeLevels } from '@/utils/normalizePrizes'
 import { useRouter, useParams } from 'next/navigation'
@@ -25,6 +25,7 @@ export default function EditProductPage() {
     status: 'active',
     category: '一番賞',
     categoryId: '',
+    type: 'ichiban',
     remaining: '',
     totalCount: '',  // 商品總數（用於自動計算原始機率）
     isHot: false,
@@ -37,6 +38,7 @@ export default function EditProductPage() {
     endedAt: '',  // 完抽時間
     txidHash: '',  // TXID Hash（自動生成，不可編輯）
     seed: '',  // 隨機種子（活動結束後才公布，活動進行中保密）
+    selectedTagIds: [] as string[],
   })
   
   const availableLevels = ['A賞', 'B賞', 'C賞', 'D賞', 'E賞', 'F賞', 'G賞', 'H賞']
@@ -192,6 +194,14 @@ export default function EditProductPage() {
           const defaultYear = product.release_year || now.getFullYear().toString()
           const defaultMonth = product.release_month || (now.getMonth() + 1).toString().padStart(2, '0')
           
+          // Fetch existing tags
+          const { data: tags } = await supabase
+            .from('product_tags')
+            .select('category_id')
+            .eq('product_id', productId)
+            
+          const tagIds = tags ? tags.map(t => t.category_id) : []
+          
           setFormData({
             name: product.name,
             price: product.price.toString(),
@@ -200,6 +210,7 @@ export default function EditProductPage() {
             status: product.status,
             category: product.category,
             categoryId: product.category_id || '',
+            type: product.type || 'ichiban',
             remaining: product.remaining.toString(),
             totalCount: product.total_count?.toString() || '0',
             isHot: product.is_hot,
@@ -212,6 +223,7 @@ export default function EditProductPage() {
             endedAt: product.ended_at ? product.ended_at.replace('T', ' ').split('.')[0] : '', // 簡單處理
             txidHash: product.txid_hash || '',
             seed: product.seed || '',
+            selectedTagIds: tagIds,
           })
 
           // 排序獎項 (可選：根據 level 或 created_at)
@@ -283,7 +295,8 @@ export default function EditProductPage() {
       const productData = {
         name: formData.name,
         category: formData.category,
-        category_id: formData.categoryId || null,
+        category_id: formData.categoryId,
+        type: formData.type,
         price: parseInt(formData.price) || 0,
         remaining: calculatedRemaining,
         status: formData.status,
@@ -313,6 +326,29 @@ export default function EditProductPage() {
         .eq('id', productId)
 
       if (updateError) throw updateError
+
+      // 2.5 Update Product Tags
+      if (formData.selectedTagIds) {
+        // Delete existing tags
+        await supabase
+          .from('product_tags')
+          .delete()
+          .eq('product_id', productId)
+        
+        // Insert new tags
+        if (formData.selectedTagIds.length > 0) {
+          const tagInserts = formData.selectedTagIds.map(tagId => ({
+            product_id: productId,
+            category_id: tagId
+          }))
+          
+          const { error: tagError } = await supabase
+            .from('product_tags')
+            .insert(tagInserts)
+            
+          if (tagError) console.error('Error updating tags:', tagError)
+        }
+      }
 
       // 3. Handle Prizes Deletion
       if (deletedPrizeIds.length > 0) {
@@ -443,7 +479,7 @@ export default function EditProductPage() {
           </div>
 
           {/* 價格與分類 */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1.5">
                 價格（代幣） <span className="text-red-500">*</span>
@@ -461,27 +497,18 @@ export default function EditProductPage() {
 
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-                分類 <span className="text-red-500">*</span>
+                商品類型 <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <select
-                  value={formData.categoryId || (categories.find(c => c.name === formData.category)?.id) || ''}
-                  onChange={(e) => {
-                    const selectedId = e.target.value
-                    const selectedCat = categories.find(c => c.id === selectedId)
-                    if (selectedCat) {
-                      setFormData({ 
-                        ...formData, 
-                        categoryId: selectedCat.id,
-                        category: selectedCat.name 
-                      })
-                    }
-                  }}
+                  value={formData.type}
+                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                   className="w-full px-3 py-2 pr-10 bg-white border-2 border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 hover:border-neutral-300 shadow-sm appearance-none cursor-pointer"
                 >
-                  {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
+                  <option value="ichiban">一番賞</option>
+                  <option value="blindbox">盒玩 (盲盒)</option>
+                  <option value="gacha">轉蛋</option>
+                  <option value="custom">自製賞</option>
                 </select>
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
                   <svg className="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -490,6 +517,28 @@ export default function EditProductPage() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* 標籤選擇 */}
+          <div>
+            <TagSelector
+              options={categories}
+              value={formData.selectedTagIds}
+              onChange={(newTags) => {
+                setFormData(prev => {
+                  const firstTagId = newTags[0]
+                  const firstTagName = categories.find(c => c.id === firstTagId)?.name || ''
+                  return {
+                    ...prev,
+                    selectedTagIds: newTags,
+                    categoryId: firstTagId || '',
+                    category: firstTagName
+                  }
+                })
+              }}
+              label="顯示菜單"
+            />
+            <p className="text-xs text-neutral-500 mt-1">選擇商品標籤，商品將顯示在所有選中標籤的頁面中。</p>
           </div>
 
           {/* 商品總數、剩餘數量、狀態、開賣時間 */}
