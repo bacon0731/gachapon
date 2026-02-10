@@ -3,7 +3,7 @@
 import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { Home, Newspaper, User, Search, CalendarCheck } from 'lucide-react';
+import { Home, Newspaper, User, Search, ShoppingBag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -51,7 +51,7 @@ function MobileTabbarInner() {
   const activeTab = searchParams.get('tab');
 
   // Logic matches Navbar.tsx's isSecondaryPage
-  const isSecondaryPage = (pathname !== '/' && pathname !== '/shop' && pathname !== '/news' && pathname !== '/profile' && pathname !== '/check-in') || (pathname === '/profile' && !!activeTab);
+  const isSecondaryPage = (pathname !== '/' && pathname !== '/shop' && pathname !== '/news' && pathname !== '/profile' && pathname !== '/check-in' && pathname !== '/market') || (pathname === '/profile' && !!activeTab);
 
   const { theme } = useTheme();
 
@@ -61,9 +61,9 @@ function MobileTabbarInner() {
 
   const tabs = [
     { name: '首頁', href: '/', icon: Home },
+    { name: '商品', href: '/shop', icon: ShoppingBag },
+    { name: '市集', href: '/market', icon: Search, isCenter: true },
     { name: '情報', href: '/news', icon: Newspaper },
-    { name: '尋找', href: '/shop', icon: Search, isCenter: true },
-    { name: '簽到', href: '/check-in', icon: CalendarCheck },
     { name: '會員', href: '/profile', icon: User },
   ];
 

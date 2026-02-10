@@ -13,6 +13,7 @@ import { useToast } from '@/components/ui/Toast';
 import { ArrowLeft, Share2, Heart, ShieldCheck, Trophy, ChevronRight, AlertTriangle, FileCheck, Copy, Info, Flame } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import ProductBadge, { ProductType } from '@/components/ui/ProductBadge';
 
 import { TicketSelectionFlow } from '@/components/shop/TicketSelectionFlow';
 
@@ -204,13 +205,13 @@ export default function ProductDetailPage() {
                 </div>
                 
                 {/* Status Badges & Action Buttons */}
-                <div className="absolute top-4 left-4 right-4 z-10 flex items-start justify-between">
-                  {product.is_hot ? (
-                    <span className="px-3.5 py-1.5 text-sm font-black text-white bg-accent-red rounded-full shadow-lg shadow-accent-red/20 uppercase tracking-wider flex items-center gap-1.5">
-                      <Flame className="w-4 h-4 fill-current" />
-                      熱賣中
-                    </span>
-                  ) : <div />}
+                <div className="absolute top-4 left-4 right-4 z-10 flex items-start justify-between pointer-events-none">
+                  <div className="flex flex-col gap-1.5">
+                    {product.is_hot && <ProductBadge type="hot" />}
+                  </div>
+                  <div>
+                    <ProductBadge type={product.type} />
+                  </div>
                 </div>
               </div>
               
@@ -448,6 +449,7 @@ export default function ProductDetailPage() {
                     total={item.total_count}
                     isHot={item.is_hot || false}
                     category={item.category || ''}
+                    type={item.type}
                   />
                 ))}
               </div>

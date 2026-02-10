@@ -190,39 +190,43 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
           {allOpened && !isWaitingForReveal ? '恭喜獲得' : '清單'}
         </h2>
         
-        <div className="flex-1 w-full max-w-4xl overflow-y-auto p-4 custom-scrollbar pb-32">
+        <div className="flex-1 w-full max-w-5xl mx-auto overflow-y-auto p-4 custom-scrollbar pb-32">
            {!allOpened || isWaitingForReveal ? (
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-               {drawnResults.map((result, idx) => (
-                 <div key={idx} className="animate-in fade-in zoom-in duration-300" style={{ animationDelay: `${idx * 100}ms` }}>
-                   <IchibanTicket 
-                     grade={result.grade}
-                     prizeName={result.name}
-                     isOpened={result.isOpened}
-                     isLastOne={result.is_last_one}
-                     onOpen={() => {
-                       const newResults = [...drawnResults];
-                       newResults[idx].isOpened = true;
-                       setDrawnResults(newResults);
+             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {drawnResults.map((result, idx) => (
+                <div key={idx} className="animate-in fade-in zoom-in duration-300 w-full flex justify-center" style={{ animationDelay: `${idx * 100}ms` }}>
+                  <IchibanTicket 
+                    grade={result.grade}
+                    prizeName={result.name}
+                    isOpened={result.isOpened}
+                    isLastOne={result.is_last_one}
+                    onOpen={() => {
+                      const newResults = [...drawnResults];
+                      newResults[idx].isOpened = true;
+                      setDrawnResults(newResults);
 
-                       if (newResults.every(r => r.isOpened)) {
-                         setIsWaitingForReveal(true);
-                         setTimeout(() => {
-                           setIsRevealing(true);
-                           setIsWaitingForReveal(false);
-                         }, 800);
-                       }
-                     }}
-                   />
-                 </div>
-               ))}
-             </div>
+                      if (newResults.every(r => r.isOpened)) {
+                        setIsWaitingForReveal(true);
+                        setTimeout(() => {
+                          setIsRevealing(true);
+                          setIsWaitingForReveal(false);
+                        }, 800);
+                      }
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
            ) : (
              <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
                {drawnResults.map((result, idx) => (
                  <div key={idx} className="bg-[#2D3648] rounded-xl p-3 flex items-center gap-4 border border-[#3E4A61]">
-                   <div className="w-12 h-12 rounded-lg bg-[#FFE5E5] flex items-center justify-center shrink-0">
-                     <span className="text-xl font-black text-[#D92D20] font-amount">{result.grade.replace('賞', '')}</span>
+                   <div className="w-12 h-12 rounded-lg bg-[#1A202C] overflow-hidden shrink-0 border border-white/10">
+                     <img 
+                       src={result.image_url} 
+                       alt={result.grade} 
+                       className="w-full h-full object-cover"
+                     />
                    </div>
                    <div className="min-w-0 flex-1">
                       <div className="text-[13px] text-neutral-400 font-bold mb-0.5">{result.grade}</div>

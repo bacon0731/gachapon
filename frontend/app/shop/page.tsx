@@ -284,7 +284,7 @@ function ShopContent() {
                   {activeType !== 'all' && (
                     <button
                       onClick={() => handleTypeChange('all')}
-                      className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black bg-primary/10 text-primary hover:bg-primary/20 transition-all border border-primary/5 uppercase tracking-wider group"
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black bg-primary/10 text-primary hover:bg-primary/20 transition-all border border-primary/5 uppercase tracking-wider group"
                     >
                       {productTypes.find((t) => t.id === activeType)?.name ?? '種類'}
                       <span className="text-primary/40 group-hover:text-primary transition-colors">×</span>
@@ -293,7 +293,7 @@ function ShopContent() {
                   {activeCategory !== 'all' && (
                     <button
                       onClick={() => handleCategoryChange('all')}
-                      className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black bg-primary/10 text-primary hover:bg-primary/20 transition-all border border-primary/5 uppercase tracking-wider group"
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black bg-primary/10 text-primary hover:bg-primary/20 transition-all border border-primary/5 uppercase tracking-wider group"
                     >
                       {allCategories.find((c) => c.id === activeCategory)?.name ?? '分類'}
                       <span className="text-primary/40 group-hover:text-primary transition-colors">×</span>
@@ -306,7 +306,7 @@ function ShopContent() {
                         params.delete('search');
                         router.push(`/shop?${params.toString()}`);
                       }}
-                      className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black bg-neutral-100 text-neutral-600 hover:bg-neutral-200 transition-all border border-neutral-200/50 uppercase tracking-wider group"
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black bg-neutral-100 text-neutral-600 hover:bg-neutral-200 transition-all border border-neutral-200/50 uppercase tracking-wider group"
                     >
                       關鍵字: {searchQuery}
                       <span className="text-neutral-400 group-hover:text-neutral-900 transition-colors">×</span>
@@ -323,12 +323,12 @@ function ShopContent() {
 
               {/* Sorting Button (Desktop) */}
               <div className="relative group shrink-0">
-                <button className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-2xl text-sm font-black text-neutral-600 dark:text-neutral-400 hover:border-primary hover:text-primary shadow-soft transition-all active:scale-95">
+                <button className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-xl text-sm font-black text-neutral-600 dark:text-neutral-400 hover:border-primary hover:text-primary shadow-soft transition-all active:scale-95">
                   <SlidersHorizontal className="w-4 sm:h-4 stroke-[2.5]" />
                   <span>排序方式</span>
                   <ChevronDown className="w-3.5 h-3.5 text-neutral-300 transition-transform group-hover:rotate-180" />
                 </button>
-                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-neutral-900 rounded-3xl shadow-modal border border-neutral-100 dark:border-neutral-800 p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 transform origin-top-right scale-95 group-hover:scale-100">
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-neutral-900 rounded-2xl shadow-modal border border-neutral-100 dark:border-neutral-800 p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 transform origin-top-right scale-95 group-hover:scale-100">
                   {[
                     { id: 'newest', label: '最新上架' },
                     { id: 'price-asc', label: '價格: 低到高' },
@@ -352,24 +352,24 @@ function ShopContent() {
         </div>
 
         {/* 4. Product Grid & Sidebar */}
-        <div className="flex flex-col md:flex-row gap-6 lg:gap-10 items-start">
+        <div className="flex flex-col md:flex-row gap-4 lg:gap-6 items-start">
           {/* Sidebar Filters (Desktop) */}
-          <aside className="hidden md:block w-64 flex-shrink-0 sticky top-24">
-            <div className="bg-white dark:bg-neutral-900 rounded-3xl lg:rounded-4xl p-4 lg:p-6 shadow-card border border-neutral-100 dark:border-neutral-800 transition-colors space-y-8">
+          <aside className="hidden md:block w-60 flex-shrink-0 sticky top-24">
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl p-3 shadow-card border border-neutral-100 dark:border-neutral-800 transition-colors space-y-6">
               {/* Unified Menu */}
               <div>
-                <div className="flex items-center gap-3 mb-4 lg:mb-6 px-1">
-                  <Filter className="w-4 h-4 lg:w-5 h-5 text-primary stroke-[2.5]" />
+                <div className="flex items-center gap-3 mb-3 lg:mb-4 px-1">
+                  <Filter className="w-4 h-4 text-primary stroke-[2.5]" />
                   <h2 className="text-[12px] lg:text-sm font-black text-neutral-900 dark:text-white uppercase tracking-widest">商品列表</h2>
                 </div>
-                <div className="space-y-1 lg:space-y-1.5">
+                <div className="space-y-1 lg:space-y-1">
                   {/* Fixed Types */}
                   {productTypes.map((type) => (
                     <button
                       key={type.id}
                       onClick={() => handleTypeChange(type.id)}
                       className={cn(
-                        "w-full text-left px-3 lg:px-4 py-3 lg:py-3.5 rounded-xl lg:rounded-2xl text-[13px] lg:text-sm font-black transition-all flex items-center justify-between group",
+                        "w-full text-left px-2.5 lg:px-3 py-2 lg:py-2.5 rounded-xl text-[13px] lg:text-sm font-black transition-all flex items-center justify-between group",
                         // Active state logic:
                         // 1. If type.id is 'all', it's active if both activeType is 'all' AND activeCategory is 'all'
                         // 2. Otherwise, it's active if activeType matches type.id
@@ -394,7 +394,7 @@ function ShopContent() {
                   {/* Dynamic Categories (Tags) */}
                   {isLoading ? (
                     Array.from({ length: 4 }).map((_, index) => (
-                      <div key={index} className="px-3 lg:px-4 py-3 lg:py-3.5">
+                      <div key={index} className="px-2.5 lg:px-3 py-2 lg:py-2.5">
                          <Skeleton className="h-5 w-full rounded-lg" />
                       </div>
                     ))
@@ -404,7 +404,7 @@ function ShopContent() {
                         key={cat.id}
                         onClick={() => handleCategoryChange(cat.id)}
                         className={cn(
-                          "w-full text-left px-3 lg:px-4 py-3 lg:py-3.5 rounded-xl lg:rounded-2xl text-[13px] lg:text-sm font-black transition-all flex items-center justify-between group",
+                          "w-full text-left px-2.5 lg:px-3 py-2 lg:py-2.5 rounded-xl text-[13px] lg:text-sm font-black transition-all flex items-center justify-between group",
                           activeCategory === cat.id
                             ? "bg-primary text-white shadow-lg shadow-primary/20"
                             : "text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white"
@@ -423,8 +423,8 @@ function ShopContent() {
 
               {/* Price Range (Mock) */}
               <div>
-                <div className="flex items-center gap-3 mb-4 lg:mb-6 px-1">
-                  <div className="w-4 h-4 lg:w-5 h-5 flex items-center justify-center rounded-full bg-accent-yellow/20 text-accent-yellow">
+                <div className="flex items-center gap-3 mb-3 lg:mb-4 px-1">
+                  <div className="w-4 h-4 flex items-center justify-center rounded-full bg-accent-yellow/20 text-accent-yellow">
                     <span className="text-xs font-bold font-amount">$</span>
                   </div>
                   <h2 className="text-[12px] lg:text-sm font-black text-neutral-900 dark:text-white uppercase tracking-widest">價格區間</h2>
@@ -478,6 +478,7 @@ function ShopContent() {
                     category={product.category}
                     remaining={product.remaining}
                     total={product.total_count}
+                    type={product.type}
                   />
                 ))}
               </div>
@@ -486,7 +487,7 @@ function ShopContent() {
                 title="找不到商品" 
                 description="試試看調整搜尋關鍵字或篩選條件" 
                 actionLabel="清除篩選"
-                actionLink="/shop"
+                onAction={clearFilters}
               />
             )}
           </div>

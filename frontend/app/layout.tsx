@@ -4,7 +4,6 @@ import './globals.css';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import MobileTabbar from '@/components/MobileTabbar';
-import FloatingCheckIn from '@/components/FloatingCheckIn';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ToastProvider } from '@/components/ui/Toast';
 import { AlertProvider } from '@/components/ui/AlertDialog';
@@ -29,9 +28,6 @@ export default function RootLayout({
               <ToastProvider>
                 <Navbar />
                 <main className="flex-grow">{children}</main>
-                <div className="hidden md:block">
-                  <FloatingCheckIn />
-                </div>
                 <div className="hidden md:block">
                   <Footer />
                 </div>

@@ -12,6 +12,7 @@ interface Profile {
   full_name: string | null;
   avatar_url: string | null;
   points: number;
+  tokens?: number; // Added tokens for marketplace
   email: string;
   recipient_name?: string | null;
   recipient_phone?: string | null;
@@ -74,6 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           full_name: data.name,
           avatar_url: null, // users table currently doesn't have avatar_url
           points: data.tokens || 0,
+          tokens: data.tokens || 0,
           email: email,
           recipient_name: data.recipient_name,
           recipient_phone: data.recipient_phone,
@@ -152,7 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading, 
       logout, 
       refreshProfile,
-      isAuthenticated: !!user 
+      isAuthenticated: !!supabaseUser 
     }}>
       {children}
     </AuthContext.Provider>

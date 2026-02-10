@@ -1,4 +1,4 @@
--- Fix play_ichiban function to use correct tables and columns
+-- Fix play_ichiban function to deduct user points and record warehouse items correctly
 CREATE OR REPLACE FUNCTION public.play_ichiban(p_product_id BIGINT, p_ticket_numbers INTEGER[])
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -6,7 +6,9 @@ SECURITY DEFINER
 AS $$
 DECLARE
   v_user_id UUID;
+  v_user_tokens INTEGER;
   v_product_price INTEGER;
+  v_total_cost INTEGER;
   v_prize RECORD;
   v_last_one_prize RECORD;
   v_prizes_drawn JSONB := '[]'::jsonb;
@@ -32,6 +34,26 @@ BEGIN
   IF v_count IS NULL OR v_count = 0 THEN
      RAISE EXCEPTION 'No tickets selected';
   END IF;
+
+  v_total_cost := v_product_price * v_count;
+
+  -- Check user balance
+  SELECT tokens INTO v_user_tokens FROM users WHERE id = v_user_id::text;
+  
+  IF v_user_tokens IS NULL THEN
+     -- Try fetching from profiles if users table entry missing
+     SELECT points INTO v_user_tokens FROM profiles WHERE id = v_user_id;
+  END IF;
+
+  IF v_user_tokens IS NULL OR v_user_tokens < v_total_cost THEN
+    RAISE EXCEPTION 'Insufficient balance';
+  END IF;
+
+  -- Deduct balance
+  UPDATE users SET tokens = tokens - v_total_cost WHERE id = v_user_id::text;
+  
+  -- Also update profiles if it exists, to keep in sync
+  UPDATE profiles SET points = points - v_total_cost WHERE id = v_user_id;
 
   FOREACH v_ticket_no IN ARRAY p_ticket_numbers LOOP
     -- Check if ticket is already taken
@@ -62,11 +84,13 @@ BEGIN
     -- Record in draw_records
     INSERT INTO draw_records (
         user_id, product_id, ticket_number, prize_level, prize_name,
-        txid_seed, txid_nonce, txid_hash, random_value, profit_rate
+        txid_seed, txid_nonce, txid_hash, random_value, profit_rate,
+        product_prize_id, status
     )
     VALUES (
         v_user_id, p_product_id, v_ticket_no, v_prize.level, v_prize.name,
-        v_seed, v_nonce, v_hash, v_random, 1.0
+        v_seed, v_nonce, v_hash, v_random, 1.0,
+        v_prize.id, 'in_warehouse'
     );
 
     -- Add to result
@@ -102,11 +126,13 @@ BEGIN
             -- Record Last One in draw_records
             INSERT INTO draw_records (
                 user_id, product_id, ticket_number, prize_level, prize_name,
-                txid_seed, txid_nonce, txid_hash, random_value, profit_rate
+                txid_seed, txid_nonce, txid_hash, random_value, profit_rate,
+                product_prize_id, status
             )
             VALUES (
                 v_user_id, p_product_id, 0, v_last_one_prize.level, v_last_one_prize.name,
-                v_seed, v_nonce, v_hash, v_random, 1.0
+                v_seed, v_nonce, v_hash, v_random, 1.0,
+                v_last_one_prize.id, 'in_warehouse'
             );
 
             -- Add to result
@@ -124,3 +150,15 @@ BEGIN
   RETURN v_prizes_drawn;
 END;
 $$;
+
+-- Fix existing draw_records that are missing status or product_prize_id
+UPDATE draw_records dr
+SET 
+  status = 'in_warehouse',
+  product_prize_id = pp.id
+FROM product_prizes pp
+WHERE 
+  dr.product_id = pp.product_id 
+  AND dr.prize_level = pp.level 
+  AND dr.prize_name = pp.name
+  AND (dr.status IS NULL OR dr.product_prize_id IS NULL);

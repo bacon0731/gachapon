@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 
 export function BannerSkeleton() {
   return (
-    <div className="w-full aspect-[21/9] sm:aspect-[21/9] md:aspect-[3/1] lg:aspect-[4/1] rounded-3xl overflow-hidden">
+    <div className="w-full aspect-[1200/298] rounded-3xl overflow-hidden">
       <Skeleton className="w-full h-full" />
     </div>
   );

@@ -2,15 +2,71 @@
 
 import Link from 'next/link'
 import { ArrowLeft, Mail, Lock } from 'lucide-react'
-import { login } from './actions'
-import { Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { Suspense, useEffect, useState } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Button, Input } from '@/components/ui'
+import { useAuth } from '@/contexts/AuthContext'
+import { createClient } from '@/lib/supabase/client'
 
 function LoginContent() {
   const searchParams = useSearchParams()
+  const router = useRouter()
+  const { user, isLoading: isAuthLoading } = useAuth()
   const message = searchParams.get('message')
-  const error = searchParams.get('error')
+  const errorParam = searchParams.get('error')
+  
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [localError, setLocalError] = useState<string | null>(null)
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  })
+
+  // If user is already logged in, redirect to home
+  useEffect(() => {
+    if (user && !isAuthLoading) {
+      router.push('/')
+    }
+  }, [user, isAuthLoading, router])
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+    setLocalError(null)
+
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      })
+
+      if (error) {
+        setLocalError(error.message)
+      } else {
+        // Success - AuthContext will detect the change automatically
+        // We can manually push to home
+        router.push('/?login_success=true')
+        router.refresh()
+      }
+    } catch (err) {
+      setLocalError('發生未預期的錯誤，請稍後再試')
+      console.error(err)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // If we have a user, show a loading state instead of the form
+  // This prevents the form from showing while redirecting
+  if (user) {
+    return (
+      <div className="h-[calc(100vh-64px)] bg-neutral-50 dark:bg-neutral-950 flex flex-col items-center justify-center">
+        <div className="w-16 h-16 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+        <p className="mt-4 text-neutral-500 font-bold">正在登入...</p>
+      </div>
+    )
+  }
 
   return (
     <div className="h-[calc(100vh-64px)] bg-neutral-50 dark:bg-neutral-950 flex flex-col overflow-hidden relative pt-6 md:pt-8">
@@ -33,7 +89,7 @@ function LoginContent() {
           </div>
 
           <div className="bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl py-6 px-5 shadow-2xl shadow-neutral-200/50 dark:shadow-black/20 rounded-3xl border border-white/20 dark:border-neutral-800">
-            <form className="space-y-4">
+            <form className="space-y-4" onSubmit={handleLogin}>
               <Input
                 label="電子郵件"
                 name="email"
@@ -42,6 +98,8 @@ function LoginContent() {
                 required
                 leftIcon={<Mail className="w-4 h-4" />}
                 className="bg-neutral-50/50 dark:bg-neutral-800/50 border-transparent focus:bg-white dark:focus:bg-neutral-800 transition-all"
+                value={formData.email}
+                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
               />
               
               <div className="space-y-0.5">
@@ -53,6 +111,8 @@ function LoginContent() {
                   required
                   leftIcon={<Lock className="w-4 h-4" />}
                   className="bg-neutral-50/50 dark:bg-neutral-800/50 border-transparent focus:bg-white dark:focus:bg-neutral-800 transition-all"
+                  value={formData.password}
+                  onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                 />
                 <div className="flex justify-end">
                   <Link href="/forgot-password" className="text-xs text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-300">
@@ -62,9 +122,10 @@ function LoginContent() {
               </div>
 
               <Button
-                formAction={login}
+                type="submit"
                 className="w-full rounded-xl shadow-lg shadow-primary/20"
                 size="lg"
+                isLoading={isSubmitting}
               >
                 登入
               </Button>
@@ -74,9 +135,9 @@ function LoginContent() {
                   {message}
                 </div>
               )}
-              {error && (
+              {(localError || errorParam) && (
                 <div className="p-2.5 bg-red-50/80 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-xl text-xs flex items-center justify-center border border-red-100 dark:border-red-900/50 backdrop-blur-sm">
-                  {error}
+                  {localError || errorParam}
                 </div>
               )}
             </form>

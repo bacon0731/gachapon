@@ -100,6 +100,9 @@ BEGIN
             v_random := random();
 
             -- Record Last One in draw_records
+            -- Use -1 or special ticket number for Last One? 
+            -- Existing code used 'LAST_ONE' string for ticket_no, but ticket_number is INTEGER.
+            -- We'll use 0 or -1. Let's use 0 as ticket numbers usually start from 1.
             INSERT INTO draw_records (
                 user_id, product_id, ticket_number, prize_level, prize_name,
                 txid_seed, txid_nonce, txid_hash, random_value, profit_rate

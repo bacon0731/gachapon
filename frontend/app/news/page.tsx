@@ -35,7 +35,17 @@ export default function NewsPage() {
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 pb-20 transition-colors">
       <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-6">
-        <h1 className="hidden md:block text-2xl font-black text-neutral-900 dark:text-white mb-6 tracking-tight">最新情報</h1>
+        <div className="hidden md:flex flex-col gap-4 sm:gap-6 mb-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
+            <h1 className="flex items-baseline gap-4 text-2xl font-black text-neutral-900 dark:text-white tracking-tight">
+              最新情報
+              <span className="text-xs font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
+                <span className="font-amount">{news.length.toLocaleString()}</span> 篇文章
+              </span>
+            </h1>
+          </div>
+        </div>
+
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[1, 2, 3, 4, 5, 6].map((i) => (

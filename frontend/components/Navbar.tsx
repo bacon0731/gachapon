@@ -21,7 +21,7 @@ export default function Navbar() {
 
 function NavbarInner() {
   const [query, setQuery] = useState('');
-  const { user, logout } = useAuth();
+  const { user, logout, isLoading, isAuthenticated } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { showToast } = useToast();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -38,6 +38,21 @@ function NavbarInner() {
   const searchParams = useSearchParams();
   const supabase = createClient();
 
+  // Check if we just logged in
+  const isLoginRedirect = searchParams.get('login_success') === 'true';
+  const [isForcingLoading, setIsForcingLoading] = useState(false);
+
+  useEffect(() => {
+    if (isLoginRedirect && !user) {
+      setIsForcingLoading(true);
+      // Fallback timeout in case user never loads (e.g. error)
+      const timer = setTimeout(() => setIsForcingLoading(false), 8000);
+      return () => clearTimeout(timer);
+    } else if (user) {
+      setIsForcingLoading(false);
+    }
+  }, [isLoginRedirect, user]);
+  
   const activeTab = searchParams.get('tab');
   
   // Define page types
@@ -239,6 +254,10 @@ function NavbarInner() {
               </Link>
               <div className="hidden md:flex items-center gap-3 lg:gap-5">
                 <Link href="/shop" className="text-[15px] lg:text-[16px] font-black text-neutral-600 dark:text-neutral-400 hover:text-primary transition-colors">全部商品</Link>
+                <Link href="/market" className="text-[15px] lg:text-[16px] font-black text-neutral-600 dark:text-neutral-400 hover:text-primary transition-colors flex items-center gap-1">
+                  市集
+                  <span className="bg-accent-yellow/20 text-accent-yellow text-[9px] px-1.5 py-0.5 rounded-full">NEW</span>
+                </Link>
                 <Link href="/news" className="text-[15px] lg:text-[16px] font-black text-neutral-600 dark:text-neutral-400 hover:text-primary transition-colors">最新情報</Link>
                 <Link href="/faq" className="text-[15px] lg:text-[16px] font-black text-neutral-600 dark:text-neutral-400 hover:text-primary transition-colors">常見問題</Link>
               </div>
@@ -417,7 +436,11 @@ function NavbarInner() {
                 )}
               </div>
 
-              {user ? (
+              {isLoading || isForcingLoading || (isAuthenticated && !user) ? (
+                <div className="relative ml-1 hidden md:flex items-center gap-2 pl-1 pr-1.5 py-1">
+                  <div className="w-8 h-8 rounded-xl bg-neutral-100 dark:bg-neutral-800 animate-pulse" />
+                </div>
+              ) : user ? (
                 <div className="relative ml-1 hidden md:block" ref={menuRef}>
                   <button 
                     className={cn(

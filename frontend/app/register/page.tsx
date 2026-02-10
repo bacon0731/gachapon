@@ -1,19 +1,37 @@
 'use client';
 
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Mail, Lock, User } from 'lucide-react';
 import { Button, Input } from '@/components/ui';
 import { useToast } from '@/components/ui/Toast';
 import { signup } from '../login/actions';
+import { useAuth } from '@/contexts/AuthContext';
 
 function RegisterContent() {
   const { showToast } = useToast();
+  const { user, isLoading } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
   const message = searchParams.get('message');
   const error = searchParams.get('error');
+
+  // If user is already logged in, redirect to home
+  useEffect(() => {
+    if (user && !isLoading) {
+      router.push('/');
+    }
+  }, [user, isLoading, router]);
+
+  if (user) {
+    return (
+      <div className="h-[calc(100vh-64px)] bg-neutral-50 dark:bg-neutral-950 flex flex-col items-center justify-center">
+        <div className="w-16 h-16 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+        <p className="mt-4 text-neutral-500 font-bold">正在跳轉...</p>
+      </div>
+    );
+  }
 
   React.useEffect(() => {
     if (error) {
