@@ -119,9 +119,9 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
               {!showPrizeDetail ? (
                 <motion.div
                   key="grade"
-                  initial={{ opacity: 0, scale: 0.8, filter: 'blur(10px)' }}
-                  animate={isOpened ? { opacity: 1, scale: 1, filter: 'blur(0px)' } : {}}
-                  exit={{ opacity: 0, scale: 0.8, filter: 'blur(10px)' }}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={isOpened ? { opacity: 1, scale: 1 } : {}}
+                  exit={{ opacity: 0, scale: 0.8 }}
                   transition={{ delay: 0.3, duration: 0.6, type: 'spring' }}
                   className="flex flex-col items-center justify-center w-full z-10 px-4 pl-12"
                 >
