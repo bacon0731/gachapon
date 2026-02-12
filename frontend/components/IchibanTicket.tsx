@@ -95,7 +95,7 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
       <div className="absolute inset-0 bg-black/10 rounded-[24px] blur-md translate-y-1 group-hover:translate-y-2 transition-transform" />
 
       {/* Main Ticket Base */}
-      <div className="absolute inset-0 rounded-[24px] shadow-xl bg-[#F3F4F6]">
+      <div className="absolute inset-0 rounded-[24px] shadow-xl bg-[#F3F4F6] overflow-hidden">
         
         {/* Inner Content Wrapper - Clipped */}
         <div className="absolute inset-0 rounded-[24px] overflow-hidden">

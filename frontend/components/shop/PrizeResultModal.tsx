@@ -75,7 +75,7 @@ export const PrizeResultModal: React.FC<PrizeResultModalProps> = ({
             className={cn(
               "fixed bottom-0 left-0 right-0 w-full bg-white rounded-t-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]",
               "md:relative md:bottom-auto md:left-auto md:right-auto md:top-auto",
-              "md:w-full md:max-w-5xl md:rounded-2xl md:h-auto"
+              "md:w-auto md:min-w-[500px] md:max-w-[95vw] md:rounded-2xl md:h-auto"
             )}
             onClick={(e) => e.stopPropagation()}
           >
@@ -112,7 +112,10 @@ export const PrizeResultModal: React.FC<PrizeResultModalProps> = ({
 
                 {/* Grid Content */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-3 md:p-6 bg-neutral-50">
-                  <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-2 gap-y-6 md:gap-4 justify-items-center max-w-5xl mx-auto">
+                  <div className={cn(
+                    "grid gap-4 justify-items-center mx-auto",
+                    prizes.length <= 5 ? "grid-cols-2 md:grid-cols-5" : "grid-cols-3 md:grid-cols-5"
+                  )}>
                     {prizes.map((prize, idx) => {
                       const isSpecial = isHighTier(prize.grade);
                       
@@ -132,25 +135,22 @@ export const PrizeResultModal: React.FC<PrizeResultModalProps> = ({
                           <div className="flex flex-col gap-1.5 items-center">
                             {/* Image Container */}
                             <div className={cn(
-                              "w-full aspect-square md:aspect-[3/4] rounded-xl overflow-hidden relative flex items-center justify-center transition-all duration-300",
-                              // Mobile: Simple image. Desktop: Card style
-                              "bg-transparent md:bg-white md:shadow-sm",
-                              isSpecial 
-                                ? "md:ring-2 md:ring-yellow-400 md:shadow-[0_0_15px_rgba(250,204,21,0.2)]" 
-                                : "md:border md:border-neutral-100"
+                              "w-full aspect-[3/4] rounded-xl overflow-hidden relative flex items-center justify-center transition-all duration-300",
+                              "bg-white shadow-sm border border-neutral-100",
+                              isSpecial && "ring-2 ring-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.2)]"
                             )}>
-                              {/* Special Effect Overlay (Pulse) - Desktop Only */}
+                              {/* Special Effect Overlay (Pulse) */}
                               {isSpecial && (
-                                <div className="hidden md:block absolute inset-0 bg-yellow-50 animate-pulse z-0 pointer-events-none opacity-50" />
+                                <div className="absolute inset-0 bg-yellow-50 animate-pulse z-0 pointer-events-none opacity-50" />
                               )}
                               
                               {/* Image Area */}
-                              <div className="w-full h-full p-0 md:p-2 flex items-center justify-center relative z-10">
+                              <div className="w-full h-full p-2 flex items-center justify-center relative z-10">
                                 {prize.image_url ? (
                                   <img 
                                     src={prize.image_url} 
                                     alt={prize.name} 
-                                    className="w-full h-full object-contain drop-shadow-sm md:drop-shadow-none"
+                                    className="w-full h-full object-contain"
                                   />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center text-neutral-300 font-bold text-2xl">?</div>
@@ -159,17 +159,17 @@ export const PrizeResultModal: React.FC<PrizeResultModalProps> = ({
                               
                               {/* Grade Badge */}
                               <div className={cn(
-                                "absolute top-0 left-0 md:top-2 md:left-2 px-1.5 py-0.5 md:px-2 md:py-1 rounded-md md:rounded-lg text-[10px] md:text-xs font-black shadow-sm z-20",
+                                "absolute top-2 left-2 px-2 py-1 rounded-lg text-xs font-black shadow-sm z-20",
                                 isSpecial 
-                                  ? "bg-yellow-400 text-yellow-900 ring-1 ring-yellow-200" 
-                                  : "bg-neutral-100 text-neutral-600"
+                                  ? "bg-neutral-900 text-white" 
+                                  : "bg-neutral-100 text-neutral-500"
                               )}>
                                 {prize.grade.endsWith('賞') ? prize.grade : `${prize.grade}賞`}
                               </div>
                               
                               {/* Last One Badge */}
                               {prize.is_last_one && (
-                                <div className="absolute top-0 right-0 md:top-2 md:right-2 px-1.5 py-0.5 md:px-2 md:py-1 rounded-md md:rounded-lg text-[8px] md:text-[10px] font-black bg-black text-white shadow-sm z-20">
+                                <div className="absolute top-2 right-2 px-2 py-1 rounded-lg text-[10px] font-black bg-black text-white shadow-sm z-20">
                                   LAST ONE
                                 </div>
                               )}
@@ -178,7 +178,7 @@ export const PrizeResultModal: React.FC<PrizeResultModalProps> = ({
                             {/* Name Label */}
                             <div className="text-center w-full px-1">
                               <p className={cn(
-                                "text-[11px] md:text-xs font-bold leading-tight line-clamp-2",
+                                "text-xs font-bold leading-tight line-clamp-2",
                                 isSpecial ? "text-yellow-600" : "text-neutral-600"
                               )}>
                                 {prize.name}

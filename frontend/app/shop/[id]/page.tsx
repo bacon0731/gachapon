@@ -80,11 +80,6 @@ export default function ProductDetailPage() {
   };
 
   const handleDrawClick = () => {
-    if (!user) {
-      router.push('/auth/login?redirect=/shop/' + params.id);
-      return;
-    }
-
     // Check product type for Ichiban flow
     if (product?.type === 'ichiban') {
       router.push(`/shop/${params.id}/select`);

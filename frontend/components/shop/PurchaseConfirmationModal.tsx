@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useMediaQuery } from '@/hooks/use-media-query';
 
 import { X, Minus, Plus, Wallet } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui';
 import { Database } from '@/types/database.types';
 import { cn } from '@/lib/utils';
@@ -30,6 +32,8 @@ export function PurchaseConfirmationModal({
   const [quantity, setQuantity] = useState(1);
   const { showAlert } = useAlert();
   const isDesktop = useMediaQuery('(min-width: 768px)');
+  const router = useRouter();
+  const { user } = useAuth();
 
   useEffect(() => {
     if (isOpen) {
@@ -50,6 +54,17 @@ export function PurchaseConfirmationModal({
   const isInsufficient = userPoints < totalPrice;
 
   const handleConfirm = () => {
+    if (!user) {
+      showAlert({
+        title: '提示',
+        message: '請先登入會員',
+        type: 'info',
+        confirmText: '前往登入',
+        onConfirm: () => router.push(`/auth/login?redirect=/shop/${product.id}`)
+      });
+      return;
+    }
+    
     if (isInsufficient) {
       showAlert({
         title: '餘額不足',
@@ -58,9 +73,9 @@ export function PurchaseConfirmationModal({
         confirmText: '前往儲值',
         onConfirm: () => onTopUp?.()
       });
-      return;
+    } else {
+      onConfirm(quantity);
     }
-    onConfirm(quantity);
   };
 
   return (
