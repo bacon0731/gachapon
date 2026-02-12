@@ -105,7 +105,7 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
         <div className="absolute inset-0 rounded-[12px] overflow-hidden">
           {/* Background Image */}
           <Image 
-            src="/images/bg.svg?v=9" 
+            src="/images/bg.svg?v=10" 
             className="object-cover" 
             alt="ticket background"
             draggable={false}
@@ -123,12 +123,12 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
                   animate={isOpened ? { opacity: 1, scale: 1 } : {}}
                   exit={{ opacity: 0, scale: 0.8 }}
                   transition={{ delay: 0.3, duration: 0.6, type: 'spring' }}
-                  className="flex flex-col items-center justify-center w-full z-10 px-4 pl-12"
+                  className="flex flex-col items-center justify-center w-full z-10 px-8 pl-14"
                 >
-                  <div className="flex items-baseline gap-0.5 sm:gap-1 text-center justify-center">
+                  <div className="flex items-baseline gap-0.5 sm:gap-1 text-center justify-center -mb-1">
                     <span className={cn(
                       "text-4xl sm:text-5xl font-black tracking-tighter leading-none font-amount",
-                      isLastOne ? "text-yellow-600 drop-shadow-sm" : "text-neutral-900"
+                      isLastOne ? "text-yellow-600 drop-shadow-sm" : "text-[#D3D3D3]"
                     )}>
                       {(() => {
                         if (isLastOne) return "LAST";
@@ -139,16 +139,16 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
                     </span>
                     <span className={cn(
                       "text-sm sm:text-lg font-black",
-                      isLastOne ? "text-yellow-700" : "text-neutral-900"
+                      isLastOne ? "text-yellow-700" : "text-[#D3D3D3]"
                     )}>
                       {isLastOne ? "ONE" : "賞"}
                     </span>
                   </div>
-                  <div className="text-[10px] sm:text-xs font-black text-neutral-800 text-center line-clamp-2 w-full mt-1 leading-tight">
+                  <div className="text-[10px] sm:text-xs font-black text-[#D3D3D3] text-center line-clamp-1 w-full mt-0.5 leading-tight px-1">
                     {prizeName}
                   </div>
                   {ticketNumber !== undefined && ticketNumber > 0 && (
-                    <div className="text-[10px] font-bold text-neutral-500 mt-1">
+                    <div className="text-[9px] font-bold text-[#D3D3D3]/80 mt-0.5">
                       No. {ticketNumber.toString().padStart(3, '0')}
                     </div>
                   )}
