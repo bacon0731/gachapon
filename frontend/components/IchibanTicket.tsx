@@ -96,16 +96,16 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
       )}
     >
       {/* Shadow layer for depth */}
-      <div className="absolute inset-0 bg-black/10 rounded-[24px] blur-md translate-y-1 group-hover:translate-y-2 transition-transform will-change-transform" />
+      <div className="absolute inset-0 bg-black/10 rounded-[12px] blur-md translate-y-1 group-hover:translate-y-2 transition-transform will-change-transform" />
 
       {/* Main Ticket Base */}
-      <div className="absolute inset-0 rounded-[24px] shadow-xl bg-[#F3F4F6] overflow-hidden will-change-transform">
+      <div className="absolute inset-0 rounded-[12px] shadow-xl bg-[#F3F4F6] overflow-hidden will-change-transform">
         
         {/* Inner Content Wrapper - Clipped */}
-        <div className="absolute inset-0 rounded-[24px] overflow-hidden">
+        <div className="absolute inset-0 rounded-[12px] overflow-hidden">
           {/* Background Image */}
           <Image 
-            src="/images/bg.svg" 
+            src="/images/bg.svg?v=9" 
             className="object-cover" 
             alt="ticket background"
             draggable={false}
@@ -238,9 +238,16 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
             >
               <div className="absolute inset-0 backface-hidden flex items-center justify-center overflow-visible">
                 {/* Cover Image Wrapper - Clipped */}
-                <div className="absolute inset-0 rounded-[24px] overflow-hidden">
-                  <div className="w-full h-full bg-orange-500 flex items-center justify-center">
-                    <span className="text-white font-black text-2xl tracking-widest opacity-90">GACHAPON</span>
+                <div className="absolute inset-0 rounded-[12px] overflow-hidden">
+                  <div className="relative w-[105%] h-[105%] -translate-x-2 -translate-y-0.5">
+                    <Image 
+                      src="/images/up.svg?v=8" 
+                      className="object-cover" 
+                      alt="cover" 
+                      draggable={false}
+                      fill
+                      unoptimized
+                    />
                   </div>
                 </div>
 
