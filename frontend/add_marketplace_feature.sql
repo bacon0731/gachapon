@@ -131,9 +131,9 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'message', 'Listing not found or no longer active');
     END IF;
 
-    IF v_listing.seller_id = p_buyer_id THEN
-        RETURN jsonb_build_object('success', false, 'message', 'Cannot buy your own listing');
-    END IF;
+    -- IF v_listing.seller_id = p_buyer_id THEN
+    --    RETURN jsonb_build_object('success', false, 'message', 'Cannot buy your own listing');
+    -- END IF;
 
     -- Check buyer balance
     SELECT tokens INTO v_buyer_tokens FROM users WHERE id = p_buyer_id;

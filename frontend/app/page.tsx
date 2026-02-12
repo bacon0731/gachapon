@@ -23,7 +23,7 @@ export default function Home() {
     const fetchData = async () => {
       try {
         const [productsData, bannersData] = await Promise.all([
-          supabase.from('products').select('*').order('created_at', { ascending: false }),
+          supabase.from('products').select('*').neq('status', 'pending').order('created_at', { ascending: false }),
           supabase.from('banners').select('*').order('sort_order', { ascending: true }).eq('is_active', true)
         ]);
 

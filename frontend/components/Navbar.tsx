@@ -91,7 +91,7 @@ function NavbarInner() {
         if (user) {
           const checkFollow = async () => {
             const { count } = await supabase
-              .from('follows')
+              .from('product_follows')
               .select('*', { count: 'exact', head: true })
               .eq('user_id', user.id)
               .eq('product_id', productId);
@@ -136,10 +136,10 @@ function NavbarInner() {
     const productId = match[1];
 
     if (isProductFollowed) {
-      const { error } = await supabase.from('follows').delete().eq('user_id', user.id).eq('product_id', productId);
+      const { error } = await supabase.from('product_follows').delete().eq('user_id', user.id).eq('product_id', productId);
       if (!error) setIsProductFollowed(false);
     } else {
-      const { error } = await supabase.from('follows').insert({ user_id: user.id, product_id: parseInt(productId) });
+      const { error } = await supabase.from('product_follows').insert({ user_id: user.id, product_id: parseInt(productId) });
       if (!error) setIsProductFollowed(true);
     }
   };

@@ -34,6 +34,7 @@ interface MarketplaceListing {
     image_url: string;
   };
   products: {
+    id: number;
     name: string;
     type?: string;
   };
@@ -97,7 +98,7 @@ export default function MarketplacePage() {
           draw_record_id,
           draw_records!inner (
             product_prizes ( name, level, image_url ),
-            products ( name, type )
+            products ( id, name, type )
           )
         `)
         .eq('status', 'active');
@@ -495,10 +496,11 @@ export default function MarketplacePage() {
                     price={item.price}
                     grade={item.product_prizes.level}
                     series={item.products.name}
-                    sellerName={item.seller_name}
-                    onClick={() => setSelectedListing(item)}
-                  />
-                ))}
+            sellerName={item.seller_name}
+            productId={item.products.id}
+            onClick={() => setSelectedListing(item)}
+          />
+        ))}
               </div>
             ) : (
               <EmptyState 

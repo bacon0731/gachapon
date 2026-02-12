@@ -1,9 +1,11 @@
 
 import Link from 'next/link';
 import { Flame, Heart } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import ProductBadge, { ProductType } from './ui/ProductBadge';
+import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ProductCardProps {
   id: string | number;
@@ -35,11 +37,57 @@ export default function ProductCard({
   type,
 }: ProductCardProps) {
   const [isFollowed, setIsFollowed] = useState(false);
+  const { user } = useAuth();
+  const supabase = createClient();
 
-  const handleFollow = (e: React.MouseEvent) => {
+  useEffect(() => {
+    if (!user) return;
+    
+    const checkFollowStatus = async () => {
+      const { count } = await supabase
+        .from('product_follows')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('product_id', id);
+      
+      setIsFollowed(!!count);
+    };
+
+    checkFollowStatus();
+  }, [user, id, supabase]);
+
+  const handleFollow = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsFollowed(!isFollowed);
+
+    if (!user) {
+      // Optional: Redirect to login or show toast
+      return;
+    }
+
+    // Optimistic update
+    const newStatus = !isFollowed;
+    setIsFollowed(newStatus);
+
+    try {
+      if (newStatus) {
+        const { error } = await supabase
+          .from('product_follows')
+          .insert({ user_id: user.id, product_id: id });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('product_follows')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('product_id', id);
+        if (error) throw error;
+      }
+    } catch (error) {
+      console.error('Error toggling follow:', error);
+      // Revert on error
+      setIsFollowed(!newStatus);
+    }
   };
 
   return (

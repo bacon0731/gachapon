@@ -46,6 +46,55 @@ export default function ProductDetailPage() {
   const [drawResults, setDrawResults] = useState<{ ticket_number: number; prize_level: string; prize_name: string }[]>([]);
   const [isLoadingResults, setIsLoadingResults] = useState(false);
 
+  useEffect(() => {
+    if (!user || !product) return;
+
+    const checkFollowStatus = async () => {
+      const { count } = await supabase
+        .from('product_follows')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('product_id', product.id);
+      
+      setIsFollowed(!!count);
+    };
+
+    checkFollowStatus();
+  }, [user, product, supabase]);
+
+  const handleFollowToggle = async () => {
+    if (!user || !product) {
+      router.push('/login');
+      return;
+    }
+
+    // Optimistic update
+    const newStatus = !isFollowed;
+    setIsFollowed(newStatus);
+
+    try {
+      if (newStatus) {
+        const { error } = await supabase
+          .from('product_follows')
+          .insert({ user_id: user.id, product_id: product.id });
+        if (error) throw error;
+        showToast('已加入關注清單', 'success');
+      } else {
+        const { error } = await supabase
+          .from('product_follows')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('product_id', product.id);
+        if (error) throw error;
+        showToast('已取消關注', 'success');
+      }
+    } catch (error) {
+      console.error('Error toggling follow:', error);
+      setIsFollowed(!newStatus);
+      showToast('操作失敗，請稍後再試', 'error');
+    }
+  };
+
   const handleShowResults = async () => {
     setShowResultModal(true);
     if (drawResults.length > 0 || !product) return;
@@ -162,6 +211,7 @@ export default function ProductDetailPage() {
           .from('products')
           .select('*')
           .eq('id', productId)
+          .neq('status', 'pending')
           .single();
         
         if (productError) throw productError;
@@ -366,7 +416,7 @@ export default function ProductDetailPage() {
                     </button>
                     
                     <button 
-                      onClick={() => setIsFollowed(!isFollowed)}
+                      onClick={handleFollowToggle}
                       className={cn(
                         "w-[44px] h-[44px] rounded-xl flex items-center justify-center transition-all shadow-sm active:scale-95 border",
                         isFollowed 

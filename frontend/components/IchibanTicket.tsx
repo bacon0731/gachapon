@@ -102,7 +102,7 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
           {/* Background Image */}
           <img 
             src="/images/bg.svg" 
-            className="absolute inset-0 w-full h-full object-cover sepia brightness-110 saturate-[5] hue-rotate-[-10deg] contrast-105" 
+            className="absolute inset-0 w-full h-full object-cover" 
             alt="ticket background"
             draggable={false}
           />
@@ -226,14 +226,14 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
                 transformStyle: 'preserve-3d',
                 zIndex: 50
               }}
-              className="absolute inset-0 touch-none cursor-grab active:cursor-grabbing"
+              className="absolute inset-0 touch-none cursor-grab active:cursor-grabbing will-change-transform"
             >
               <div className="absolute inset-0 backface-hidden flex items-center justify-center overflow-visible">
                 {/* Cover Image Wrapper - Clipped */}
                 <div className="absolute inset-0 rounded-[24px] overflow-hidden">
                   <img 
                     src="/images/up.svg?v=5" 
-                    className="w-[105%] h-[105%] max-w-none object-cover -translate-x-2 -translate-y-0.5 sepia brightness-110 saturate-[5] hue-rotate-[-10deg] contrast-105" 
+                    className="w-[105%] h-[105%] max-w-none object-cover -translate-x-2 -translate-y-0.5" 
                     alt="cover" 
                     draggable={false}
                   />

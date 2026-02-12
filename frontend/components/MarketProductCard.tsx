@@ -1,11 +1,16 @@
+'use client';
 
 import { Heart } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import ProductBadge from './ui/ProductBadge';
+import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 interface MarketProductCardProps {
   id: string | number;
+  productId?: number;
   name: string;
   image: string;
   price: number;
@@ -17,6 +22,7 @@ interface MarketProductCardProps {
 
 export default function MarketProductCard({
   id,
+  productId,
   name,
   image,
   price,
@@ -26,11 +32,62 @@ export default function MarketProductCard({
   onClick,
 }: MarketProductCardProps) {
   const [isFollowed, setIsFollowed] = useState(false);
+  const { user } = useAuth();
+  const supabase = createClient();
 
-  const handleFollow = (e: React.MouseEvent) => {
+  useEffect(() => {
+    if (!user || !productId) return;
+
+    const checkFollowStatus = async () => {
+      const { count } = await supabase
+        .from('product_follows')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('product_id', productId);
+      
+      setIsFollowed(!!count);
+    };
+
+    checkFollowStatus();
+  }, [user, productId, supabase]);
+
+  const handleFollow = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsFollowed(!isFollowed);
+
+    if (!user) {
+      toast.error('請先登入');
+      return;
+    }
+
+    if (!productId) {
+      return;
+    }
+
+    const newStatus = !isFollowed;
+    setIsFollowed(newStatus);
+
+    try {
+      if (newStatus) {
+        const { error } = await supabase
+          .from('product_follows')
+          .insert({ user_id: user.id, product_id: productId });
+        if (error) throw error;
+        toast.success('已加入關注清單');
+      } else {
+        const { error } = await supabase
+          .from('product_follows')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('product_id', productId);
+        if (error) throw error;
+        toast.success('已取消關注');
+      }
+    } catch (error) {
+      console.error('Error toggling follow:', error);
+      setIsFollowed(!newStatus);
+      toast.error('操作失敗，請稍後再試');
+    }
   };
 
   return (
@@ -52,8 +109,6 @@ export default function MarketProductCard({
           {/* Status Badges */}
           <div className="absolute top-2 left-2 right-2 z-10 flex items-start justify-between pointer-events-none">
             <div className="flex flex-col gap-1.5">
-               {/* Market items might not be 'hot' or 'new' in the same way, but we can use grade as a badge if mapped correctly */}
-               {/* Or just show grade if available */}
                {grade && (
                  <div className="px-2 py-1 rounded-lg bg-black/50 backdrop-blur-md text-white text-[10px] font-black border border-white/10 shadow-sm">
                    {grade}賞

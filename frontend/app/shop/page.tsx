@@ -34,7 +34,7 @@ function ShopContent() {
       try {
         setIsLoading(true);
         const [productsRes, categoriesRes] = await Promise.all([
-          supabase.from('products').select('*, product_tags(category_id)'),
+          supabase.from('products').select('*, product_tags(category_id)').neq('status', 'pending'),
           supabase.from('categories').select('*').eq('is_active', true).order('sort_order', { ascending: true })
         ]);
 

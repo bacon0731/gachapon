@@ -10,6 +10,7 @@ export interface ResultPrize {
   grade: string;
   image_url?: string;
   is_last_one?: boolean;
+  ticket_number?: number;
 }
 
 interface PrizeResultModalProps {
@@ -75,7 +76,7 @@ export const PrizeResultModal: React.FC<PrizeResultModalProps> = ({
             className={cn(
               "fixed bottom-0 left-0 right-0 w-full bg-white rounded-t-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]",
               "md:relative md:bottom-auto md:left-auto md:right-auto md:top-auto",
-              "md:w-auto md:min-w-[500px] md:max-w-[95vw] md:rounded-2xl md:h-auto"
+              "md:w-full md:max-w-[800px] md:rounded-2xl md:h-auto"
             )}
             onClick={(e) => e.stopPropagation()}
           >
@@ -111,11 +112,8 @@ export const PrizeResultModal: React.FC<PrizeResultModalProps> = ({
                 </div>
 
                 {/* Grid Content */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-3 md:p-6 bg-neutral-50">
-                  <div className={cn(
-                    "grid gap-4 justify-items-center mx-auto",
-                    prizes.length <= 5 ? "grid-cols-2 md:grid-cols-5" : "grid-cols-3 md:grid-cols-5"
-                  )}>
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 bg-neutral-50">
+                  <div className="flex flex-wrap justify-center gap-4 md:gap-6 mx-auto">
                     {prizes.map((prize, idx) => {
                       const isSpecial = isHighTier(prize.grade);
                       
@@ -130,60 +128,50 @@ export const PrizeResultModal: React.FC<PrizeResultModalProps> = ({
                             stiffness: 200,
                             damping: 15
                           }}
-                          className="w-full relative group"
+                          className="w-32 md:w-36 flex flex-col items-center group"
                         >
-                          <div className="flex flex-col gap-1.5 items-center">
-                            {/* Image Container */}
-                            <div className={cn(
-                              "w-full aspect-[3/4] rounded-xl overflow-hidden relative flex items-center justify-center transition-all duration-300",
-                              "bg-white shadow-sm border border-neutral-100",
-                              isSpecial && "ring-2 ring-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.2)]"
-                            )}>
-                              {/* Special Effect Overlay (Pulse) */}
-                              {isSpecial && (
-                                <div className="absolute inset-0 bg-yellow-50 animate-pulse z-0 pointer-events-none opacity-50" />
-                              )}
-                              
-                              {/* Image Area */}
-                              <div className="w-full h-full p-2 flex items-center justify-center relative z-10">
-                                {prize.image_url ? (
-                                  <img 
-                                    src={prize.image_url} 
-                                    alt={prize.name} 
-                                    className="w-full h-full object-contain"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-neutral-300 font-bold text-2xl">?</div>
-                                )}
-                              </div>
-                              
-                              {/* Grade Badge */}
-                              <div className={cn(
-                                "absolute top-2 left-2 px-2 py-1 rounded-lg text-xs font-black shadow-sm z-20",
-                                isSpecial 
-                                  ? "bg-neutral-900 text-white" 
-                                  : "bg-neutral-100 text-neutral-500"
-                              )}>
-                                {prize.grade.endsWith('賞') ? prize.grade : `${prize.grade}賞`}
-                              </div>
-                              
-                              {/* Last One Badge */}
-                              {prize.is_last_one && (
-                                <div className="absolute top-2 right-2 px-2 py-1 rounded-lg text-[10px] font-black bg-black text-white shadow-sm z-20">
-                                  LAST ONE
-                                </div>
+                          {/* Card Container (Image + Badges) */}
+                          <div className={cn(
+                            "w-full aspect-square rounded-xl relative flex items-center justify-center mb-2 transition-all duration-300 bg-white border border-neutral-200 shadow-sm overflow-hidden",
+                            isSpecial && "ring-2 ring-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.2)]"
+                          )}>
+                            {/* Special Effect Overlay */}
+                            {isSpecial && (
+                              <div className="absolute inset-0 bg-yellow-50 animate-pulse z-0 pointer-events-none opacity-50" />
+                            )}
+                            
+                            {/* Image Area */}
+                            <div className="w-full h-full p-2 flex items-center justify-center relative z-10">
+                              {prize.image_url ? (
+                                <img 
+                                  src={prize.image_url} 
+                                  alt={prize.name} 
+                                  className="w-full h-full object-contain"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-neutral-300 font-bold text-2xl">?</div>
                               )}
                             </div>
+                            
+                            {/* Grade Badge (Top Left) - Black */}
+                            <div className="absolute top-2 left-2 px-2 py-1 rounded-md text-xs font-black bg-neutral-900 text-white shadow-sm z-20 leading-none">
+                              {prize.grade.replace('賞', '')}賞
+                            </div>
+                            
+                            {/* Ticket Number / No.1 Badge (Top Right) - White */}
+                            <div className="absolute top-2 right-2 px-2 py-1 rounded-md text-[10px] font-bold bg-white text-neutral-900 border border-neutral-200 shadow-sm z-20 leading-none">
+                              {prize.is_last_one ? 'LAST' : `No.${prize.ticket_number ?? '?'}`}
+                            </div>
+                          </div>
 
-                            {/* Name Label */}
-                            <div className="text-center w-full px-1">
-                              <p className={cn(
-                                "text-xs font-bold leading-tight line-clamp-2",
-                                isSpecial ? "text-yellow-600" : "text-neutral-600"
-                              )}>
-                                {prize.name}
-                              </p>
-                            </div>
+                          {/* Name Label (Below Card) */}
+                          <div className="text-center w-full px-1">
+                            <p className={cn(
+                              "text-sm font-bold leading-tight line-clamp-2",
+                              isSpecial ? "text-yellow-600" : "text-neutral-700"
+                            )}>
+                              {prize.name}
+                            </p>
                           </div>
                         </motion.div>
                       );

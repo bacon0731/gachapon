@@ -7,7 +7,7 @@ import { type Product } from '@/types/product'
 import { formatDateTime } from '@/utils/dateFormat'
 import { normalizePrizeLevels } from '@/utils/normalizePrizes'
 import Link from 'next/link'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Fragment } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 
 export default function ProductsPage() {
@@ -37,6 +37,7 @@ export default function ProductsPage() {
           productCode: p.product_code,
           name: p.name,
           category: p.category,
+          type: p.type,
           price: p.price,
           remaining: p.remaining,
           status: p.status,
@@ -130,6 +131,7 @@ export default function ProductsPage() {
     productCode: true,
     name: true,
     category: true,
+    type: true,
     price: true,
     stockAndSales: true,  // 庫存/銷量合併欄位
     majorStatus: true,  // 大獎狀態欄位
@@ -152,32 +154,7 @@ export default function ProductsPage() {
     return majorRemaining === 0
   }
   
-  const [productVisibility, setProductVisibility] = useState<{ [key: number]: boolean }>(() => {
-    // 從 localStorage 載入保存的顯示狀態
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('productVisibility')
-      if (saved) {
-        try {
-          return JSON.parse(saved)
-        } catch (e) {
-          console.error('Failed to parse saved product visibility:', e)
-        }
-      }
-    }
-    // 如果沒有保存的狀態，使用默認值
-    const visibility: { [key: number]: boolean } = {}
-    for (let i = 1; i <= 35; i++) {
-      visibility[i] = i % 7 !== 0
-    }
-    return visibility
-  })
-
-  // 保存顯示狀態到 localStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('productVisibility', JSON.stringify(productVisibility))
-    }
-  }, [productVisibility])
+  const [productVisibility, setProductVisibility] = useState<{ [key: number]: boolean }>({})
 
   // 高亮效果處理
   useEffect(() => {
@@ -200,7 +177,7 @@ export default function ProductsPage() {
 
   // 匯出CSV功能
   const handleExportCSV = () => {
-    const headers = ['編號', '商品名稱', '分類', '價格(TWD)', '庫存/銷量', '大獎狀態', '上架', '建立時間', '開賣時間', '完抽時間']
+    const headers = ['編號', '商品名稱', '分類', '種類', '價格(TWD)', '庫存/銷量', '大獎狀態', '上架', '建立時間', '開賣時間', '完抽時間']
     const csvData = sortedProducts.map(product => {
       // 使用統一的統計函數，從實際抽獎記錄計算
       const calculatedRemaining = product.prizes.reduce((sum, s) => sum + s.remaining, 0)
@@ -208,10 +185,21 @@ export default function ProductsPage() {
       const calculatedSales = product.sales
       const stockAndSales = `庫存：${calculatedRemaining}/${totalCount} 銷量：${calculatedSales}`
       const majorStatus = isMajorDepleted(product) ? '廢套' : '正常'
+      
+      // 轉換種類名稱
+      const typeMap: Record<string, string> = {
+        'ichiban': '一番賞',
+        'blindbox': '盲盒',
+        'gacha': '轉蛋',
+        'custom': '自製'
+      }
+      const typeName = typeMap[product.type || 'ichiban'] || '一番賞'
+
       return [
         product.productCode,
         product.name,
         product.category,
+        typeName,
         product.price.toString(),
         stockAndSales,
         majorStatus,
@@ -433,6 +421,7 @@ export default function ProductsPage() {
         bValue = parseInt(b.productCode) || 0
         break
       case 'category': aValue = a.category; bValue = b.category; break
+      case 'type': aValue = a.type || 'ichiban'; bValue = b.type || 'ichiban'; break
       case 'price': aValue = a.price; bValue = b.price; break
       case 'stockAndSales': 
         // 根據庫存排序（庫存 = 所有獎項剩餘數量總和）
@@ -627,6 +616,7 @@ export default function ProductsPage() {
               { key: 'productCode', label: '編號', visible: visibleColumns.productCode },
               { key: 'name', label: '名稱', visible: visibleColumns.name },
               { key: 'category', label: '分類', visible: visibleColumns.category },
+              { key: 'type', label: '種類', visible: visibleColumns.type },
               { key: 'price', label: '價格(TWD)', visible: visibleColumns.price },
               { key: 'stockAndSales', label: '庫存/銷量', visible: visibleColumns.stockAndSales },
               { key: 'majorStatus', label: '大獎狀態', visible: visibleColumns.majorStatus },
@@ -759,6 +749,11 @@ export default function ProductsPage() {
                       分類
                     </SortableTableHeader>
                   )}
+                  {visibleColumns.type && (
+                    <SortableTableHeader sortKey="type" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>
+                      種類
+                    </SortableTableHeader>
+                  )}
                   {visibleColumns.price && (
                     <SortableTableHeader sortKey="price" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>
                       價格(TWD)
@@ -810,9 +805,8 @@ export default function ProductsPage() {
                   sortedProducts.slice(0, displayCount).map((product) => {
                     const isHighlighted = highlightedProductId === product.id
                   return (
-                    <>
+                    <Fragment key={product.id}>
                       <tr 
-                      key={product.id}
                       ref={isHighlighted ? highlightedRowRef : null}
                       onClick={() => toggleProductExpand(product.id)}
                       className={`group border-b border-neutral-100 hover:bg-neutral-50 cursor-pointer transition-all duration-300 ${
@@ -856,6 +850,23 @@ export default function ProductsPage() {
                       {visibleColumns.category && (
                         <td className={`${getDensityClasses()} text-sm text-neutral-700 whitespace-nowrap`}>
                           <span className="whitespace-nowrap">{product.category}</span>
+                        </td>
+                      )}
+                      {visibleColumns.type && (
+                        <td className={`${getDensityClasses()} text-sm text-neutral-700 whitespace-nowrap`}>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            product.type === 'ichiban' ? 'bg-blue-100 text-blue-700' :
+                            product.type === 'blindbox' ? 'bg-purple-100 text-purple-700' :
+                            product.type === 'gacha' ? 'bg-orange-100 text-orange-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                            {{
+                              'ichiban': '一番賞',
+                              'blindbox': '盲盒',
+                              'gacha': '轉蛋',
+                              'custom': '自製'
+                            }[product.type || 'ichiban'] || '一番賞'}
+                          </span>
                         </td>
                       )}
                       {visibleColumns.price && (
@@ -902,49 +913,64 @@ export default function ProductsPage() {
                         <td className={`${getDensityClasses()} whitespace-nowrap`} onClick={(e) => e.stopPropagation()}>
                           <button
                             onClick={async () => {
-                              const newVisibility = !productVisibility[product.id]
-                              setProductVisibility(prev => ({ ...prev, [product.id]: newVisibility }))
+                              const currentVisibility = productVisibility[product.id]
+                              const newVisibility = !currentVisibility
+                              const newStatus = newVisibility ? 'active' : 'pending'
                               
-                              // 當商品上架且開賣時，自動生成 TXID Hash
-                              if (newVisibility && product.status === 'active' && product.startedAt && !product.txidHash) {
-                                if (typeof window !== 'undefined' && window.crypto) {
-                                  try {
-                                    const { generateTXID, calculateTXIDHash } = await import('@/utils/drawLogicClient')
-                                    const seed = Array.from(window.crypto.getRandomValues(new Uint8Array(32)))
-                                      .map(b => b.toString(16).padStart(2, '0'))
-                                      .join('')
-                                    const nonce = 1
-                                    const txid = generateTXID(seed, nonce)
-                                    const hash = await calculateTXIDHash(txid)
-                                    
-                                    // 更新商品數據
-                                    const savedProducts = localStorage.getItem('products')
-                                    if (savedProducts) {
-                                      try {
-                                        const products: Product[] = JSON.parse(savedProducts)
-                                        const updatedProducts = products.map(p => 
-                                          p.id === product.id ? { ...p, txidHash: hash } : p
-                                        )
-                                        localStorage.setItem('products', JSON.stringify(updatedProducts))
-                                        setProducts(updatedProducts)
+                              try {
+                                const { error } = await supabase
+                                  .from('products')
+                                  .update({ status: newStatus })
+                                  .eq('id', product.id)
+                                
+                                if (error) throw error
+                                
+                                setProductVisibility(prev => ({ ...prev, [product.id]: newVisibility }))
+                                setProducts(prev => prev.map(p => 
+                                  p.id === product.id ? { ...p, status: newStatus } : p
+                                ))
+
+                                // 當商品上架且開賣時，自動生成 TXID Hash
+                                if (newVisibility && product.status === 'active' && product.startedAt && !product.txidHash) {
+                                  if (typeof window !== 'undefined' && window.crypto) {
+                                    try {
+                                      const { generateTXID, calculateTXIDHash } = await import('@/utils/drawLogicClient')
+                                      const seed = Array.from(window.crypto.getRandomValues(new Uint8Array(32)))
+                                        .map(b => b.toString(16).padStart(2, '0'))
+                                        .join('')
+                                      const nonce = 1
+                                      const txid = generateTXID(seed, nonce)
+                                      const hash = await calculateTXIDHash(txid)
+                                      
+                                      // 更新商品數據
+                                      const { error: hashError } = await supabase
+                                        .from('products')
+                                        .update({ txid_hash: hash, seed: seed })
+                                        .eq('id', product.id)
+                                        
+                                      if (!hashError) {
+                                        setProducts(prev => prev.map(p => 
+                                          p.id === product.id ? { ...p, txidHash: hash, seed: seed } : p
+                                        ))
                                         addLog('自動生成 TXID Hash', '商品管理', `商品「${product.name}」已上架且開賣，自動生成 TXID Hash`, 'success')
-                                      } catch (e) {
-                                        console.error('更新 TXID Hash 失敗:', e)
                                       }
+                                    } catch (e) {
+                                      console.error('生成 TXID Hash 失敗:', e)
                                     }
-                                  } catch (e) {
-                                    console.error('生成 TXID Hash 失敗:', e)
                                   }
                                 }
+                                
+                                // 記錄操作
+                                addLog(
+                                  newVisibility ? '上架商品' : '下架商品',
+                                  '商品管理',
+                                  `${newVisibility ? '上架' : '下架'}商品「${product.name}」`,
+                                  'success'
+                                )
+                              } catch (error) {
+                                console.error('更新狀態失敗:', error)
+                                alert('更新狀態失敗')
                               }
-                              
-                              // 記錄操作
-                              addLog(
-                                newVisibility ? '上架商品' : '下架商品',
-                                '商品管理',
-                                `${newVisibility ? '上架' : '下架'}商品「${product.name}」`,
-                                'success'
-                              )
                             }}
                             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all flex-shrink-0 ${
                               productVisibility[product.id] ? 'bg-primary' : 'bg-neutral-300'
@@ -1029,7 +1055,7 @@ export default function ProductsPage() {
                         </td>
                       </tr>
                     )}
-                    </>
+                    </Fragment>
                   )
                 }))}
               </tbody>
