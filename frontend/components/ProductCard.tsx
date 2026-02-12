@@ -1,11 +1,12 @@
 
 import Link from 'next/link';
-import { Flame, Heart } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import ProductBadge, { ProductType } from './ui/ProductBadge';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import Image from 'next/image';
 
 interface ProductCardProps {
   id: string | number;
@@ -27,13 +28,13 @@ export default function ProductCard({
   name,
   image,
   price,
-  originalPrice,
+  // originalPrice, // Unused
   remaining,
-  total,
+  // total, // Unused
   isHot = false,
   isNew = false,
-  hasTicket = false,
-  category,
+  // hasTicket = false, // Unused
+  // category, // Unused
   type,
 }: ProductCardProps) {
   const [isFollowed, setIsFollowed] = useState(false);
@@ -95,11 +96,13 @@ export default function ProductCard({
       <div className="relative h-full flex flex-col bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 overflow-hidden hover:shadow-card hover:-translate-y-1 transition-all duration-300">
         {/* Image Container */}
         <div className="relative aspect-square overflow-hidden bg-neutral-100 dark:bg-neutral-800 rounded-t-2xl">
-          <div className="w-full h-full flex items-center justify-center text-white/20 group-hover:scale-105 transition-transform duration-500">
-            <img 
+          <div className="w-full h-full flex items-center justify-center text-white/20 group-hover:scale-105 transition-transform duration-500 relative">
+            <Image 
               src={image || '/images/item.png'} 
               alt={name}
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
+              unoptimized
             />
           </div>
           
@@ -117,11 +120,14 @@ export default function ProductCard({
 
           {/* Sold Out Stamp */}
           {remaining === 0 && (
-            <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/50 backdrop-blur-[1px]">
-              <img 
+            <div className="relative absolute inset-0 z-20 flex items-center justify-center bg-white/50 backdrop-blur-[1px]">
+              <Image 
                 src="/images/sale.svg" 
                 alt="完抽" 
+                width={96}
+                height={96}
                 className="w-24 h-auto transform scale-110 drop-shadow-xl"
+                unoptimized
               />
             </div>
           )}

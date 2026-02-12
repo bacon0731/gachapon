@@ -5,18 +5,17 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/types/database.types';
 import { Button } from '@/components/ui';
-import ProductCard from '@/components/ProductCard';
 import ProductDetailSkeleton from '@/components/ProductDetailSkeleton';
-import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/Toast';
-import { ArrowLeft, Share2, Heart, ShieldCheck, Trophy, ChevronRight, AlertTriangle, FileCheck, Copy, Info, Flame, Loader2 } from 'lucide-react';
+import { Share2, Heart, ShieldCheck, Info, Trophy, FileCheck, Copy, AlertTriangle, Loader2 } from 'lucide-react';
+import ProductCard from '@/components/ProductCard';
+import { Modal } from '@/components/ui/Modal';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import ProductBadge, { ProductType } from '@/components/ui/ProductBadge';
-import { useMediaQuery } from '@/hooks/use-media-query';
+import ProductBadge from '@/components/ui/ProductBadge';
+import Image from 'next/image';
 
-import { TicketSelectionFlow } from '@/components/shop/TicketSelectionFlow';
 import { PurchaseConfirmationModal } from '@/components/shop/PurchaseConfirmationModal';
 import GachaMachine, { Prize } from '@/components/GachaMachine';
 
@@ -155,8 +154,17 @@ export default function ProductDetailPage() {
 
       if (error) throw error;
 
+      interface PlayGachaResult {
+        id: string;
+        name: string;
+        grade: string;
+        image_url: string;
+        ticket_number?: number;
+      }
+
       // Transform result to Prize format for GachaMachine
-      const results = (data as any[]).map(item => ({
+      const rawResults = data as unknown as PlayGachaResult[];
+      const results = rawResults.map(item => ({
         id: item.id,
         name: item.name,
         rarity: item.grade, // Map grade to rarity
@@ -166,7 +174,7 @@ export default function ProductDetailPage() {
 
       // [GA] Track purchase success
       console.log('[GA] event: purchase', { 
-        transaction_id: (data as any[])[0]?.ticket_number, // using first ticket as ref
+        transaction_id: rawResults[0]?.ticket_number, // using first ticket as ref
         value: product.price * quantity,
         currency: 'G',
         items: results.map(r => ({ item_id: r.id, item_name: r.name, item_category: r.grade }))
@@ -179,11 +187,12 @@ export default function ProductDetailPage() {
       // Update local user points/tokens if possible, or wait for context update
       // The context usually updates on its own or we can force it if exposed
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Purchase error:', error);
       // [GA] Track purchase error
-      console.log('[GA] event: purchase_error', { error: error.message });
-      showToast(error.message || '購買失敗，請稍後再試', 'error');
+      const errorMessage = error instanceof Error ? error.message : '購買失敗';
+      console.log('[GA] event: purchase_error', { error: errorMessage });
+      showToast(errorMessage || '購買失敗，請稍後再試', 'error');
     } finally {
       setIsProcessing(false);
     }
@@ -245,7 +254,7 @@ export default function ProductDetailPage() {
     };
 
     fetchData();
-  }, [params.id]);
+  }, [params.id, supabase]);
 
   // Realtime subscription for inventory updates
   useEffect(() => {
@@ -355,10 +364,12 @@ export default function ProductDetailPage() {
               {/* Image Section */}
               <div className="relative aspect-square bg-neutral-100 dark:bg-neutral-800">
                 <div className="w-full h-full flex items-center justify-center text-white/20 group-hover:scale-105 transition-transform duration-500">
-                    <img 
+                    <Image 
                       src={product.image_url || '/images/item.png'} 
                       alt={product.name}
-                      className="w-full h-full object-cover"
+                      fill
+                      className="object-cover"
+                      unoptimized
                     />
                 </div>
                 
@@ -633,10 +644,12 @@ export default function ProductDetailPage() {
       >
         <div className="space-y-5">
           <div className="relative aspect-square bg-neutral-100 dark:bg-neutral-800 rounded-3xl overflow-hidden shadow-card max-h-[50vh] mx-auto">
-            <img 
-              src={viewingPrize?.image_url} 
-              alt={viewingPrize?.name} 
-              className="w-full h-full object-cover"
+            <Image 
+              src={viewingPrize?.image_url || '/images/item.png'} 
+              alt={viewingPrize?.name || 'Prize'} 
+              fill
+              className="object-cover"
+              unoptimized
             />
           </div>
           

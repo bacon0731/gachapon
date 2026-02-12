@@ -5,13 +5,11 @@ import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   Loader2, 
-  Filter, 
   ShoppingCart, 
   Info, 
   X, 
   SlidersHorizontal, 
   ChevronDown,
-  Search
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -20,6 +18,7 @@ import MarketProductCard from '@/components/MarketProductCard';
 import ProductCardSkeleton from '@/components/ProductCardSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 
 interface MarketplaceListing {
   id: number;
@@ -40,6 +39,26 @@ interface MarketplaceListing {
   };
 }
 
+interface RawMarketplaceListing {
+  id: number;
+  price: number;
+  seller_id: string;
+  created_at: string;
+  draw_record_id: number;
+  draw_records: {
+    product_prizes: {
+      name: string;
+      level: string;
+      image_url: string;
+    };
+    products: {
+      id: number;
+      name: string;
+      type?: string;
+    };
+  };
+}
+
 export default function MarketplacePage() {
   const { user, refreshProfile } = useAuth();
   const router = useRouter();
@@ -55,19 +74,6 @@ export default function MarketplacePage() {
   const [priceMin, setPriceMin] = useState('');
   const [priceMax, setPriceMax] = useState('');
   const [isMobileSortOpen, setIsMobileSortOpen] = useState(false);
-  const [localSearch, setLocalSearch] = useState(searchQuery);
-
-  useEffect(() => {
-    setLocalSearch(searchQuery);
-  }, [searchQuery]);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const params = new URLSearchParams(searchParams.toString());
-    if (localSearch) params.set('search', localSearch);
-    else params.delete('search');
-    router.push(`/market?${params.toString()}`);
-  };
 
   const setActiveType = (type: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -81,11 +87,7 @@ export default function MarketplacePage() {
 
   const supabase = createClient();
 
-  useEffect(() => {
-    fetchListings();
-  }, [sortBy]);
-
-  const fetchListings = async () => {
+  const fetchListings = React.useCallback(async () => {
     setIsLoading(true);
     try {
       let query = supabase
@@ -116,7 +118,7 @@ export default function MarketplacePage() {
 
       if (error) throw error;
 
-      const formattedData = data.map((item: any) => ({
+      const formattedData = (data as unknown as RawMarketplaceListing[]).map((item) => ({
         id: item.id,
         price: item.price,
         seller_id: item.seller_id,
@@ -134,7 +136,11 @@ export default function MarketplacePage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [sortBy, supabase]);
+
+  useEffect(() => {
+    fetchListings();
+  }, [fetchListings]);
 
   const filteredListings = useMemo(() => {
     let result = [...listings];
@@ -172,7 +178,7 @@ export default function MarketplacePage() {
     }
 
     return result;
-  }, [listings, activeType, filterLevel, priceMin, priceMax]);
+  }, [listings, activeType, filterLevel, priceMin, priceMax, searchQuery]);
 
   const handlePurchase = async () => {
     if (!selectedListing || !user) return;
@@ -195,11 +201,12 @@ export default function MarketplacePage() {
 
       toast.success('購買成功！獎項已存入您的倉庫');
       setSelectedListing(null);
-      fetchListings(); // Refresh list
-      refreshProfile(); // Refresh user balance
-    } catch (error: any) {
+      await fetchListings(); // Refresh list
+      await refreshProfile(); // Refresh user balance
+    } catch (error: unknown) {
       console.error('Purchase Error:', error);
-      toast.error(error.message || '購買失敗');
+      const message = error instanceof Error ? error.message : '購買失敗';
+      toast.error(message);
     } finally {
       setIsPurchasing(false);
     }
@@ -284,9 +291,9 @@ export default function MarketplacePage() {
                        <button
                          key={opt.id}
                          onClick={() => {
-                           setSortBy(opt.id as any);
-                           setIsMobileSortOpen(false);
-                         }}
+                          setSortBy(opt.id as 'newest' | 'price_asc' | 'price_desc');
+                          setIsMobileSortOpen(false);
+                        }}
                          className={cn(
                            "w-full text-left px-4 py-3 text-sm font-black rounded-xl transition-colors",
                            sortBy === opt.id ? "bg-primary/5 text-primary" : "text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white"
@@ -373,12 +380,12 @@ export default function MarketplacePage() {
                 <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-neutral-900 rounded-2xl shadow-modal border border-neutral-100 dark:border-neutral-800 p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 transform origin-top-right scale-95 group-hover:scale-100">
                   {[
                     { id: 'newest', label: '最新上架' },
-                    { id: 'price-asc', label: '價格: 低到高' },
-                    { id: 'price-desc', label: '價格: 高到低' },
+                    { id: 'price_asc', label: '價格: 低到高' },
+                    { id: 'price_desc', label: '價格: 高到低' },
                   ].map((opt) => (
                     <button
                       key={opt.id}
-                      onClick={() => setSortBy(opt.id as any)}
+                      onClick={() => setSortBy(opt.id as 'newest' | 'price_asc' | 'price_desc')}
                       className={cn(
                         "w-full text-left px-4 py-3 text-sm font-black rounded-xl transition-colors",
                         sortBy === opt.id ? "bg-primary/5 text-primary" : "text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white"
@@ -548,11 +555,13 @@ export default function MarketplacePage() {
                 </div>
 
                 <div className="flex gap-4 mb-6">
-                  <div className="w-24 h-24 bg-neutral-100 dark:bg-neutral-800 rounded-2xl overflow-hidden shrink-0">
-                    <img 
+                  <div className="relative w-24 h-24 bg-neutral-100 dark:bg-neutral-800 rounded-2xl overflow-hidden shrink-0">
+                    <Image 
                       src={selectedListing.product_prizes.image_url} 
                       alt={selectedListing.product_prizes.name}
-                      className="w-full h-full object-cover"
+                      fill
+                      className="object-cover"
+                      unoptimized
                     />
                   </div>
                   <div>

@@ -4,6 +4,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import Image from 'next/image';
 
 interface Banner {
   id: string;
@@ -65,7 +66,14 @@ export default function HeroBanner({ banners }: { banners: Banner[] }) {
           }`}
         >
           <Link href={banner.link} className="block w-full h-full relative">
-            <img src={banner.image || '/images/banner.png'} alt="Banner" className="w-full h-full object-cover select-none" draggable={false} />
+            <Image 
+              src={banner.image || '/images/banner.png'} 
+              alt="Banner" 
+              fill
+              className="object-cover select-none" 
+              draggable={false} 
+              unoptimized
+            />
             {/* Gradient Overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
           </Link>

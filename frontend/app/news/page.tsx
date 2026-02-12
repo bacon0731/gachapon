@@ -30,7 +30,7 @@ export default function NewsPage() {
       }
     };
     fetchNews();
-  }, []);
+  }, [supabase]);
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 pb-20 transition-colors">

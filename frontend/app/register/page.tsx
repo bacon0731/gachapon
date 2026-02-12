@@ -3,7 +3,7 @@
 import React, { Suspense, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Mail, Lock, User } from 'lucide-react';
+import { Mail, Lock, User } from 'lucide-react';
 import { Button, Input } from '@/components/ui';
 import { useToast } from '@/components/ui/Toast';
 import { signup } from '../login/actions';
@@ -16,6 +16,20 @@ function RegisterContent() {
   const router = useRouter();
   const message = searchParams.get('message');
   const error = searchParams.get('error');
+
+  useEffect(() => {
+    if (error) {
+      const normalized = error.toLowerCase();
+      if (normalized.includes('database error saving new user')) {
+        showToast('此信箱可能已註冊，請直接登入或重設密碼', 'error');
+      } else {
+        showToast(error, 'error');
+      }
+    }
+    if (message) {
+      showToast(message, 'success');
+    }
+  }, [error, message, showToast]);
 
   // If user is already logged in, redirect to home
   useEffect(() => {
@@ -32,20 +46,6 @@ function RegisterContent() {
       </div>
     );
   }
-
-  React.useEffect(() => {
-    if (error) {
-      const normalized = error.toLowerCase();
-      if (normalized.includes('database error saving new user')) {
-        showToast('此信箱可能已註冊，請直接登入或重設密碼', 'error');
-      } else {
-        showToast(error, 'error');
-      }
-    }
-    if (message) {
-      showToast(message, 'success');
-    }
-  }, [error, message, showToast]);
 
   const handleSignup = async (formData: FormData) => {
     const terms = formData.get('terms');

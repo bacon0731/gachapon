@@ -3,10 +3,10 @@
 import { Heart } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import ProductBadge from './ui/ProductBadge';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import Image from 'next/image';
 
 interface MarketProductCardProps {
   id: string | number;
@@ -21,7 +21,6 @@ interface MarketProductCardProps {
 }
 
 export default function MarketProductCard({
-  id,
   productId,
   name,
   image,
@@ -98,11 +97,13 @@ export default function MarketProductCard({
       <div className="relative h-full flex flex-col bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 overflow-hidden hover:shadow-card hover:-translate-y-1 transition-all duration-300">
         {/* Image Container */}
         <div className="relative aspect-square overflow-hidden bg-neutral-100 dark:bg-neutral-800 rounded-t-2xl">
-          <div className="w-full h-full flex items-center justify-center text-white/20 group-hover:scale-105 transition-transform duration-500">
-            <img 
+          <div className="w-full h-full flex items-center justify-center text-white/20 group-hover:scale-105 transition-transform duration-500 relative">
+            <Image 
               src={image || '/images/item.png'} 
               alt={name}
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
+              unoptimized
             />
           </div>
           

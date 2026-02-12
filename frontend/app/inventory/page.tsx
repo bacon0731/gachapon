@@ -1,16 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Package, Truck, RefreshCw, Filter, Search, CheckCircle2, AlertCircle, X, ChevronRight } from 'lucide-react'
+import { Package, RefreshCw, CheckCircle2, AlertCircle, ChevronRight, Search } from 'lucide-react'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { Modal } from '@/components/ui/Modal'
-import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
+import Image from 'next/image'
 
 // Types for our inventory items
 interface InventoryItem {
@@ -33,7 +33,6 @@ interface InventoryItem {
 type FilterType = 'all' | 'in_warehouse' | 'shipping' | 'history'
 
 export default function InventoryPage() {
-  const router = useRouter()
   const { user } = useAuth()
   const supabase = createClient()
   
@@ -58,7 +57,7 @@ export default function InventoryPage() {
   const [dismantleSummary, setDismantleSummary] = useState({ count: 0, totalValue: 0 })
 
   // Fetch Inventory Data
-  const fetchInventory = async () => {
+  const fetchInventory = useCallback(async () => {
     try {
       setIsLoading(true)
       const { data, error } = await supabase
@@ -87,7 +86,7 @@ export default function InventoryPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [supabase])
 
   useEffect(() => {
     if (user) {
@@ -97,7 +96,7 @@ export default function InventoryPage() {
       if (user.recipient_phone) setRecipientPhone(user.recipient_phone)
       if (user.recipient_address) setRecipientAddress(user.recipient_address)
     }
-  }, [user])
+  }, [user, fetchInventory])
 
   // Filter items logic
   const filteredItems = items.filter((item) => {
@@ -194,11 +193,12 @@ export default function InventoryPage() {
       setShowShipmentModal(false)
       setSelectedItems([])
       setIsSelectionMode(false)
-      fetchInventory() // Refresh list
+      await fetchInventory() // Refresh list
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Shipment error:', error)
-      toast.error(error.message || '申請失敗，請稍後再試')
+      const message = error instanceof Error ? error.message : '申請失敗，請稍後再試'
+      toast.error(message)
     } finally {
       setIsSubmitting(false)
     }
@@ -224,7 +224,7 @@ export default function InventoryPage() {
   const handleDismantleConfirm = async () => {
     try {
       setIsSubmitting(true);
-      const { data, error } = await supabase.rpc('dismantle_prizes', {
+      const { error } = await supabase.rpc('dismantle_prizes', {
         p_record_ids: selectedItems,
         p_user_id: user?.id
       });
@@ -411,12 +411,14 @@ export default function InventoryPage() {
                 )}
 
                 <div className="aspect-[4/3] bg-neutral-100 dark:bg-neutral-900 relative overflow-hidden">
-                  <img 
+                  <Image 
                     src={item.product_prizes?.image_url || item.products?.image_url || '/images/item.png'} 
-                    alt={item.product_prizes?.name} 
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    alt={item.product_prizes?.name || 'Item'}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    unoptimized
                   />
-                  <div className="absolute top-3 left-3">
+                  <div className="absolute top-3 left-3 z-10">
                     {getStatusBadge(item.status)}
                   </div>
                 </div>

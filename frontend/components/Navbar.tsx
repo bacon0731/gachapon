@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
-import { ArrowLeft, Search, Bell, LogOut, User as UserIcon, ChevronDown, X, History, Flame, Truck, Sparkles, Clock, Heart, CheckCircle2, Sun, Moon, Filter, Share2, Copy } from 'lucide-react';
+import { ArrowLeft, Search, Bell, LogOut, User as UserIcon, ChevronDown, X, History, Flame, Truck, Sparkles, Clock, Heart, CheckCircle2, Sun, Moon, Share2, Copy } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useToast } from '@/components/ui/Toast';
 
@@ -37,7 +37,7 @@ function NavbarInner() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
 
   // Check if we just logged in
   const isLoginRedirect = searchParams.get('login_success') === 'true';
@@ -123,7 +123,7 @@ function NavbarInner() {
       setProductName(null);
       setIsProductFollowed(false);
     }
-  }, [pathname, user, isProductDetailPage, isNewsDetailPage]);
+  }, [pathname, user, isProductDetailPage, isNewsDetailPage, supabase]);
 
   const handleFollowToggle = async () => {
     if (!user) {
@@ -232,13 +232,13 @@ function NavbarInner() {
     }
   };
 
-  const productTypes = [
-    { id: 'all', name: '全部' },
-    { id: 'custom', name: '自製賞' },
-    { id: 'ichiban', name: '一番賞' },
-    { id: 'blindbox', name: '盒玩' },
-    { id: 'gacha', name: '轉蛋' },
-  ];
+  // const productTypes = [
+  //   { id: 'all', name: '全部' },
+  //   { id: 'custom', name: '自製賞' },
+  //   { id: 'ichiban', name: '一番賞' },
+  //   { id: 'blindbox', name: '盒玩' },
+  //   { id: 'gacha', name: '轉蛋' },
+  // ];
 
   const clearHistory = () => {
     setSearchHistory([]);
@@ -498,13 +498,15 @@ function NavbarInner() {
                     onClick={() => setIsMenuOpen(!isMenuOpen)}
                   >
                     <div className={cn(
-                      "w-8 h-8 rounded-xl border-2 border-neutral-100 p-0.5 transition-all overflow-hidden",
+                      "w-8 h-8 rounded-xl border-2 border-neutral-100 p-0.5 transition-all overflow-hidden relative",
                       isMenuOpen ? "border-primary/20" : "hover:border-primary/20"
                     )}>
-                      <img
+                      <Image
                         src={user.avatar_url || 'https://github.com/shadcn.png'}
                         alt={user.name}
-                        className="w-full h-full rounded-[10px] object-cover"
+                        fill
+                        className="rounded-[10px] object-cover"
+                        unoptimized
                       />
                     </div>
                     <ChevronDown className={cn(
@@ -520,8 +522,8 @@ function NavbarInner() {
                   )}>
                     {/* User Profile Summary */}
                     <div className="px-3.5 py-2.5 mb-2 flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl overflow-hidden border border-neutral-100 dark:border-neutral-800">
-                        <img src={user.avatar_url || 'https://github.com/shadcn.png'} alt={user.name} className="w-full h-full object-cover" />
+                      <div className="w-9 h-9 rounded-xl overflow-hidden border border-neutral-100 dark:border-neutral-800 relative">
+                        <Image src={user.avatar_url || 'https://github.com/shadcn.png'} alt={user.name} fill className="object-cover" unoptimized />
                       </div>
                       <div className="flex flex-col">
                         <div className="flex items-center gap-1.5">
@@ -673,7 +675,7 @@ function NavbarInner() {
                       <span className="text-sm font-black">{term}</span>
                       <X 
                         className="w-4 h-4 text-neutral-300 hover:text-accent-red transition-colors" 
-                        onClick={(e) => { e.stopPropagation(); deleteHistoryItem(e as any, term); }}
+                        onClick={(e) => { e.stopPropagation(); deleteHistoryItem(e as React.MouseEvent, term); }}
                       />
                     </button>
                   ))}

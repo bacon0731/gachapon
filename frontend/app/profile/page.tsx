@@ -42,6 +42,7 @@ import { toast, Toaster } from 'sonner';
 import { ProfileSkeleton } from '@/components/Skeletons';
 import { WarehouseItemDetailModal } from '@/components/warehouse/WarehouseItemDetailModal';
 import ProductCard from '@/components/ProductCard';
+import Image from 'next/image';
 
 import DailyCheckInTab from '@/components/profile/DailyCheckInTab';
 
@@ -137,6 +138,98 @@ interface TopupHistoryItem {
 }
 
 type TabType = 'check-in' | 'warehouse' | 'market' | 'delivery' | 'draw-history' | 'topup-history' | 'follows' | 'coupons' | 'settings';
+
+interface DbListing {
+  id: number;
+  draw_records: {
+    id: number;
+    product_prizes: { name: string; level: string; image_url: string };
+    products: { name: string };
+  };
+  price: number;
+  status: 'active' | 'sold' | 'cancelled';
+  created_at: string;
+  updated_at: string;
+  marketplace_transactions: {
+    buyer_id: string;
+    users: { name: string };
+  }[];
+}
+
+interface DbOrder {
+  id: string;
+  created_at: string;
+  tracking_number: string | null;
+  status: 'pending' | 'shipping' | 'completed' | 'cancelled';
+  draw_records: {
+    product_prizes: {
+      level: string;
+      name: string;
+    } | null;
+  }[];
+}
+
+interface DbFollow {
+  product_id: string;
+  products: {
+    id: string;
+    name: string;
+    price: number;
+    image_url: string;
+    status: 'selling' | 'soldout' | 'coming_soon';
+  };
+}
+
+interface DbCoupon {
+  id: string;
+  status: 'unused' | 'used' | 'expired';
+  expiry_date: string;
+  coupons: {
+    id: string;
+    title: string;
+    description: string;
+    discount_type: 'fixed' | 'percentage';
+    discount_value: number;
+    min_spend: number;
+    code: string;
+  };
+}
+
+interface DbTopup {
+  id: string;
+  order_number: string;
+  amount: number;
+  bonus: number;
+  status: string;
+  created_at: string;
+}
+
+interface GroupedDrawHistoryItem {
+  _rawDate: string;
+  id: number;
+  product: string;
+  date: string;
+  tickets: string[];
+  cost: number;
+  items: { grade: string; name: string; ticket_number: string }[];
+}
+
+interface DbDrawRecord {
+  id: number;
+  ticket_number: number;
+  created_at: string;
+  status: string;
+  product_prizes: {
+    level: string;
+    name: string;
+    image_url: string;
+    recycle_value: number;
+  } | null;
+  products: {
+    name: string;
+    price?: number;
+  } | null;
+}
 
 function ProfileContent() {
   const { user, logout, refreshProfile, isLoading: isAuthLoading } = useAuth();
@@ -250,13 +343,12 @@ function ProfileContent() {
             
           if (error) throw error;
 
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const items = data.map((item: any) => ({
+          const items = (data as unknown as DbDrawRecord[]).map((item) => ({
             id: item.id.toString(),
             name: item.product_prizes?.name || '未知獎品',
             series: item.products?.name || '未知系列',
             grade: item.product_prizes?.level || '?',
-            status: item.status,
+            status: item.status as WarehouseItem['status'],
             image: item.product_prizes?.image_url || 'https://placehold.co/400',
             date: new Date(item.created_at).toLocaleString('zh-TW'),
             ticketNo: item.ticket_number?.toString() || '',
@@ -279,8 +371,7 @@ function ProfileContent() {
             
           if (error) throw error;
 
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const items = data.map((item: any) => ({
+          const items = (data as unknown as DbDrawRecord[]).map((item) => ({
             id: item.id.toString(),
             name: item.product_prizes?.name || '未知獎品',
             series: item.products?.name || '未知系列',
@@ -321,8 +412,7 @@ function ProfileContent() {
 
         if (error) throw error;
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const listings = data.map((item: any) => ({
+        const listings = (data as unknown as DbListing[]).map((item) => ({
           id: item.id.toString(),
           draw_record_id: item.draw_records?.id,
           price: item.price,
@@ -358,14 +448,12 @@ function ProfileContent() {
 
         if (error) throw error;
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const orders = data.map((order: any) => ({
+        const orders = (data as unknown as DbOrder[]).map((order) => ({
           id: order.id,
           itemsCount: order.draw_records?.length || 0,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          items: order.draw_records?.map((dh: any) => ({
-            grade: dh.product_prizes?.level,
-            name: dh.product_prizes?.name
+          items: order.draw_records?.map((dh) => ({
+            grade: dh.product_prizes?.level || '?',
+            name: dh.product_prizes?.name || '未知'
           })) || [],
           status: order.status,
           date: new Date(order.created_at).toLocaleDateString('zh-TW'),
@@ -391,28 +479,26 @@ function ProfileContent() {
         if (error) throw error;
         
         // Group records by created_at (transaction time)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const groupedHistory: Record<string, any>[] = [];
+        const groupedHistory: GroupedDrawHistoryItem[] = [];
         
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        data.forEach((item: any) => {
+        const records = data as unknown as DbDrawRecord[];
+        records.forEach((item) => {
           const currentTimestamp = item.created_at;
           const lastGroup = groupedHistory.length > 0 ? groupedHistory[groupedHistory.length - 1] : null;
           
-          // Check if belongs to the same transaction (same timestamp and product)
           if (lastGroup && lastGroup._rawDate === currentTimestamp && lastGroup.product === item.products?.name) {
              lastGroup.tickets.push(item.ticket_number?.toString());
              lastGroup.cost += (item.products?.price || 0);
-             lastGroup.items.push({ grade: item.product_prizes?.level, name: item.product_prizes?.name, ticket_number: item.ticket_number?.toString() });
+             lastGroup.items.push({ grade: item.product_prizes?.level || '?', name: item.product_prizes?.name || '?', ticket_number: item.ticket_number?.toString() });
           } else {
              groupedHistory.push({
                _rawDate: currentTimestamp,
                id: item.id,
-               product: item.products?.name,
+               product: item.products?.name || '未知',
                date: new Date(item.created_at).toLocaleString('zh-TW'),
                tickets: [item.ticket_number?.toString()],
                cost: item.products?.price || 0,
-               items: [{ grade: item.product_prizes?.level, name: item.product_prizes?.name, ticket_number: item.ticket_number?.toString() }]
+               items: [{ grade: item.product_prizes?.level || '?', name: item.product_prizes?.name || '?', ticket_number: item.ticket_number?.toString() }]
              });
           }
         });
@@ -430,8 +516,7 @@ function ProfileContent() {
 
         if (error) throw error;
         
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const history = data.map((item: any) => ({
+        const history = (data as unknown as DbTopup[]).map((item) => ({
           id: item.id,
           order_number: item.order_number,
           payment_method: '系統儲值', // Default since not in recharge_records
@@ -454,8 +539,7 @@ function ProfileContent() {
 
         if (error) throw error;
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const follows = data.map((item: any) => ({
+        const follows = (data as unknown as DbFollow[]).map((item) => ({
           id: item.products.id,
           name: item.products.name,
           image: item.products.image_url,
@@ -478,8 +562,7 @@ function ProfileContent() {
 
         if (error) throw error;
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const myCoupons = data.map((item: any) => ({
+        const myCoupons = (data as unknown as DbCoupon[]).map((item) => ({
           id: item.id,
           title: item.coupons.title,
           description: item.coupons.description,
@@ -685,10 +768,6 @@ function ProfileContent() {
     }
   };
 
-  const handleCheckIn = () => {
-    router.push('/check-in');
-  };
-
   const handleLogout = async () => {
     if (confirm('確定要登出您的帳號嗎？')) {
       await logout();
@@ -824,7 +903,13 @@ function ProfileContent() {
                             className={cn("bg-white rounded-2xl border p-3 space-y-3 shadow-sm relative overflow-hidden transition-all active:scale-95", isSelected ? "border-accent-emerald ring-2 ring-accent-emerald/20" : "border-neutral-100")}
                           >
                             <div className="aspect-square bg-[#28324E] rounded-xl overflow-hidden relative">
-                              <img src={item.image || '/images/item.png'} alt={item.name} className="w-full h-full object-cover" />
+                              <Image 
+                                src={item.image || '/images/item.png'} 
+                                alt={item.name} 
+                                fill 
+                                className="object-cover" 
+                                unoptimized
+                              />
                               <div 
                                 className="absolute top-2 right-2 z-10"
                                 onClick={(e) => {
@@ -882,8 +967,14 @@ function ProfileContent() {
                                 </td>
                                 <td className="px-3 lg:px-4 py-2 lg:py-3">
                                   <div className="flex items-center gap-3 lg:gap-4">
-                                    <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl lg:rounded-2xl bg-[#28324E] overflow-hidden flex-shrink-0 shadow-soft">
-                                      <img src={item.image || '/images/item.png'} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-80 group-hover:opacity-100" />
+                                    <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl lg:rounded-2xl bg-[#28324E] overflow-hidden flex-shrink-0 shadow-soft relative">
+                                      <Image 
+                                        src={item.image || '/images/item.png'} 
+                                        alt={item.name} 
+                                        fill 
+                                        className="object-cover group-hover:scale-110 transition-transform duration-700 opacity-80 group-hover:opacity-100" 
+                                        unoptimized
+                                      />
                                     </div>
                                     <div className="space-y-0.5 lg:space-y-1 min-w-0">
                                       <div className="text-[13px] lg:text-[14px] font-black text-neutral-900 leading-tight truncate tracking-tight">{item.name}</div>
@@ -920,7 +1011,13 @@ function ProfileContent() {
                       {dismantledItems.map((item) => (
                         <div key={item.id} className="bg-white rounded-2xl border border-neutral-100 p-3 space-y-3 shadow-sm relative overflow-hidden opacity-75 grayscale-[0.5]">
                           <div className="aspect-square bg-[#28324E] rounded-xl overflow-hidden relative">
-                            <img src={item.image || '/images/item.png'} alt={item.name} className="w-full h-full object-cover" />
+                            <Image 
+                              src={item.image || '/images/item.png'} 
+                              alt={item.name} 
+                              fill 
+                              className="object-cover" 
+                              unoptimized
+                            />
                             <div className="absolute bottom-2 left-2">
                               <span className="px-2 py-0.5 bg-neutral-600 text-white text-[10px] font-black rounded-md uppercase">{item.grade}</span>
                             </div>
@@ -955,8 +1052,14 @@ function ProfileContent() {
                               </td>
                               <td className="px-3 lg:px-4 py-2 lg:py-3">
                                 <div className="flex items-center gap-3 lg:gap-4">
-                                  <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl lg:rounded-2xl bg-[#28324E] overflow-hidden flex-shrink-0 shadow-soft">
-                                    <img src={item.image || '/images/item.png'} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-80 group-hover:opacity-100" />
+                                  <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl lg:rounded-2xl bg-[#28324E] overflow-hidden flex-shrink-0 shadow-soft relative">
+                                    <Image 
+                                      src={item.image || '/images/item.png'} 
+                                      alt={item.name} 
+                                      fill 
+                                      className="object-cover group-hover:scale-110 transition-transform duration-700 opacity-80 group-hover:opacity-100" 
+                                      unoptimized
+                                    />
                                   </div>
                                   <div className="space-y-0.5 lg:space-y-1 min-w-0">
                                     <div className="text-[13px] lg:text-[14px] font-black text-neutral-900 leading-tight truncate tracking-tight">{item.name}</div>
@@ -1119,7 +1222,14 @@ function ProfileContent() {
                     <div className="p-6 space-y-4">
                       {sellingItem && (
                         <div className="bg-neutral-50 p-4 rounded-xl flex items-center gap-4">
-                          <img src={sellingItem.image || '/images/item.png'} alt={sellingItem.name} className="w-16 h-16 object-cover rounded-lg bg-white" />
+                          <Image 
+                            src={sellingItem.image || '/images/item.png'} 
+                            alt={sellingItem.name} 
+                            width={64} 
+                            height={64} 
+                            className="object-cover rounded-lg bg-white" 
+                            unoptimized
+                          />
                           <div>
                             <span className="px-2 py-0.5 bg-accent-red text-white text-[10px] font-black rounded-md uppercase">{sellingItem.grade}</span>
                             <h4 className="text-sm font-black text-neutral-900 mt-1 line-clamp-1">{sellingItem.name}</h4>
@@ -1253,7 +1363,13 @@ function ProfileContent() {
                         <div key={item.id} className="bg-white rounded-2xl border border-neutral-100 p-3 space-y-3 shadow-sm relative overflow-hidden">
                           <div className="flex gap-3">
                             <div className="w-20 h-20 bg-[#28324E] rounded-xl overflow-hidden flex-shrink-0 relative">
-                               <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />
+                               <Image 
+                                 src={item.product.image} 
+                                 alt={item.product.name} 
+                                 fill 
+                                 className="object-cover" 
+                                 unoptimized
+                               />
                                <div className="absolute bottom-1 left-1">
                                  <span className="px-1.5 py-0.5 bg-accent-red text-white text-[9px] font-black rounded uppercase">{item.product.grade}</span>
                                </div>
@@ -1301,8 +1417,14 @@ function ProfileContent() {
                               </td>
                               <td className="px-3 lg:px-4 py-2 lg:py-3">
                                 <div className="flex items-center gap-3 lg:gap-4">
-                                  <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl lg:rounded-2xl bg-[#28324E] overflow-hidden flex-shrink-0 shadow-soft">
-                                    <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                  <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl lg:rounded-2xl bg-[#28324E] overflow-hidden flex-shrink-0 shadow-soft relative">
+                                    <Image 
+                                      src={item.product.image} 
+                                      alt={item.product.name} 
+                                      fill 
+                                      className="object-cover group-hover:scale-110 transition-transform duration-700" 
+                                      unoptimized
+                                    />
                                   </div>
                                   <div className="space-y-0.5 lg:space-y-1 min-w-0">
                                     <div className="text-[13px] lg:text-[14px] font-black text-neutral-900 leading-tight truncate tracking-tight">{item.product.name}</div>
@@ -1347,7 +1469,13 @@ function ProfileContent() {
                         <div key={item.id} className="bg-white rounded-2xl border border-neutral-100 p-3 space-y-3 shadow-sm relative overflow-hidden opacity-75 grayscale-[0.5]">
                           <div className="flex gap-3">
                             <div className="w-20 h-20 bg-[#28324E] rounded-xl overflow-hidden flex-shrink-0 relative">
-                               <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />
+                               <Image 
+                                 src={item.product.image} 
+                                 alt={item.product.name} 
+                                 fill 
+                                 className="object-cover" 
+                                 unoptimized
+                               />
                                <div className="absolute bottom-1 left-1">
                                  <span className="px-1.5 py-0.5 bg-neutral-600 text-white text-[9px] font-black rounded uppercase">{item.product.grade}</span>
                                </div>
@@ -1394,7 +1522,14 @@ function ProfileContent() {
                               <td className="px-3 lg:px-4 py-2 lg:py-3">
                                 <div className="flex items-center gap-3 lg:gap-4">
                                   <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl lg:rounded-2xl bg-[#28324E] overflow-hidden flex-shrink-0 border border-neutral-100 p-0.5 shadow-soft">
-                                    <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover rounded-[10px] lg:rounded-[14px] grayscale-[0.5]" />
+                                    <Image 
+                                      src={item.product.image} 
+                                      alt={item.product.name} 
+                                      width={48} 
+                                      height={48} 
+                                      className="w-full h-full object-cover rounded-[10px] lg:rounded-[14px] grayscale-[0.5]" 
+                                      unoptimized
+                                    />
                                   </div>
                                   <div className="space-y-0.5 lg:space-y-1 min-w-0">
                                     <div className="text-[13px] lg:text-[14px] font-black text-neutral-900 leading-tight truncate tracking-tight">{item.product.name}</div>
@@ -1997,8 +2132,14 @@ function ProfileContent() {
             {/* User Info + Settings Icon */}
             <div className="flex items-center justify-between px-0 mb-3">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-full overflow-hidden border-2 border-white dark:border-neutral-800 shadow-soft">
-                  <img src={user.avatar_url || 'https://github.com/shadcn.png'} alt={user.name} className="w-full h-full object-cover" />
+                <div className="w-11 h-11 rounded-full overflow-hidden border-2 border-white dark:border-neutral-800 shadow-soft relative">
+                  <Image 
+                    src={user.avatar_url || 'https://github.com/shadcn.png'} 
+                    alt={user.name || 'User'} 
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5">
@@ -2131,7 +2272,13 @@ function ProfileContent() {
                   <div className="flex items-center gap-2.5">
                     <div className="relative flex-shrink-0">
                       <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-xl overflow-hidden border-2 border-neutral-50 dark:border-neutral-800 shadow-soft p-0.5 bg-white dark:bg-neutral-800">
-                        <img src={user.avatar_url || 'https://github.com/shadcn.png'} alt={user.name} className="w-full h-full rounded-[8px] object-cover" />
+                        <Image 
+                          src={user.avatar_url || 'https://github.com/shadcn.png'} 
+                          alt={user.name || 'User'} 
+                          fill 
+                          className="rounded-[8px] object-cover" 
+                          unoptimized
+                        />
                       </div>
                       <div className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-accent-emerald border-2 border-white dark:border-neutral-900 rounded-full shadow-sm" />
                     </div>

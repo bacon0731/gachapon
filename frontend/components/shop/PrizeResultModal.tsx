@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Button from '@/components/ui/Button';
+import Image from 'next/image';
 
 export interface ResultPrize {
   id: string;
@@ -14,8 +14,16 @@ export interface ResultPrize {
 }
 
 interface PrizeResultModalProps {
-  isOpen: boolean;
-  prizes: ResultPrize[];
+  isOpen?: boolean;
+  prizes?: ResultPrize[];
+  results?: {
+    grade: string;
+    name: string;
+    isOpened: boolean;
+    image_url: string;
+    is_last_one: boolean;
+    ticket_number: number;
+  }[];
   onClose: () => void;
   onGoToWarehouse?: () => void;
   onPlayAgain?: () => void;
@@ -25,14 +33,25 @@ interface PrizeResultModalProps {
 const HIGH_TIER_GRADES = ['A', 'B', 'C', 'Last One', 'LAST ONE', 'SP'];
 
 export const PrizeResultModal: React.FC<PrizeResultModalProps> = ({
-  isOpen,
+  isOpen = true,
   prizes,
-  onClose,
+  results,
+  // onClose,
   onGoToWarehouse,
   onPlayAgain,
-  isLoading
+  // isLoading
 }) => {
   const [showContent, setShowContent] = useState(false);
+
+  // Normalize prizes from either `prizes` or `results` prop
+  const displayPrizes: ResultPrize[] = prizes || (results ? results.map((r, i) => ({
+    id: String(i),
+    name: r.name,
+    grade: r.grade,
+    image_url: r.image_url,
+    is_last_one: r.is_last_one,
+    ticket_number: r.ticket_number
+  })) : []);
 
   // Lock body scroll when open
   useEffect(() => {
@@ -114,7 +133,7 @@ export const PrizeResultModal: React.FC<PrizeResultModalProps> = ({
                 {/* Grid Content */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 bg-neutral-50">
                   <div className="flex flex-wrap justify-center gap-4 md:gap-6 mx-auto">
-                    {prizes.map((prize, idx) => {
+                    {displayPrizes.map((prize, idx) => {
                       const isSpecial = isHighTier(prize.grade);
                       
                       return (
@@ -143,11 +162,15 @@ export const PrizeResultModal: React.FC<PrizeResultModalProps> = ({
                             {/* Image Area */}
                             <div className="w-full h-full p-2 flex items-center justify-center relative z-10">
                               {prize.image_url ? (
-                                <img 
-                                  src={prize.image_url} 
-                                  alt={prize.name} 
-                                  className="w-full h-full object-contain"
-                                />
+                                <div className="relative w-full h-full">
+                                  <Image 
+                                    src={prize.image_url} 
+                                    alt={prize.name} 
+                                    fill
+                                    className="object-contain"
+                                    unoptimized
+                                  />
+                                </div>
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center text-neutral-300 font-bold text-2xl">?</div>
                               )}

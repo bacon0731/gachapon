@@ -5,7 +5,6 @@ import { Database } from '@/types/database.types';
 import ProductCard from '@/components/ProductCard';
 import ProductCardSkeleton from '@/components/ProductCardSkeleton';
 import { BannerSkeleton } from '@/components/Skeletons';
-import { Skeleton } from '@/components/ui/Skeleton';
 import HeroBanner from '@/components/HeroBanner';
 import WinningMarquee from '@/components/WinningMarquee';
 import { ArrowRight, Flame } from 'lucide-react';
@@ -43,7 +42,7 @@ export default function Home() {
     };
 
     fetchData();
-  }, []);
+  }, [supabase]);
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 pb-20 transition-colors">

@@ -1,14 +1,14 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 
 interface FilterOption {
   key: string
   label: string
   type: 'select' | 'date-range' | 'checkbox'
   options?: { value: string; label: string }[]
-  value?: any
-  onChange?: (value: any) => void
+  value?: string | number | boolean
+  onChange?: (value: string | number | boolean) => void
   // date-range 專用
   startDate?: string
   endDate?: string
@@ -85,9 +85,9 @@ export default function SearchToolbar({
   onAddClick,
   showExportCSV = false,
   onExportCSV,
-  selectedCount = 0,
-  batchActions = [],
-  onClearSelection,
+  // selectedCount = 0, // Unused props
+  // batchActions = [], // Unused props
+  // onClearSelection, // Unused props
   children
 }: SearchToolbarProps) {
   const [showFilterPanel, setShowFilterPanel] = useState(false)
@@ -235,7 +235,7 @@ export default function SearchToolbar({
                       </label>
                       {option.type === 'select' && (
                         <select
-                          value={option.value}
+                          value={String(option.value)}
                           onChange={(e) => option.onChange?.(e.target.value)}
                           className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-neutral-900 dark:text-white"
                         >

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, Fragment, ReactNode } from 'react'
+import { useEffect, useRef, Fragment, ReactNode } from 'react'
 import SortableTableHeader from './SortableTableHeader'
 
 export interface Column<T> {
@@ -71,7 +71,7 @@ export default function DataTable<T extends { id: number | string }>({
   isSelectable = () => true,
   expandable = false,
   expandedIds = new Set(),
-  onExpandChange,
+  // onExpandChange,
   renderExpanded,
   rowClassName,
   highlightedId,
@@ -113,9 +113,10 @@ export default function DataTable<T extends { id: number | string }>({
       observer.observe(observerTarget.current)
     }
 
+    const currentTarget = observerTarget.current
     return () => {
-      if (observerTarget.current) {
-        observer.unobserve(observerTarget.current)
+      if (currentTarget) {
+        observer.unobserve(currentTarget)
       }
     }
   }, [enableInfiniteScroll, onLoadMore, isLoadingMore])
@@ -144,16 +145,16 @@ export default function DataTable<T extends { id: number | string }>({
   }
 
   // 展開處理
-  const handleToggleExpand = (id: number | string) => {
-    if (!onExpandChange) return
-    const newExpanded = new Set(expandedIds)
-    if (newExpanded.has(id)) {
-      newExpanded.delete(id)
-    } else {
-      newExpanded.add(id)
-    }
-    onExpandChange(newExpanded)
-  }
+  // const handleToggleExpand = (id: number | string) => {
+  //   if (!onExpandChange) return
+  //   const newExpanded = new Set(expandedIds)
+  //   if (newExpanded.has(id)) {
+  //     newExpanded.delete(id)
+  //   } else {
+  //     newExpanded.add(id)
+  //   }
+  //   onExpandChange(newExpanded)
+  // }
 
   // 過濾可見欄位
   const filteredColumns = columns.filter(col => {
@@ -255,7 +256,7 @@ export default function DataTable<T extends { id: number | string }>({
                           key={column.key} 
                           className={`${getDensityClasses()} text-sm text-neutral-600 dark:text-neutral-400 ${column.className || ''} ${stickyClass}`}
                         >
-                          {column.render ? column.render(item, index) : (item as any)[column.key]}
+                          {column.render ? column.render(item, index) : (item as Record<string, unknown>)[column.key] as ReactNode}
                         </td>
                       )
                     })}

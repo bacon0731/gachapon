@@ -2,7 +2,7 @@
 
 import { CalendarCheck, Sparkles, CheckCircle2, Loader2, ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -20,22 +20,10 @@ export default function CheckInPage() {
     next_reward: 10
   });
 
-  useEffect(() => {
-    if (!user && !loading) {
-        // Redirect if not logged in? Or just show empty.
-        // AuthContext usually handles protection but let's be safe.
-        return;
-    }
-    if (user) {
-        fetchStatus();
-    } else {
-        setLoading(false); // Stop loading if no user yet (will likely redirect or show login)
-    }
-  }, [user]);
-
-  const fetchStatus = async () => {
+  const fetchStatus = React.useCallback(async () => {
+    if (!user) return;
     try {
-      const { data, error } = await supabase.rpc('get_check_in_status', { p_user_id: user!.id });
+      const { data, error } = await supabase.rpc('get_check_in_status', { p_user_id: user.id });
       if (error) {
           if (error.code === '42883') {
               // Function not found - might need migration
@@ -50,7 +38,20 @@ export default function CheckInPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (!user && !loading) {
+        // Redirect if not logged in? Or just show empty.
+        // AuthContext usually handles protection but let's be safe.
+        return;
+    }
+    if (user) {
+        fetchStatus();
+    } else {
+        setLoading(false); // Stop loading if no user yet (will likely redirect or show login)
+    }
+  }, [user, loading, fetchStatus]);
 
   const handleCheckIn = async () => {
     setCheckingIn(true);
@@ -65,9 +66,10 @@ export default function CheckInPage() {
       } else {
         toast.info(data.message || '今日已簽到');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Check-in Error:', error);
-      toast.error(error.message || '簽到失敗');
+      const message = error instanceof Error ? error.message : '簽到失敗';
+      toast.error(message);
     } finally {
       setCheckingIn(false);
     }

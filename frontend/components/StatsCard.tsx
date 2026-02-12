@@ -44,12 +44,12 @@ export default function StatsCard({
     }
   }
 
-  const colors = colorMap[activeColor]
+  const colors = colorMap[activeColor] || colorMap.primary
 
   // 統一高度和樣式
   const baseClasses = `bg-white dark:bg-neutral-900 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-800 p-4 text-left hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-all h-full min-h-[100px] flex flex-col justify-between`
   // 統一選中樣式：使用單一藍色邊框和 ring，避免多種顏色混在一起
-  const activeClasses = isActive ? `ring-2 ring-primary border-primary` : ''
+  const activeClasses = isActive ? `ring-2 ${colors.ring} ${colors.border}` : ''
   const clickableClasses = onClick ? `cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary` : ''
 
   const content = (

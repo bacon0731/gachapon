@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { TicketSelectionFlow } from '@/components/shop/TicketSelectionFlow';
 import { useMediaQuery } from '@/hooks/use-media-query';
@@ -13,10 +14,12 @@ export default function SelectTicketPage() {
     <div className="min-h-screen relative bg-neutral-900 flex items-center justify-center md:fixed md:inset-0 md:z-[100]">
       {/* Page Background (Visible on Desktop as backdrop context) */}
       <div className="absolute inset-0 z-0 overflow-hidden">
-        <img 
+        <Image 
           src="/images/gacha_bg.png" 
           alt="" 
-          className="w-full h-full object-cover filter brightness-[0.85] blur-[3px] scale-105"
+          fill
+          className="object-cover filter brightness-[0.85] blur-[3px] scale-105"
+          unoptimized
         />
         <div className="absolute inset-0 bg-neutral-900/50" />
       </div>

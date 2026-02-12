@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { CalendarCheck, Sparkles, CheckCircle2, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
@@ -17,24 +16,7 @@ export default function DailyCheckInTab() {
   });
   const supabase = createClient();
 
-  useEffect(() => {
-    const initCheckIn = async () => {
-      if (user) {
-        // Fetch status first
-        await fetchStatus();
-      }
-    };
-    initCheckIn();
-  }, [user]);
-
-  // Auto Check-in when status is loaded and not checked in
-  useEffect(() => {
-    if (!loading && !status.checked_in_today && !checkingIn) {
-      handleCheckIn();
-    }
-  }, [loading, status.checked_in_today]);
-
-  const fetchStatus = async () => {
+  const fetchStatus = useCallback(async () => {
     try {
       const { data, error } = await supabase.rpc('get_check_in_status', { p_user_id: user!.id });
       if (error) {
@@ -50,9 +32,9 @@ export default function DailyCheckInTab() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [supabase, user]);
 
-  const handleCheckIn = async () => {
+  const handleCheckIn = useCallback(async () => {
     setCheckingIn(true);
     try {
       const { data, error } = await supabase.rpc('daily_check_in', { p_user_id: user!.id });
@@ -65,13 +47,34 @@ export default function DailyCheckInTab() {
       } else {
         toast.info(data.message || '今日已簽到');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Check-in Error:', error);
-      toast.error(error.message || '簽到失敗');
+      const errorMessage = error instanceof Error ? error.message : '簽到失敗';
+      toast.error(errorMessage);
     } finally {
       setCheckingIn(false);
     }
-  };
+  }, [supabase, user, refreshProfile, fetchStatus]);
+
+  useEffect(() => {
+    const initCheckIn = async () => {
+      if (user) {
+        // Fetch status first
+        await fetchStatus();
+      }
+    };
+    initCheckIn();
+  }, [user, fetchStatus]);
+
+  const hasAttemptedCheckIn = React.useRef(false);
+
+  // Auto Check-in when status is loaded and not checked in
+  useEffect(() => {
+    if (!loading && !status.checked_in_today && !checkingIn && !hasAttemptedCheckIn.current) {
+      hasAttemptedCheckIn.current = true;
+      handleCheckIn();
+    }
+  }, [loading, status.checked_in_today, checkingIn, handleCheckIn]);
 
   const days = Array.from({ length: 7 }, (_, i) => {
     const dayNum = i + 1;

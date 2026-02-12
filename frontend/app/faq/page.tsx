@@ -1,12 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { ChevronDown, ChevronUp, Mail, Phone, MessageCircle, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function FAQPage() {
-  const router = useRouter();
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   const toggleFAQ = (index: number) => {

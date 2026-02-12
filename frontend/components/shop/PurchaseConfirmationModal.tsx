@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMediaQuery } from '@/hooks/use-media-query';
 
-import { X, Minus, Plus, Wallet } from 'lucide-react';
+import { X, Minus, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui';
 import { Database } from '@/types/database.types';
 import { cn } from '@/lib/utils';
 import { useAlert } from '@/components/ui/AlertDialog';
+import Image from 'next/image';
 
 interface PurchaseConfirmationModalProps {
   isOpen: boolean;
@@ -129,13 +130,15 @@ export function PurchaseConfirmationModal({
               {/* Product Info */}
               <div className={cn("flex gap-3", isDesktop ? "p-6 pb-4 gap-5" : "p-3 pb-2")}>
                 <div className={cn(
-                  "bg-neutral-100 dark:bg-neutral-800 rounded-lg overflow-hidden shrink-0 shadow-sm border border-neutral-100 dark:border-neutral-700",
+                  "relative bg-neutral-100 dark:bg-neutral-800 rounded-lg overflow-hidden shrink-0 shadow-sm border border-neutral-100 dark:border-neutral-700",
                   isDesktop ? "w-16 h-16" : "w-12 h-12"
                 )}>
-                  <img 
+                  <Image 
                     src={product.image_url || '/images/item.png'} 
                     alt={product.name}
-                    className="w-full h-full object-cover"
+                    fill
+                    className="object-cover"
+                    unoptimized
                   />
                 </div>
                 <div className="flex-1 min-w-0 py-0.5 flex flex-col justify-between">

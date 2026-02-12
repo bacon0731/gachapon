@@ -10,10 +10,7 @@ import {
   CreditCard, 
   Smartphone, 
   Banknote, 
-  ChevronRight, 
   CheckCircle2, 
-  Plus, 
-  ArrowLeft,
   Zap,
   Lock
 } from 'lucide-react';
@@ -70,7 +67,7 @@ export default function TopupPage() {
       if (!user) throw new Error('User not found');
 
       // Call the RPC to process topup immediately for testing
-      const { data, error } = await supabase.rpc('process_topup', {
+      const { error } = await supabase.rpc('process_topup', {
         p_amount: selectedPlan.amount,
         p_bonus: selectedPlan.bonus
       });
@@ -87,9 +84,9 @@ export default function TopupPage() {
         router.push('/profile?tab=topup-history');
       }, 1000);
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Topup Error:', error);
-      showToast(error.message || '儲值失敗，請稍後再試', 'error');
+      showToast((error as Error).message || '儲值失敗，請稍後再試', 'error');
     } finally {
       setIsProcessing(false);
     }

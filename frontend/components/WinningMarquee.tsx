@@ -35,7 +35,16 @@ export default function WinningMarquee() {
         .limit(10);
 
       if (data) {
-        const formatted = data.map((item: any) => ({
+        // Define type for joined data
+        interface JoinedDrawRecord {
+          id: number;
+          prize_level: string;
+          prize_name: string;
+          users: { name: string } | null;
+          products: { name: string } | null;
+        }
+
+        const formatted = (data as unknown as JoinedDrawRecord[]).map((item) => ({
           id: item.id,
           user_name: item.users?.name || '神秘客',
           product_name: item.products?.name || '未知商品',
@@ -61,7 +70,7 @@ export default function WinningMarquee() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [supabase]);
 
   useEffect(() => {
     if (records.length <= 1) return;

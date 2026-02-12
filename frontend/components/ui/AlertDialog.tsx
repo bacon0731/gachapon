@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { X, CheckCircle2, AlertCircle, Info, HelpCircle } from 'lucide-react';
+import { X, CheckCircle2, AlertCircle, Info } from 'lucide-react';
 import Button from './Button';
 
 type AlertType = 'success' | 'error' | 'info' | 'confirm';

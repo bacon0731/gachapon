@@ -3,6 +3,7 @@ import { Database } from '@/types/database.types';
 import { cn } from '@/lib/utils';
 import { Ticket, ChevronRight } from 'lucide-react';
 import { useAlert } from '@/components/ui/AlertDialog';
+import Image from 'next/image';
 
 interface PurchaseConfirmationProps {
   product: Database['public']['Tables']['products']['Row'];
@@ -23,7 +24,6 @@ export function PurchaseConfirmation({
   totalPrice,
   userPoints,
   onConfirm,
-  onCancel,
   onTopUp,
   isProcessing = false,
   isLoggedIn = false,
@@ -40,11 +40,13 @@ export function PurchaseConfirmation({
       <div className="flex-1 min-h-0">
         {/* Header: Product Info */}
         <div className="p-3 md:p-6 pb-2 md:pb-4 flex gap-3 md:gap-5">
-          <div className="w-12 h-12 md:w-16 md:h-16 bg-neutral-100 dark:bg-neutral-800 rounded-lg overflow-hidden shrink-0 shadow-sm border border-neutral-100 dark:border-neutral-700">
-            <img 
+          <div className="relative w-12 h-12 md:w-16 md:h-16 bg-neutral-100 dark:bg-neutral-800 rounded-lg overflow-hidden shrink-0 shadow-sm border border-neutral-100 dark:border-neutral-700">
+            <Image 
               src={product.image_url || '/images/item.png'} 
               alt={product.name}
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
+              unoptimized
             />
           </div>
           <div className="flex-1 min-w-0 py-0.5 flex flex-col justify-between">

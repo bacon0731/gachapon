@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence, useAnimation, Variants } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { X, Package, RotateCcw } from 'lucide-react';
 import { PrizeResultModal } from '@/components/shop/PrizeResultModal';
+import Image from 'next/image';
 
 // Types
 export interface Prize {
@@ -146,6 +146,7 @@ export default function GachaMachine({ prizes, isOpen, onGoToWarehouse, onContin
           setState('RESULT');
           setShowResultModal(true);
         }, 800);
+        timeoutsRef.current.push(t3);
       }, 600);
       timeoutsRef.current.push(t2);
     }, 1500);
@@ -169,10 +170,12 @@ export default function GachaMachine({ prizes, isOpen, onGoToWarehouse, onContin
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-hidden">
       {/* Background Image */}
       <div className="absolute inset-0 z-[-1]">
-        <img 
+        <Image 
           src="/images/gacha_bg.png" 
           alt="" 
-          className="w-full h-full object-cover filter brightness-[0.85] blur-[3px] scale-105"
+          fill
+          className="object-cover filter brightness-[0.85] blur-[3px] scale-105"
+          unoptimized
         />
         <div className="absolute inset-0 bg-black/40" />
       </div>

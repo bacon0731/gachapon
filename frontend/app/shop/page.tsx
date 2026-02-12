@@ -8,8 +8,25 @@ import ProductCard from '@/components/ProductCard';
 import ProductCardSkeleton from '@/components/ProductCardSkeleton';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Filter, SlidersHorizontal, ChevronDown, Search, X } from 'lucide-react';
+import { SlidersHorizontal, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+interface TabItem {
+  id: string;
+  name: string;
+  kind: 'reset' | 'type' | 'category';
+  sort_order?: number;
+  is_active?: boolean;
+  created_at?: string;
+}
+
+const productTypes = [
+  { id: 'all', name: '全部商品' },
+  { id: 'ichiban', name: '一番賞' },
+  { id: 'blindbox', name: '盒玩' },
+  { id: 'gacha', name: '轉蛋' },
+  { id: 'custom', name: '自製賞' },
+];
 
 function ShopContent() {
   const searchParams = useSearchParams();
@@ -23,7 +40,6 @@ function ShopContent() {
   const [isLoading, setIsLoading] = useState(true);
   const supabase = createClient();
 
-  const [localSearch, setLocalSearch] = useState(searchQuery);
   const [priceMin, setPriceMin] = useState('');
   const [priceMax, setPriceMax] = useState('');
   const [isMobileSortOpen, setIsMobileSortOpen] = useState(false);
@@ -43,7 +59,7 @@ function ShopContent() {
 
         // Transform the data to match the expected type if needed, 
         // though Supabase return should match if relation exists
-        setProducts(productsRes.data as any || []);
+        setProducts((productsRes.data as unknown as (Database['public']['Tables']['products']['Row'] & { product_tags: { category_id: string }[] })[]) || []);
         setCategories(categoriesRes.data || []);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -52,28 +68,20 @@ function ShopContent() {
       }
     };
     fetchData();
-  }, []);
+  }, [supabase]);
 
   const allCategories = useMemo(() => [
     { id: 'all', name: '全部商品', sort_order: -1, is_active: true, created_at: '' },
     ...categories
   ], [categories]);
 
-  const productTypes = [
-    { id: 'all', name: '全部商品' },
-    { id: 'ichiban', name: '一番賞' },
-    { id: 'blindbox', name: '盒玩' },
-    { id: 'gacha', name: '轉蛋' },
-    { id: 'custom', name: '自製賞' },
-  ];
-
   const combinedTabs = useMemo(() => [
-    { id: 'all_reset', name: '全部商品', kind: 'reset' },
-    ...productTypes.filter(t => t.id !== 'all').map(t => ({ ...t, kind: 'type' })),
-    ...categories.map(c => ({ ...c, kind: 'category' }))
+    { id: 'all_reset', name: '全部商品', kind: 'reset' } as TabItem,
+    ...productTypes.filter(t => t.id !== 'all').map(t => ({ ...t, kind: 'type' } as TabItem)),
+    ...categories.map(c => ({ ...c, kind: 'category' } as TabItem))
   ], [categories]);
 
-  const handleTabClick = (item: any) => {
+  const handleTabClick = (item: TabItem) => {
     if (item.kind === 'reset') {
       const params = new URLSearchParams(searchParams);
       params.delete('category');
@@ -122,7 +130,7 @@ function ShopContent() {
     }
 
     return result;
-  }, [activeCategory, activeType, searchQuery, sortBy, products, categories]);
+  }, [activeCategory, activeType, searchQuery, sortBy, products]);
 
   const handleCategoryChange = (id: string) => {
     const params = new URLSearchParams(searchParams);
@@ -147,16 +155,7 @@ function ShopContent() {
     router.push(`/shop?${params.toString()}`);
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const params = new URLSearchParams(searchParams);
-    if (localSearch) params.set('search', localSearch);
-    else params.delete('search');
-    router.push(`/shop?${params.toString()}`);
-  };
-
   const clearFilters = () => {
-    setLocalSearch('');
     setPriceMin('');
     setPriceMax('');
     router.push('/shop');
@@ -229,7 +228,7 @@ function ShopContent() {
                       <button
                         key={opt.id}
                         onClick={() => {
-                          setSortBy(opt.id as any);
+                          setSortBy(opt.id as 'newest' | 'price-asc' | 'price-desc');
                           setIsMobileSortOpen(false);
                         }}
                         className={cn(
@@ -318,7 +317,7 @@ function ShopContent() {
                   ].map((opt) => (
                     <button
                       key={opt.id}
-                      onClick={() => setSortBy(opt.id as any)}
+                      onClick={() => setSortBy(opt.id as 'newest' | 'price-asc' | 'price-desc')}
                       className={cn(
                         "w-full text-left px-4 py-3 text-sm font-black rounded-xl transition-colors",
                         sortBy === opt.id ? "bg-primary/5 text-primary" : "text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white"

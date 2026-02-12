@@ -1,7 +1,7 @@
 import React from 'react';
 import { Modal } from '@/components/ui/Modal';
-import { cn } from '@/lib/utils';
 import Button from '@/components/ui/Button';
+import Image from 'next/image';
 
 export interface WarehouseItem {
   id: string;
@@ -34,10 +34,12 @@ export function WarehouseItemDetailModal({ item, isOpen, onClose }: WarehouseIte
       <div className="space-y-6">
         {/* Image Section */}
         <div className="relative aspect-square w-full bg-[#28324E] rounded-2xl overflow-hidden shadow-inner">
-          <img 
+          <Image 
             src={item.image || '/images/item.png'} 
             alt={item.name} 
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
+            unoptimized
           />
           <div className="absolute top-3 left-3">
              <span className="px-3 py-1 bg-neutral-900 text-white text-sm font-black rounded-lg shadow-sm border border-white/10 uppercase tracking-wider">

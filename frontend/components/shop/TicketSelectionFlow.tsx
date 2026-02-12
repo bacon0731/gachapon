@@ -6,15 +6,14 @@ import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/types/database.types';
 import { TicketSelector, Ticket } from '@/components/shop/TicketSelector';
 import { Button } from '@/components/ui';
-import { RotateCcw, Shuffle, X, LayoutGrid, Package, Loader2 } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { PurchaseConfirmation } from '@/components/shop/PurchaseConfirmation';
 import { IchibanTicket } from '@/components/IchibanTicket';
 import { PrizeResultModal } from '@/components/shop/PrizeResultModal';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-
-const HIGH_TIER_GRADES = ['A', 'B', 'C', 'Last One', 'LAST ONE', 'SP'];
+import Image from 'next/image';
 
 interface TicketSelectionFlowProps {
   isModal?: boolean;
@@ -35,20 +34,16 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
   // Confirmation & Purchase State
   const [showConfirm, setShowConfirm] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isRevealing, setIsRevealing] = useState(false);
-  const [isWaitingForReveal, setIsWaitingForReveal] = useState(false);
   const [showResultModal, setShowResultModal] = useState(false);
   const [showPrizeDetails, setShowPrizeDetails] = useState(false);
-  const [drawnResults, setDrawnResults] = useState<any[]>([]);
-  const [abVariant, setAbVariant] = useState<'A' | 'B'>('B'); // A: Modal Flow (Old), B: Inline Flow (New)
-
-  // A/B Test Randomization
-  useEffect(() => {
-    // Randomize on client-side mount
-    setAbVariant(Math.random() > 0.5 ? 'A' : 'B');
-  }, []);
-
-  // Removed separate isRevealing effect since loading is now handled inside the modal
+  const [drawnResults, setDrawnResults] = useState<{
+    grade: string;
+    name: string;
+    isOpened: boolean;
+    image_url: string;
+    is_last_one: boolean;
+    ticket_number: number;
+  }[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -85,7 +80,7 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
     };
 
     fetchData();
-  }, [params.id]);
+  }, [params.id, supabase]);
 
   const totalTicketsCount = product?.total_count || 80;
   
@@ -137,8 +132,16 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
       
       if (error) throw error;
       
-      const results = (data as any[]).map((r: any) => ({
-        grade: r.grade + '賞',
+      interface PlayIchibanResult {
+        grade: string;
+        name: string;
+        image_url: string;
+        is_last_one: boolean;
+        ticket_number: number;
+      }
+
+      const results = (data as unknown as PlayIchibanResult[]).map((r) => ({
+        grade: r.grade,
         name: r.name,
         isOpened: false,
         image_url: r.image_url,
@@ -150,9 +153,13 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
       if (refreshProfile) refreshProfile();
       setShowConfirm(false); // Close confirmation modal
       
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      alert(err.message || '購買失敗');
+      if (err instanceof Error) {
+        alert(err.message || '購買失敗');
+      } else {
+        alert('購買失敗');
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -162,7 +169,19 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
     setDrawnResults(prev => prev.map(r => ({ ...r, isOpened: true })));
   };
 
-  const isHighTier = (grade: string) => HIGH_TIER_GRADES.some(t => grade.includes(t));
+  // If we are showing results, render the result flow (New: Inline, Old: Modal)
+  if (showResultModal) {
+    return (
+      <PrizeResultModal 
+        results={drawnResults}
+        onClose={() => router.push('/shop')}
+        onPlayAgain={() => {
+          setShowResultModal(false);
+          setDrawnResults([]);
+        }}
+      />
+    );
+  }
 
   if (isLoading) return (
     <div className="min-h-[50vh] flex items-center justify-center">
@@ -179,10 +198,12 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
       <div className="fixed inset-0 z-[2000] bg-neutral-900 flex flex-col items-center justify-center p-3 pb-safe overflow-hidden pt-1 md:pt-24">
         {/* Background Image */}
         <div className="absolute inset-0 z-0 overflow-hidden">
-          <img 
+          <Image 
             src="/images/gacha_bg.png" 
             alt="" 
-            className="w-full h-full object-cover filter brightness-[0.85] blur-[3px] scale-105"
+            fill
+            className="object-cover filter brightness-[0.85] blur-[3px] scale-105"
+            unoptimized
           />
           <div className="absolute inset-0 bg-neutral-900/50" />
         </div>
@@ -261,19 +282,13 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
         </div>
 
         {/* Prize Result Modal for Variant A */}
-        <PrizeResultModal 
-          isOpen={showResultModal} 
-          onClose={() => setShowResultModal(false)}
-          prizes={drawnResults.map((r, i) => ({
-            id: String(i),
-            name: r.name,
-            grade: r.grade,
-            image_url: r.image_url,
-            is_last_one: r.is_last_one
-          }))}
-          onGoToWarehouse={() => router.push('/profile?tab=warehouse')}
-          onPlayAgain={() => window.location.reload()}
-        />
+        {showResultModal && (
+          <PrizeResultModal 
+            results={drawnResults}
+            onClose={() => setShowResultModal(false)}
+            onPlayAgain={() => window.location.reload()}
+          />
+        )}
       </div>
     );
   }
@@ -289,10 +304,12 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
       {/* Background Image */}
       {!isModal && (
         <div className="absolute inset-0 z-0 overflow-hidden">
-          <img 
+          <Image 
             src="/images/gacha_bg.png" 
             alt="" 
-            className="w-full h-full object-cover filter brightness-[0.85] blur-[3px] scale-105"
+            fill
+            className="object-cover filter brightness-[0.85] blur-[3px] scale-105"
+            unoptimized
           />
           <div className="absolute inset-0 bg-neutral-50/80 dark:bg-neutral-900/80" />
         </div>

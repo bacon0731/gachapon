@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { Hand } from 'lucide-react';
+import Image from 'next/image';
 
 interface IchibanTicketProps {
   grade: string;
@@ -50,13 +50,17 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
         )}
       >
         <div className="relative w-full flex-1 flex items-center justify-center bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden mb-2">
-          {imageUrl ? (
-            <img 
-              src={imageUrl} 
-              alt={prizeName}
-              className="w-full h-full object-contain p-2"
-            />
-          ) : (
+            {imageUrl ? (
+              <div className="relative w-full h-full p-2">
+                <Image 
+                  src={imageUrl} 
+                  alt={prizeName}
+                  fill
+                  className="object-contain"
+                  unoptimized
+                />
+              </div>
+            ) : (
             <div className="w-full h-full flex items-center justify-center bg-neutral-50 text-neutral-300 font-bold">?</div>
           )}
           
@@ -100,11 +104,13 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
         {/* Inner Content Wrapper - Clipped */}
         <div className="absolute inset-0 rounded-[24px] overflow-hidden">
           {/* Background Image */}
-          <img 
+          <Image 
             src="/images/bg.svg" 
-            className="absolute inset-0 w-full h-full object-cover" 
+            className="object-cover" 
             alt="ticket background"
             draggable={false}
+            fill
+            unoptimized
           />
 
           {/* The Result Content */}
@@ -159,10 +165,12 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
                   {/* Image Container */}
                   <div className="h-full aspect-square relative rounded-xl overflow-hidden bg-white shadow-sm border border-neutral-100 shrink-0 p-1">
                     {imageUrl ? (
-                      <img 
+                      <Image 
                         src={imageUrl} 
                         alt={prizeName}
-                        className="w-full h-full object-contain"
+                        fill
+                        className="object-contain p-1"
+                        unoptimized
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-neutral-50 text-neutral-300 font-bold">?</div>
@@ -231,12 +239,16 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
               <div className="absolute inset-0 backface-hidden flex items-center justify-center overflow-visible">
                 {/* Cover Image Wrapper - Clipped */}
                 <div className="absolute inset-0 rounded-[24px] overflow-hidden">
-                  <img 
-                    src="/images/up.svg?v=5" 
-                    className="w-[105%] h-[105%] max-w-none object-cover -translate-x-2 -translate-y-0.5" 
-                    alt="cover" 
-                    draggable={false}
-                  />
+                  <div className="relative w-[105%] h-[105%] -translate-x-2 -translate-y-0.5">
+                    <Image 
+                      src="/images/up.svg?v=5" 
+                      className="object-cover" 
+                      alt="cover" 
+                      draggable={false}
+                      fill
+                      unoptimized
+                    />
+                  </div>
                 </div>
 
                 {/* Finger Swipe Guide - Not Clipped */}
@@ -253,11 +265,15 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
                     times: [0, 0.1, 0.8, 1]
                   }}
                 >
-                  <img 
-                    src="/images/finger.png" 
-                    alt="swipe" 
-                    className="w-16 h-16 drop-shadow-md"
-                  />
+                  <div className="relative w-16 h-16 drop-shadow-md">
+                    <Image 
+                      src="/images/finger.png" 
+                      alt="swipe" 
+                      fill
+                      className="object-contain"
+                      unoptimized
+                    />
+                  </div>
                 </motion.div>
               </div>
             </motion.div>

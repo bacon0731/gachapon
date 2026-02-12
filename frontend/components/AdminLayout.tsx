@@ -4,11 +4,9 @@ import { useState, useEffect, useMemo } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useAdmin } from '@/contexts/AdminContext'
-import { useShipment } from '@/contexts/ShipmentContext'
-import { useLog } from '@/contexts/LogContext'
-import { useProduct } from '@/contexts/ProductContext'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui'
+import { Database } from '@/types/database.types'
 
 interface Breadcrumb {
   label: string
@@ -26,9 +24,6 @@ export default function AdminLayout({ children, pageTitle, pageSubtitle, breadcr
   const router = useRouter()
   const pathname = usePathname()
   const { isAuthenticated, logout, user } = useAdmin()
-  const { shipments, setHighlightedOrderId } = useShipment()
-  const { setHighlightedProductId } = useProduct()
-  const { addLog } = useLog()
   const [isMounted, setIsMounted] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -38,13 +33,10 @@ export default function AdminLayout({ children, pageTitle, pageSubtitle, breadcr
     return false
   })
   const [isAlertOpen, setIsAlertOpen] = useState(false)
-  const [isShipmentOpen, setIsShipmentOpen] = useState(false)
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   
   // Supabase for data fetching
   const supabase = createClient()
-  const [products, setProducts] = useState<any[]>([])
-  const [pendingOrders, setPendingOrders] = useState<any[]>([])
+  const [products, setProducts] = useState<(Database['public']['Tables']['products']['Row'] & { prizes: Database['public']['Tables']['prizes']['Row'][] })[]>([])
 
   useEffect(() => {
     setIsMounted(true)
@@ -75,12 +67,12 @@ export default function AdminLayout({ children, pageTitle, pageSubtitle, breadcr
         `)
       
       if (!error && data) {
-        setProducts(data)
+        setProducts(data as unknown as (Database['public']['Tables']['products']['Row'] & { prizes: Database['public']['Tables']['prizes']['Row'][] })[])
       }
     }
 
     fetchProducts()
-  }, [isAuthenticated])
+  }, [isAuthenticated, supabase])
 
   // Calculate alerts
   const alerts = useMemo(() => {
@@ -120,34 +112,7 @@ export default function AdminLayout({ children, pageTitle, pageSubtitle, breadcr
     })
   }, [products])
 
-  // Fetch pending shipments (delivery_orders with status 'pending')
-  useEffect(() => {
-    if (!isAuthenticated) return
-
-    const fetchPendingShipments = async () => {
-      const { data, error } = await supabase
-        .from('delivery_orders')
-        .select('*')
-        .eq('status', 'pending')
-        .order('created_at', { ascending: true })
-      
-      if (!error && data) {
-        setPendingOrders(data)
-      }
-    }
-
-    fetchPendingShipments()
-  }, [isAuthenticated])
-
   const alertCount = alerts.length
-  const shipmentCount = pendingOrders.length
-
-  const handleShipmentClick = (orderId: string) => {
-    setHighlightedOrderId(orderId)
-    router.push('/orders') // Assuming orders page exists or will exist
-    setIsShipmentOpen(false)
-    setTimeout(() => setHighlightedOrderId(null), 3000)
-  }
 
   const getRoleName = (role: string | undefined): string => {
     const roleMap: { [key: string]: string } = {
@@ -315,8 +280,6 @@ export default function AdminLayout({ children, pageTitle, pageSubtitle, breadcr
                 className="p-2 text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors relative"
                 onClick={() => {
                   setIsAlertOpen(!isAlertOpen)
-                  setIsShipmentOpen(false)
-                  setIsUserMenuOpen(false)
                 }}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

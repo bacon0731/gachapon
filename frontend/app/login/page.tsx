@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeft, Mail, Lock } from 'lucide-react'
+import { Mail, Lock } from 'lucide-react'
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Button, Input } from '@/components/ui'

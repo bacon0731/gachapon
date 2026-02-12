@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/types/database.types';
 import { Button } from '@/components/ui';
@@ -35,7 +36,7 @@ export default function NewsDetailPage() {
       }
     };
     fetchNewsItem();
-  }, [params.id]);
+  }, [params.id, supabase]);
 
   if (isLoading) {
     return (
@@ -101,10 +102,12 @@ export default function NewsDetailPage() {
         <article className="bg-white dark:bg-neutral-900 rounded-3xl md:rounded-3xl shadow-card border border-neutral-100 dark:border-neutral-800 overflow-hidden transition-colors">
           {/* News Banner */}
           <div className="relative aspect-[21/9] bg-[#28324E]">
-            <img 
+            <Image 
               src={newsItem.image_url || '/images/banner.png'} 
               alt={newsItem.title}
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
+              unoptimized
             />
           </div>
 
