@@ -28,8 +28,8 @@ export default function Home() {
         ]);
 
         if (productsData.data) {
-          setNewProducts(productsData.data.slice(0, 4));
-          setHotProducts(productsData.data.filter(p => p.is_hot).slice(0, 4));
+          setNewProducts(productsData.data.slice(0, 10));
+          setHotProducts(productsData.data.filter(p => p.is_hot).slice(0, 10));
         }
 
         if (bannersData.data) {
@@ -78,7 +78,7 @@ export default function Home() {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-4">
             {isLoading ? (
               // Skeleton Loading
-              Array.from({ length: 5 }).map((_, index) => (
+              Array.from({ length: 10 }).map((_, index) => (
                 <div key={index} className="h-[280px]">
                   <ProductCardSkeleton />
                 </div>
@@ -115,7 +115,7 @@ export default function Home() {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-4">
             {isLoading ? (
               // Skeleton Loading
-              Array.from({ length: 5 }).map((_, index) => (
+              Array.from({ length: 10 }).map((_, index) => (
                 <div key={index} className="h-[280px]">
                   <ProductCardSkeleton />
                 </div>
