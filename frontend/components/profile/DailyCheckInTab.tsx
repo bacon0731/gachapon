@@ -47,9 +47,9 @@ export default function DailyCheckInTab() {
       } else {
         toast.info(data.message || '今日已簽到');
       }
-    } catch (error: unknown) {
-      console.error('Check-in Error:', error);
-      const errorMessage = error instanceof Error ? error.message : '簽到失敗';
+    } catch (err: unknown) {
+      console.error('Check-in Error:', err);
+      const errorMessage = err instanceof Error ? err.message : (err as { message?: string })?.message || '簽到失敗';
       toast.error(errorMessage);
     } finally {
       setCheckingIn(false);

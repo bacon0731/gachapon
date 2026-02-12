@@ -28,13 +28,9 @@ export default function ProductCard({
   name,
   image,
   price,
-  // originalPrice, // Unused
   remaining,
-  // total, // Unused
   isHot = false,
   isNew = false,
-  // hasTicket = false, // Unused
-  // category, // Unused
   type,
 }: ProductCardProps) {
   const [isFollowed, setIsFollowed] = useState(false);

@@ -20,6 +20,14 @@ interface TicketSelectionFlowProps {
   onClose?: () => void;
 }
 
+interface PlayIchibanResult {
+  grade: string;
+  name: string;
+  image_url: string;
+  is_last_one: boolean;
+  ticket_number: number;
+}
+
 export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectionFlowProps) {
   const params = useParams();
   const router = useRouter();
@@ -132,14 +140,6 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
       
       if (error) throw error;
       
-      interface PlayIchibanResult {
-        grade: string;
-        name: string;
-        image_url: string;
-        is_last_one: boolean;
-        ticket_number: number;
-      }
-
       const results = (data as unknown as PlayIchibanResult[]).map((r) => ({
         grade: r.grade,
         name: r.name,
@@ -202,7 +202,7 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
             src="/images/gacha_bg.png" 
             alt="" 
             fill
-            className="object-cover filter brightness-[0.85] blur-[3px] scale-105"
+            className="object-cover filter brightness-[0.85] scale-105"
             unoptimized
           />
           <div className="absolute inset-0 bg-neutral-900/50" />

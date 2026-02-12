@@ -13,6 +13,14 @@ interface WinningRecord {
   prize_name: string;
 }
 
+interface JoinedDrawRecord {
+  id: number;
+  prize_level: string;
+  prize_name: string;
+  users: { name: string } | null;
+  products: { name: string } | null;
+}
+
 export default function WinningMarquee() {
   const [records, setRecords] = useState<WinningRecord[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -35,15 +43,6 @@ export default function WinningMarquee() {
         .limit(10);
 
       if (data) {
-        // Define type for joined data
-        interface JoinedDrawRecord {
-          id: number;
-          prize_level: string;
-          prize_name: string;
-          users: { name: string } | null;
-          products: { name: string } | null;
-        }
-
         const formatted = (data as unknown as JoinedDrawRecord[]).map((item) => ({
           id: item.id,
           user_name: item.users?.name || '神秘客',

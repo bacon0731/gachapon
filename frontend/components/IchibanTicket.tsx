@@ -96,10 +96,10 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
       )}
     >
       {/* Shadow layer for depth */}
-      <div className="absolute inset-0 bg-black/10 rounded-[24px] blur-md translate-y-1 group-hover:translate-y-2 transition-transform" />
+      <div className="absolute inset-0 bg-black/10 rounded-[24px] blur-md translate-y-1 group-hover:translate-y-2 transition-transform will-change-transform" />
 
       {/* Main Ticket Base */}
-      <div className="absolute inset-0 rounded-[24px] shadow-xl bg-[#F3F4F6] overflow-hidden">
+      <div className="absolute inset-0 rounded-[24px] shadow-xl bg-[#F3F4F6] overflow-hidden will-change-transform">
         
         {/* Inner Content Wrapper - Clipped */}
         <div className="absolute inset-0 rounded-[24px] overflow-hidden">

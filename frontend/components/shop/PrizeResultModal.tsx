@@ -36,10 +36,8 @@ export const PrizeResultModal: React.FC<PrizeResultModalProps> = ({
   isOpen = true,
   prizes,
   results,
-  // onClose,
   onGoToWarehouse,
   onPlayAgain,
-  // isLoading
 }) => {
   const [showContent, setShowContent] = useState(false);
 

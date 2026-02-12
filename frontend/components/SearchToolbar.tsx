@@ -85,9 +85,6 @@ export default function SearchToolbar({
   onAddClick,
   showExportCSV = false,
   onExportCSV,
-  // selectedCount = 0, // Unused props
-  // batchActions = [], // Unused props
-  // onClearSelection, // Unused props
   children
 }: SearchToolbarProps) {
   const [showFilterPanel, setShowFilterPanel] = useState(false)
