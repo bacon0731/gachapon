@@ -116,7 +116,7 @@ export default function ProductCard({
 
           {/* Sold Out Stamp */}
           {remaining === 0 && (
-            <div className="relative absolute inset-0 z-20 flex items-center justify-center bg-white/50 backdrop-blur-[1px]">
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/50 backdrop-blur-[1px]">
               <Image 
                 src="/images/sale.svg" 
                 alt="完抽" 
