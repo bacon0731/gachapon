@@ -13,7 +13,7 @@ interface DrawRecord {
   created_at: string
   ticket_number: number
   status: string
-  user?: { name: string; email: string; user_id: string }
+  user?: { name: string; email: string; id: string }
   product?: { name: string; image_url: string }
 }
 
@@ -49,7 +49,7 @@ export default function DrawsPage() {
         .from('draw_records')
         .select(`
           *,
-          user:users (user_id, name, email),
+          user:users (id, name, email),
           product:products (name, image_url)
         `)
         .order('created_at', { ascending: false })

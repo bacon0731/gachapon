@@ -58,7 +58,7 @@ export function WarehouseItemDetailModal({ item, isOpen, onClose }: WarehouseIte
         {/* Info Section */}
         <div className="space-y-4">
           <div>
-            <h3 className="text-lg font-black text-neutral-900 leading-tight">{item.name}</h3>
+            <h3 className="text-lg font-black text-neutral-900 dark:text-white leading-tight">{item.name}</h3>
             <p className="text-sm text-neutral-400 font-bold mt-1 uppercase tracking-wider">{item.series}</p>
           </div>
 

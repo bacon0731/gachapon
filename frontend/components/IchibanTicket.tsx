@@ -239,15 +239,8 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
               <div className="absolute inset-0 backface-hidden flex items-center justify-center overflow-visible">
                 {/* Cover Image Wrapper - Clipped */}
                 <div className="absolute inset-0 rounded-[24px] overflow-hidden">
-                  <div className="relative w-[105%] h-[105%] -translate-x-2 -translate-y-0.5">
-                    <Image 
-                      src="/images/up.svg?v=5" 
-                      className="object-cover" 
-                      alt="cover" 
-                      draggable={false}
-                      fill
-                      unoptimized
-                    />
+                  <div className="w-full h-full bg-orange-500 flex items-center justify-center">
+                    <span className="text-white font-black text-2xl tracking-widest opacity-90">GACHAPON</span>
                   </div>
                 </div>
 

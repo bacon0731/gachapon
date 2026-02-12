@@ -200,7 +200,22 @@ export default function EditProductPage() {
             .select('category_id')
             .eq('product_id', productId)
             
-          const tagIds = tags ? tags.map(t => t.category_id) : []
+          let tagIds = tags ? tags.map(t => t.category_id) : []
+          let primaryCategoryId = product.category_id || ''
+          let primaryCategoryName = product.category || ''
+
+          // If no tags are selected, default to 'Year-end Clearance'
+          if (tagIds.length === 0) {
+             const { data: clearanceCat } = await supabase.from('categories').select('id, name').eq('name', '年末出清【限時】').single();
+             if (clearanceCat) {
+                tagIds = [clearanceCat.id];
+                // If primary category is also missing, set it too
+                if (!primaryCategoryId) {
+                    primaryCategoryId = clearanceCat.id;
+                    primaryCategoryName = clearanceCat.name;
+                }
+             }
+          }
           
           setFormData({
             name: product.name,
@@ -208,8 +223,8 @@ export default function EditProductPage() {
             image: null,
             imagePreview: product.image_url || '/item.png',
             status: product.status,
-            category: product.category,
-            categoryId: product.category_id || '',
+            category: primaryCategoryName,
+            categoryId: primaryCategoryId,
             type: product.type || 'ichiban',
             remaining: product.remaining.toString(),
             totalCount: product.total_count?.toString() || '0',

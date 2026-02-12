@@ -1608,7 +1608,7 @@ export default function OrdersPage() {
                           <div className="flex items-center gap-2 flex-nowrap">
                             {/* 詳情 - 所有狀態都有 */}
                             <Link 
-                              href={`/orders/${shipment.id}`}
+                              href={`/orders/${shipment.orderId}`}
                               className="text-blue-500 hover:text-blue-700 text-sm font-medium whitespace-nowrap flex-shrink-0"
                             >
                               詳情

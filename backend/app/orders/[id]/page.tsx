@@ -10,8 +10,7 @@ import { supabase } from '@/lib/supabaseClient'
 export default function OrderDetailPage() {
   const router = useRouter()
   const params = useParams()
-  const orderId = params.id as string
-  const shipmentId = parseInt(orderId)
+  const idParam = params.id as string
 
   type ShipmentStatus = 'submitted' | 'processing' | 'picked_up' | 'shipping' | 'delivered' | 'cancelled'
   
@@ -46,24 +45,36 @@ export default function OrderDetailPage() {
 
   useEffect(() => {
     const fetchOrder = async () => {
-      if (isNaN(shipmentId)) {
-        setLoading(false)
-        return
-      }
-
+      setLoading(true)
       try {
-        const { data: order, error } = await supabase
+        let query = supabase
           .from('orders')
           .select(`
             *,
-            items:order_items(
+            items:draw_records(
               *,
-              product:products(name, image_url)
+              product_prizes(name, level, image_url),
+              products(name, image_url)
             ),
-            user:users(user_id, email, name)
+            user:users(email, name)
           `)
-          .eq('id', shipmentId)
-          .single()
+
+        // Check if idParam is numeric ID or string order_number
+        // If it starts with "DEL-", it's definitely an order_number
+        // Otherwise try to parse as int
+        if (idParam.startsWith('DEL-')) {
+          query = query.eq('order_number', idParam)
+        } else {
+          const numericId = parseInt(idParam)
+          if (!isNaN(numericId)) {
+            query = query.eq('id', numericId)
+          } else {
+            // Fallback for non-DEL string IDs if any
+            query = query.eq('order_number', idParam)
+          }
+        }
+
+        const { data: order, error } = await query.single()
 
         if (error) {
           console.error('Error fetching order:', error)
@@ -90,15 +101,15 @@ export default function OrderDetailPage() {
             date: order.submitted_at || order.created_at,
             days: diffDays,
             trackingNumber: order.tracking_number,
-            userId: order.user?.user_id || 'Unknown',
+            userId: order.user_id || 'Unknown',
             user: order.user?.email || 'Unknown',
             recipientName: order.recipient_name,
             recipientPhone: order.recipient_phone,
             address: order.address,
             items: (order.items || []).map((item: any) => ({
-              product: item.product_name || item.product?.name || 'Unknown Product',
-              prize: item.prize_level && item.prize_name ? `${item.prize_level}賞 ${item.prize_name}` : 'Unknown Prize',
-              imageUrl: item.image_url || item.product?.image_url || 'https://placehold.co/100'
+              product: item.products?.name || 'Unknown Product',
+              prize: item.product_prizes ? `${item.product_prizes.level}賞 ${item.product_prizes.name}` : 'Unknown Prize',
+              imageUrl: item.product_prizes?.image_url || item.products?.image_url || 'https://placehold.co/100'
             }))
           }
           
@@ -113,7 +124,7 @@ export default function OrderDetailPage() {
     }
 
     fetchOrder()
-  }, [shipmentId])
+  }, [idParam])
 
   const updateStatus = async (newStatus: ShipmentStatus) => {
     if (!shipment) return
@@ -360,7 +371,7 @@ export default function OrderDetailPage() {
                   </label>
                   <input
                     type="text"
-                    value={shipment.trackingNumber}
+                    value={shipment.trackingNumber || ''}
                     readOnly
                     className="w-full px-4 py-2 border border-neutral-300 rounded-lg bg-neutral-50"
                   />

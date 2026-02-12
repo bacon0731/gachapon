@@ -130,7 +130,6 @@ export default function ProductsPage() {
   const [visibleColumns, setVisibleColumns] = useState({
     productCode: true,
     name: true,
-    category: true,
     type: true,
     price: true,
     stockAndSales: true,  // 庫存/銷量合併欄位
@@ -615,7 +614,6 @@ export default function ProductsPage() {
             columns={[
               { key: 'productCode', label: '編號', visible: visibleColumns.productCode },
               { key: 'name', label: '名稱', visible: visibleColumns.name },
-              { key: 'category', label: '分類', visible: visibleColumns.category },
               { key: 'type', label: '種類', visible: visibleColumns.type },
               { key: 'price', label: '價格(TWD)', visible: visibleColumns.price },
               { key: 'stockAndSales', label: '庫存/銷量', visible: visibleColumns.stockAndSales },
@@ -744,11 +742,6 @@ export default function ProductsPage() {
                       商品名稱
                     </SortableTableHeader>
                   )}
-                  {visibleColumns.category && (
-                    <SortableTableHeader sortKey="category" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>
-                      分類
-                    </SortableTableHeader>
-                  )}
                   {visibleColumns.type && (
                     <SortableTableHeader sortKey="type" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>
                       種類
@@ -845,11 +838,6 @@ export default function ProductsPage() {
                               return isSoldOut && <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700 whitespace-nowrap flex-shrink-0">已完抽</span>
                             })()}
                           </div>
-                        </td>
-                      )}
-                      {visibleColumns.category && (
-                        <td className={`${getDensityClasses()} text-sm text-neutral-700 whitespace-nowrap`}>
-                          <span className="whitespace-nowrap">{product.category}</span>
                         </td>
                       )}
                       {visibleColumns.type && (
