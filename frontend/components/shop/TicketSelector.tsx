@@ -26,7 +26,7 @@ export function TicketSelector({
           disabled={ticket.isSold}
           onClick={() => onToggle(ticket.number)}
           className={cn(
-            "relative aspect-square rounded-lg border-2 transition-all duration-200 flex items-center justify-center group",
+            "relative aspect-square rounded-[8px] border-2 transition-all duration-200 flex items-center justify-center group",
             ticket.isSold 
               ? "bg-neutral-200 dark:bg-neutral-800 border-transparent text-neutral-400 dark:text-neutral-600 cursor-not-allowed" 
               : selectedTickets.includes(ticket.number)

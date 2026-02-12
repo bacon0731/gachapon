@@ -93,13 +93,13 @@ export function AlertProvider({ children }: { children: ReactNode }) {
               {/* Text Section */}
               {alert.title && (
                 <h3 className={cn(
-                  "text-xl font-black text-neutral-900 dark:text-white mb-2 tracking-tight",
+                  "text-base font-black text-neutral-900 dark:text-white mb-2 tracking-tight",
                   alert.type === 'confirm' && "mt-2"
                 )}>
                   {alert.title}
                 </h3>
               )}
-              <div className="text-neutral-500 dark:text-neutral-400 font-bold text-[13px] leading-relaxed mb-6 w-full px-2">
+              <div className="text-neutral-500 dark:text-neutral-400 font-medium text-[16px] leading-[1.5] mb-6 w-full px-2">
                 {alert.message}
               </div>
 
@@ -108,7 +108,7 @@ export function AlertProvider({ children }: { children: ReactNode }) {
                 {alert.type === 'confirm' && (
                   <button
                     onClick={handleCancel}
-                    className="flex-1 py-3 px-4 rounded-xl text-[13px] font-black text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-all active:scale-95 border border-transparent hover:border-neutral-200 dark:hover:border-neutral-700"
+                    className="flex-1 py-0 h-[40px] px-6 rounded-[2px] text-[15px] font-semibold text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-all active:scale-95 border border-transparent hover:border-neutral-200 dark:hover:border-neutral-700"
                   >
                     {alert.cancelText || '取消'}
                   </button>
@@ -117,7 +117,7 @@ export function AlertProvider({ children }: { children: ReactNode }) {
                   onClick={handleConfirm}
                   size="lg"
                   className={cn(
-                    "flex-1 rounded-xl h-[44px] text-[13px]",
+                    "flex-1 rounded-[2px] h-[40px] px-6 text-[15px] font-semibold",
                     (alert.type === 'error' || alert.variant === 'danger')
                       ? "bg-accent-red hover:bg-accent-red/90 shadow-xl shadow-accent-red/20 text-white" 
                       : "bg-primary hover:bg-primary/90 shadow-xl shadow-primary/20 text-white"

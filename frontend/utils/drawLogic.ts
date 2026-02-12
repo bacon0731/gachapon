@@ -23,7 +23,7 @@ export interface DrawRequest {
   productId: number
   seed: string
   nonce: number  // 單次抽獎的 nonce（籤號直接作為 nonce）
-  ticketNumber?: number  // 用戶選擇的籤號（01-80），如果提供則 nonce = ticketNumber
+  ticketNumber?: number  // 會員選擇的籤號（01-80），如果提供則 nonce = ticketNumber
 }
 
 /**
@@ -33,7 +33,7 @@ export interface BatchDrawRequest {
   userId: string
   productId: number
   seed: string
-  ticketNumbers: number[]  // 用戶選擇的多個籤號（01-80），每個籤號作為 nonce
+  ticketNumbers: number[]  // 會員選擇的多個籤號（01-80），每個籤號作為 nonce
 }
 
 /**
@@ -130,7 +130,7 @@ async function getProductPrizes(productId: number): Promise<Array<{
   level: string
   name: string
   originalProbability: number  // 原始機率（用於實際抽獎）
-  displayProbability: number   // 顯示機率（用戶看到的機率）
+  displayProbability: number   // 顯示機率（會員看到的機率）
 }>> {
   // TODO: 實際實現時從資料庫讀取
   // SELECT level, name, original_probability, display_probability 

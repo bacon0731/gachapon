@@ -34,9 +34,9 @@ export default function NewsPage() {
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 pb-20 transition-colors">
-      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-6">
+      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-2 md:pt-6">
         <div className="hidden md:flex flex-col gap-4 sm:gap-6 mb-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 min-h-[38px]">
             <h1 className="flex items-baseline gap-4 text-2xl font-black text-neutral-900 dark:text-white tracking-tight">
               最新情報
               <span className="text-xs font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">

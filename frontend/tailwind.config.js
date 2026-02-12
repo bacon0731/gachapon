@@ -33,11 +33,11 @@ module.exports = {
         },
       },
       borderRadius: {
-        'lg': '8px',
-        'xl': '12px',
-        '2xl': '16px',
-        '3xl': '24px',
-        '4xl': '32px',
+        'lg': '6px',
+        'xl': '9px',
+        '2xl': '12px',
+        '3xl': '18px',
+        '4xl': '24px',
       },
       boxShadow: {
         'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',

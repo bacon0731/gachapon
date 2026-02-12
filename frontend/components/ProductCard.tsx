@@ -66,6 +66,17 @@ export default function ProductCard({
               {type && <ProductBadge type={type} />}
             </div>
           </div>
+
+          {/* Sold Out Stamp */}
+          {remaining === 0 && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/50 backdrop-blur-[1px]">
+              <img 
+                src="/images/sale.svg" 
+                alt="完抽" 
+                className="w-24 h-auto transform scale-110 drop-shadow-xl"
+              />
+            </div>
+          )}
         </div>
 
         {/* Content */}

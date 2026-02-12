@@ -101,7 +101,7 @@ interface DrawHistoryItem {
   date: string;
   tickets: string[];
   cost: number;
-  items: { grade: string; name: string }[];
+  items: { grade: string; name: string; ticket_number: string }[];
 }
 
 interface FollowedProduct {
@@ -255,7 +255,7 @@ function ProfileContent() {
             grade: item.product_prizes?.level || '?',
             status: item.status,
             image: item.product_prizes?.image_url || 'https://placehold.co/400',
-            date: new Date(item.created_at).toLocaleDateString('zh-TW'),
+            date: new Date(item.created_at).toLocaleString('zh-TW'),
             ticketNo: item.ticket_number?.toString() || '',
             recycleValue: item.product_prizes?.recycle_value || 0
           }));
@@ -324,8 +324,8 @@ function ProfileContent() {
           draw_record_id: item.draw_records?.id,
           price: item.price,
           status: item.status,
-          created_at: new Date(item.created_at).toLocaleDateString('zh-TW'),
-          updated_at: new Date(item.updated_at).toLocaleDateString('zh-TW'),
+          created_at: new Date(item.created_at).toLocaleString('zh-TW'),
+          updated_at: new Date(item.updated_at).toLocaleString('zh-TW'),
           product: {
             name: item.draw_records?.product_prizes?.name || '未知',
             image: item.draw_records?.product_prizes?.image_url || 'https://placehold.co/400',
@@ -400,7 +400,7 @@ function ProfileContent() {
           if (lastGroup && lastGroup._rawDate === currentTimestamp && lastGroup.product === item.products?.name) {
              lastGroup.tickets.push(item.ticket_number?.toString());
              lastGroup.cost += (item.products?.price || 0);
-             lastGroup.items.push({ grade: item.product_prizes?.level, name: item.product_prizes?.name });
+             lastGroup.items.push({ grade: item.product_prizes?.level, name: item.product_prizes?.name, ticket_number: item.ticket_number?.toString() });
           } else {
              groupedHistory.push({
                _rawDate: currentTimestamp,
@@ -409,7 +409,7 @@ function ProfileContent() {
                date: new Date(item.created_at).toLocaleString('zh-TW'),
                tickets: [item.ticket_number?.toString()],
                cost: item.products?.price || 0,
-               items: [{ grade: item.product_prizes?.level, name: item.product_prizes?.name }]
+               items: [{ grade: item.product_prizes?.level, name: item.product_prizes?.name, ticket_number: item.ticket_number?.toString() }]
              });
           }
         });
@@ -579,7 +579,7 @@ function ProfileContent() {
 
       if (error) throw error;
 
-      toast.success(`成功分解 ${dismantleSummary.count} 件商品，獲得 ${dismantleSummary.totalValue} 代幣！`);
+      toast.success(`成功分解 ${dismantleSummary.count} 件獎項，獲得 ${dismantleSummary.totalValue} 代幣！`);
       setShowDismantleModal(false);
       setSelectedForDelivery([]);
       fetchUserData(); // Refresh list and balance
@@ -701,9 +701,9 @@ function ProfileContent() {
   }
 
   const navItems = [
-    { id: 'check-in', label: '每日簽到', icon: CalendarCheck, color: 'text-orange-500' },
-    { id: 'market', label: '市集管理', icon: Store, color: 'text-purple-500' },
     { id: 'warehouse', label: '我的倉庫', icon: Box, color: 'text-primary' },
+    { id: 'market', label: '市集管理', icon: Store, color: 'text-purple-500' },
+    { id: 'check-in', label: '每日簽到', icon: CalendarCheck, color: 'text-orange-500' },
     { id: 'follows', label: '我的關注', icon: Heart, color: 'text-accent-red' },
     { id: 'delivery', label: '配送訂單', icon: Truck, color: 'text-accent-emerald' },
     { id: 'draw-history', label: '抽獎紀錄', icon: Trophy, color: 'text-accent-yellow' },
@@ -713,7 +713,9 @@ function ProfileContent() {
   ];
 
   const renderTabContent = () => {
-    if (isLoadingData) {
+    // Determine if we should show a full page skeleton (e.g., initial load or non-warehouse tabs)
+    // For warehouse tab, we want to keep the header visible during sub-tab switches
+    if (isLoadingData && activeTab !== 'warehouse') {
       return (
         <div className="p-3 lg:p-8">
           <ProfileSkeleton />
@@ -733,16 +735,18 @@ function ProfileContent() {
                 <p className="text-sm text-neutral-400 font-black uppercase tracking-widest mt-2">管理您獲得的獎項，隨時申請出貨</p>
               </div>
               <div className="flex items-center gap-3">
-                <div className="px-3 py-1 bg-neutral-50 rounded-xl lg:rounded-2xl border border-neutral-100 text-[11px] lg:text-[13px] font-black text-neutral-400 uppercase tracking-widest">
-                  庫存 {warehouseItems.length} 件
-                </div>
                 {activeWarehouseTab === 'all' && selectedForDelivery.length > 0 && (
                   <div className="flex items-center gap-2">
                     <button 
-                      onClick={handleDismantleClick}
-                      className="flex items-center gap-2 bg-accent-red text-white px-4 py-2 rounded-xl lg:rounded-2xl shadow-lg shadow-accent-red/30 hover:scale-105 active:scale-95 transition-all"
+                      onClick={() => setSelectedForDelivery([])}
+                      className="px-3 py-2 text-neutral-400 hover:text-neutral-600 text-[13px] font-black transition-colors"
                     >
-                      <RefreshCw className="w-4 h-4" />
+                      重選
+                    </button>
+                    <button 
+                      onClick={handleDismantleClick}
+                      className="flex items-center justify-center bg-accent-red text-white px-4 py-2 rounded-xl lg:rounded-2xl shadow-lg shadow-accent-red/30 hover:scale-105 active:scale-95 transition-all whitespace-nowrap"
+                    >
                       <span className="text-[13px] font-black">分解 ({selectedForDelivery.length})</span>
                     </button>
                     {/* Sell Button - Only if 1 item is selected */}
@@ -752,17 +756,15 @@ function ProfileContent() {
                           const item = warehouseItems.find(i => i.id === selectedForDelivery[0]);
                           if (item) handleSellClick(item);
                         }}
-                        className="flex items-center gap-2 bg-accent-yellow text-white px-4 py-2 rounded-xl lg:rounded-2xl shadow-lg shadow-accent-yellow/30 hover:scale-105 active:scale-95 transition-all"
+                        className="flex items-center justify-center bg-accent-yellow text-white px-4 py-2 rounded-xl lg:rounded-2xl shadow-lg shadow-accent-yellow/30 hover:scale-105 active:scale-95 transition-all whitespace-nowrap"
                       >
-                        <Tag className="w-4 h-4" />
-                        <span className="text-[13px] font-black">上架拍賣</span>
+                        <span className="text-[13px] font-black">上架市集</span>
                       </button>
                     )}
                     <button 
                       onClick={() => setShowDeliveryModal(true)}
-                      className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl lg:rounded-2xl shadow-lg shadow-primary/30 hover:scale-105 active:scale-95 transition-all"
+                      className="flex items-center justify-center bg-primary text-white px-4 py-2 rounded-xl lg:rounded-2xl shadow-lg shadow-primary/30 hover:scale-105 active:scale-95 transition-all whitespace-nowrap"
                     >
-                      <Truck className="w-4 h-4" />
                       <span className="text-[13px] font-black">申請配送 ({selectedForDelivery.length})</span>
                     </button>
                   </div>
@@ -776,17 +778,30 @@ function ProfileContent() {
                 onClick={() => setActiveWarehouseTab('all')}
                 className={cn("px-4 py-2 rounded-xl text-sm font-black transition-all whitespace-nowrap", activeWarehouseTab === 'all' ? "bg-neutral-900 text-white shadow-lg shadow-neutral-900/20" : "bg-white text-neutral-400 hover:bg-neutral-50")}
               >
-                全部商品
+                全部獎項 ({warehouseItems.length})
               </button>
               <button 
                 onClick={() => setActiveWarehouseTab('dismantled')}
                 className={cn("px-4 py-2 rounded-xl text-sm font-black transition-all whitespace-nowrap", activeWarehouseTab === 'dismantled' ? "bg-neutral-900 text-white shadow-lg shadow-neutral-900/20" : "bg-white text-neutral-400 hover:bg-neutral-50")}
               >
-                已分解
+                已分解 ({dismantledItems.length})
               </button>
             </div>
 
-            {activeWarehouseTab === 'all' ? (
+            {isLoadingData ? (
+              <div className="space-y-3">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-4 p-4 border border-neutral-100 rounded-2xl animate-pulse">
+                    <div className="w-12 h-12 bg-neutral-100 rounded-xl flex-shrink-0" />
+                    <div className="space-y-2 flex-1">
+                      <div className="h-4 w-1/3 bg-neutral-100 rounded" />
+                      <div className="h-3 w-1/4 bg-neutral-100 rounded" />
+                    </div>
+                    <div className="h-8 w-20 bg-neutral-100 rounded-lg" />
+                  </div>
+                ))}
+              </div>
+            ) : activeWarehouseTab === 'all' ? (
               <>
                 {warehouseItems.length === 0 ? (
                   <div className="py-20 text-center text-neutral-400">
@@ -829,7 +844,7 @@ function ProfileContent() {
                     <div className="hidden md:block overflow-x-auto -mx-3 lg:-mx-8 custom-scrollbar">
                       <table className="w-full text-left border-collapse min-w-[550px] lg:min-w-[600px]">
                         <thead>
-                          <tr className="bg-neutral-50/50 border-y border-neutral-50 text-[12px] lg:text-[13px] font-black text-neutral-400 uppercase tracking-widest">
+                          <tr className="bg-neutral-50/50 dark:bg-neutral-800/50 border-y border-neutral-100 dark:border-neutral-800 text-[12px] lg:text-[13px] font-black text-neutral-400 uppercase tracking-widest">
                             <th className="w-12 lg:w-16 px-3 lg:px-4 py-2 lg:py-3"></th>
                             <th className="px-3 lg:px-4 py-2 lg:py-3">賞別</th>
                             <th className="px-3 lg:px-4 py-2 lg:py-3">獎項內容</th>
@@ -837,11 +852,11 @@ function ProfileContent() {
                             <th className="px-3 lg:px-4 py-2 lg:py-3 text-right">籤號</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-neutral-50">
+                        <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                           {warehouseItems.map((item) => {
                             const isSelected = selectedForDelivery.includes(item.id);
                             return (
-                              <tr key={item.id} onClick={() => toggleDeliverySelection(item.id)} className={cn("transition-all group cursor-pointer hover:bg-neutral-50/50", isSelected && "bg-accent-emerald/5 hover:bg-accent-emerald/10")}>
+                              <tr key={item.id} onClick={() => toggleDeliverySelection(item.id)} className={cn("transition-all group cursor-pointer hover:bg-neutral-50/50 dark:hover:bg-neutral-800/50", isSelected && "bg-accent-emerald/5 hover:bg-accent-emerald/10")}>
                                 <td className="px-3 lg:px-4 py-2 lg:py-3">
                                   <div className={cn("w-5 h-5 lg:w-6 lg:h-6 rounded-lg border-2 transition-all flex items-center justify-center flex-shrink-0 shadow-sm", isSelected ? "bg-accent-emerald border-accent-emerald" : "border-neutral-100 bg-white")}>
                                     {isSelected && <CheckCircle2 className="w-3.5 h-3.5 lg:w-4 h-4 text-white stroke-[3]" />}
@@ -852,8 +867,8 @@ function ProfileContent() {
                                 </td>
                                 <td className="px-3 lg:px-4 py-2 lg:py-3">
                                   <div className="flex items-center gap-3 lg:gap-4">
-                                    <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl lg:rounded-2xl bg-[#28324E] overflow-hidden flex-shrink-0 border border-neutral-100 p-0.5 shadow-soft">
-                                      <img src={item.image || '/images/item.png'} alt={item.name} className="w-full h-full object-cover rounded-[10px] lg:rounded-[14px] group-hover:scale-110 transition-transform duration-700 opacity-80 group-hover:opacity-100" />
+                                    <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl lg:rounded-2xl bg-[#28324E] overflow-hidden flex-shrink-0 shadow-soft">
+                                      <img src={item.image || '/images/item.png'} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-80 group-hover:opacity-100" />
                                     </div>
                                     <div className="space-y-0.5 lg:space-y-1 min-w-0">
                                       <div className="text-[13px] lg:text-[14px] font-black text-neutral-900 leading-tight truncate tracking-tight">{item.name}</div>
@@ -862,7 +877,11 @@ function ProfileContent() {
                                   </div>
                                 </td>
                                 <td className="hidden xl:table-cell px-3 lg:px-4 py-2 lg:py-3"><div className="text-[12px] lg:text-[13px] font-black text-neutral-400 flex items-center gap-2">{item.date}</div></td>
-                                <td className="px-3 lg:px-4 py-2 lg:py-3 text-right font-amount text-sm lg:text-base font-black text-neutral-900 tracking-tighter">{item.ticketNo}</td>
+                                <td className="px-3 lg:px-4 py-2 lg:py-3 text-right">
+                                  <span className="px-2 py-1 bg-neutral-100 text-neutral-500 rounded-[8px] text-xs font-black font-amount border border-neutral-100">
+                                    {item.ticketNo}
+                                  </span>
+                                </td>
                               </tr>
                             );
                           })}
@@ -917,12 +936,12 @@ function ProfileContent() {
                           {dismantledItems.map((item) => (
                             <tr key={item.id} className="hover:bg-neutral-50/50 transition-all opacity-75 hover:opacity-100">
                               <td className="px-3 lg:px-4 py-2 lg:py-3">
-                                <span className="px-2 lg:px-3 py-0.5 lg:py-1 bg-neutral-100 text-neutral-500 text-[12px] lg:text-[13px] font-black rounded-lg border border-neutral-200 uppercase tracking-wider">{item.grade}</span>
+                                <span className="px-2 lg:px-3 py-0.5 lg:py-1 bg-accent-red/10 text-accent-red text-[12px] lg:text-[13px] font-black rounded-lg border border-accent-red/10 uppercase tracking-wider">{item.grade}</span>
                               </td>
                               <td className="px-3 lg:px-4 py-2 lg:py-3">
                                 <div className="flex items-center gap-3 lg:gap-4">
-                                  <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl lg:rounded-2xl bg-[#28324E] overflow-hidden flex-shrink-0 border border-neutral-100 p-0.5 shadow-soft">
-                                    <img src={item.image || '/images/item.png'} alt={item.name} className="w-full h-full object-cover rounded-[10px] lg:rounded-[14px] grayscale-[0.5]" />
+                                  <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl lg:rounded-2xl bg-[#28324E] overflow-hidden flex-shrink-0 shadow-soft">
+                                    <img src={item.image || '/images/item.png'} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-80 group-hover:opacity-100" />
                                   </div>
                                   <div className="space-y-0.5 lg:space-y-1 min-w-0">
                                     <div className="text-[13px] lg:text-[14px] font-black text-neutral-900 leading-tight truncate tracking-tight">{item.name}</div>
@@ -945,6 +964,7 @@ function ProfileContent() {
                 )}
               </>
             )}
+
 
             {/* Delivery Modal */}
             <AnimatePresence>
@@ -1040,7 +1060,7 @@ function ProfileContent() {
                           <div className="space-y-1">
                             <p className="text-sm font-black text-accent-red">注意：分解後無法復原</p>
                             <p className="text-xs text-accent-red/80 font-bold leading-relaxed">
-                              確認分解後，商品將會從倉庫移除並轉換為代幣。代幣可用於再次抽獎或兌換其他商品。
+                              確認分解後，獎項將會從倉庫移除並轉換為代幣。代幣可用於再次抽獎或兌換其他商品。
                             </p>
                           </div>
                         </div>
@@ -1076,8 +1096,8 @@ function ProfileContent() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
                   <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl">
                     <div className="p-6 border-b border-neutral-100 flex items-center justify-between">
-                      <h3 className="text-xl font-black text-neutral-900">上架拍賣</h3>
-                      <button onClick={() => setShowSellModal(false)} className="w-8 h-8 rounded-full bg-neutral-50 flex items-center justify-center hover:bg-neutral-100 transition-colors">
+                      <h3 className="text-xl font-black text-neutral-900 dark:text-white">上架市集</h3>
+                      <button onClick={() => setShowSellModal(false)} className="w-8 h-8 rounded-full bg-neutral-50 dark:bg-neutral-800 flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors">
                         <X className="w-4 h-4 text-neutral-500" />
                       </button>
                     </div>
@@ -1108,17 +1128,17 @@ function ProfileContent() {
                         </div>
                       </div>
 
-                      <div className="p-4 bg-accent-yellow/5 rounded-xl border border-accent-yellow/10">
+                      <div className="p-4 bg-neutral-50 rounded-xl border border-neutral-100">
                         <div className="flex gap-3">
-                          <Info className="w-5 h-5 text-accent-yellow flex-shrink-0" />
+                          <Info className="w-5 h-5 text-neutral-400 flex-shrink-0" />
                           <div className="space-y-1">
-                            <p className="text-sm font-black text-accent-yellow">上架須知</p>
-                            <ul className="text-xs text-accent-yellow/80 font-bold leading-relaxed list-disc list-inside">
+                            <p className="text-sm font-black text-neutral-900">上架須知</p>
+                            <ul className="text-xs text-neutral-500 font-bold leading-relaxed list-disc list-inside">
                               <li>平台將收取 5% 手續費</li>
-                              <li>實際上架後，商品將從倉庫中暫時移除</li>
-                              <li>成交後商品將綁定買家，無法再次交易</li>
+                              <li>實際上架後，獎項將從倉庫中暫時移除</li>
+                              <li>成交後獎項將綁定買家，無法再次交易</li>
                             </ul>
-                            <div className="pt-2 flex justify-between text-sm font-black text-neutral-700 border-t border-accent-yellow/10 mt-2">
+                            <div className="pt-2 flex justify-between text-sm font-black text-neutral-700 border-t border-neutral-200 mt-2">
                               <span>預計手續費 (5%)</span>
                               <span>{Math.floor(sellPrice * 0.05)} 代幣</span>
                             </div>
@@ -1162,10 +1182,7 @@ function ProfileContent() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 lg:mb-8">
               <div className="hidden md:block">
                 <h3 className="text-3xl font-black text-neutral-900 tracking-tight">市集管理</h3>
-                <p className="text-sm text-neutral-400 font-black uppercase tracking-widest mt-2">管理您的上架商品與交易紀錄</p>
-              </div>
-              <div className="px-3 py-1 bg-neutral-50 rounded-xl lg:rounded-2xl border border-neutral-100 text-[11px] lg:text-[13px] font-black text-neutral-400 uppercase tracking-widest">
-                {activeMarketTab === 'listing' ? `上架中 ${marketListings.length} 件` : `已售出 ${soldItems.length} 件`}
+                <p className="text-sm text-neutral-400 font-black uppercase tracking-widest mt-2">管理您的上架獎項與交易紀錄</p>
               </div>
             </div>
 
@@ -1175,13 +1192,13 @@ function ProfileContent() {
                 onClick={() => setActiveMarketTab('listing')}
                 className={cn("px-4 py-2 rounded-xl text-sm font-black transition-all whitespace-nowrap", activeMarketTab === 'listing' ? "bg-neutral-900 text-white shadow-lg shadow-neutral-900/20" : "bg-white text-neutral-400 hover:bg-neutral-50")}
               >
-                上架中
+                上架中 ({marketListings.length})
               </button>
               <button 
                 onClick={() => setActiveMarketTab('sold')}
                 className={cn("px-4 py-2 rounded-xl text-sm font-black transition-all whitespace-nowrap", activeMarketTab === 'sold' ? "bg-neutral-900 text-white shadow-lg shadow-neutral-900/20" : "bg-white text-neutral-400 hover:bg-neutral-50")}
               >
-                已售出
+                已售出 ({soldItems.length})
               </button>
             </div>
 
@@ -1190,7 +1207,7 @@ function ProfileContent() {
                 {marketListings.length === 0 ? (
                   <div className="py-20 text-center text-neutral-400">
                     <Store className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                    <p className="font-black text-sm uppercase tracking-widest">目前沒有上架商品</p>
+                    <p className="font-black text-sm uppercase tracking-widest">目前沒有上架獎項</p>
                   </div>
                 ) : (
                   <>
@@ -1216,10 +1233,10 @@ function ProfileContent() {
                                </div>
                             </div>
                           </div>
-                          <div className="pt-2 border-t border-neutral-50">
+                          <div className="pt-2 border-t border-neutral-50 dark:border-neutral-800">
                             <button 
                               onClick={() => cancelListing(item.id)}
-                              className="w-full py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-500 rounded-lg text-xs font-black transition-colors"
+                              className="w-full py-2 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-500 dark:text-neutral-400 rounded-lg text-xs font-black transition-colors"
                             >
                               取消上架
                             </button>
@@ -1232,15 +1249,15 @@ function ProfileContent() {
                     <div className="hidden md:block overflow-x-auto -mx-3 lg:-mx-8 custom-scrollbar">
                       <table className="w-full text-left border-collapse min-w-[600px]">
                         <thead>
-                          <tr className="bg-neutral-50/50 border-y border-neutral-50 text-[12px] lg:text-[13px] font-black text-neutral-400 uppercase tracking-widest">
+                          <tr className="bg-neutral-50/50 dark:bg-neutral-800/50 border-y border-neutral-50 dark:border-neutral-800 text-[12px] lg:text-[13px] font-black text-neutral-400 uppercase tracking-widest">
                             <th className="px-3 lg:px-4 py-2 lg:py-3">賞別</th>
-                            <th className="px-3 lg:px-4 py-2 lg:py-3">商品資訊</th>
+                            <th className="px-3 lg:px-4 py-2 lg:py-3">獎項資訊</th>
                             <th className="px-3 lg:px-4 py-2 lg:py-3">售價</th>
                             <th className="px-3 lg:px-4 py-2 lg:py-3">上架時間</th>
                             <th className="px-3 lg:px-4 py-2 lg:py-3 text-right">操作</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-neutral-50">
+                        <tbody className="divide-y divide-neutral-50 dark:divide-neutral-800">
                           {marketListings.map((item) => (
                             <tr key={item.id} className="hover:bg-neutral-50/50 transition-all group">
                               <td className="px-3 lg:px-4 py-2 lg:py-3">
@@ -1248,8 +1265,8 @@ function ProfileContent() {
                               </td>
                               <td className="px-3 lg:px-4 py-2 lg:py-3">
                                 <div className="flex items-center gap-3 lg:gap-4">
-                                  <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl lg:rounded-2xl bg-[#28324E] overflow-hidden flex-shrink-0 border border-neutral-100 p-0.5 shadow-soft">
-                                    <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover rounded-[10px] lg:rounded-[14px] group-hover:scale-110 transition-transform duration-700" />
+                                  <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl lg:rounded-2xl bg-[#28324E] overflow-hidden flex-shrink-0 shadow-soft">
+                                    <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                                   </div>
                                   <div className="space-y-0.5 lg:space-y-1 min-w-0">
                                     <div className="text-[13px] lg:text-[14px] font-black text-neutral-900 leading-tight truncate tracking-tight">{item.product.name}</div>
@@ -1323,16 +1340,16 @@ function ProfileContent() {
                     <div className="hidden md:block overflow-x-auto -mx-3 lg:-mx-8 custom-scrollbar">
                       <table className="w-full text-left border-collapse min-w-[600px]">
                         <thead>
-                          <tr className="bg-neutral-50/50 border-y border-neutral-50 text-[12px] lg:text-[13px] font-black text-neutral-400 uppercase tracking-widest">
+                          <tr className="bg-neutral-50/50 dark:bg-neutral-800/50 border-y border-neutral-50 dark:border-neutral-800 text-[12px] lg:text-[13px] font-black text-neutral-400 uppercase tracking-widest">
                             <th className="px-3 lg:px-4 py-2 lg:py-3">賞別</th>
-                            <th className="px-3 lg:px-4 py-2 lg:py-3">商品資訊</th>
+                            <th className="px-3 lg:px-4 py-2 lg:py-3">獎項資訊</th>
                             <th className="px-3 lg:px-4 py-2 lg:py-3">買家</th>
                             <th className="px-3 lg:px-4 py-2 lg:py-3">成交價</th>
                             <th className="px-3 lg:px-4 py-2 lg:py-3">售出時間</th>
                             <th className="px-3 lg:px-4 py-2 lg:py-3 text-right">實收代幣</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-neutral-50">
+                        <tbody className="divide-y divide-neutral-50 dark:divide-neutral-800">
                           {soldItems.map((item) => (
                             <tr key={item.id} className="hover:bg-neutral-50/50 transition-all group opacity-75 hover:opacity-100">
                               <td className="px-3 lg:px-4 py-2 lg:py-3">
@@ -1384,9 +1401,15 @@ function ProfileContent() {
                 <h3 className="text-3xl font-black text-neutral-900 tracking-tight">配送訂單</h3>
                 <p className="text-sm text-neutral-400 font-black uppercase tracking-widest mt-2">追蹤您的獎項配送狀態</p>
               </div>
-              <div className="px-3 py-1 bg-neutral-50 rounded-xl lg:rounded-2xl border border-neutral-100 text-[11px] lg:text-[13px] font-black text-neutral-400 uppercase tracking-widest w-fit">
-                共 {deliveryHistory.length.toLocaleString()} 筆訂單
-              </div>
+            </div>
+
+            {/* Sub-tabs */}
+            <div className="flex items-center gap-2 mb-6 overflow-x-auto no-scrollbar">
+              <button 
+                className="px-4 py-2 rounded-xl text-sm font-black transition-all whitespace-nowrap bg-neutral-900 text-white shadow-lg shadow-neutral-900/20"
+              >
+                全部訂單 ({deliveryHistory.length})
+              </button>
             </div>
 
             {deliveryHistory.length === 0 ? (
@@ -1502,9 +1525,15 @@ function ProfileContent() {
                 <h3 className="text-3xl font-black text-neutral-900 tracking-tight">抽獎紀錄</h3>
                 <p className="text-sm text-neutral-400 font-black uppercase tracking-widest mt-2">回顧您的所有抽獎歷程</p>
               </div>
-              <div className="px-3 py-1 bg-neutral-50 rounded-xl lg:rounded-2xl border border-neutral-100 text-[11px] lg:text-[13px] font-black text-neutral-400 uppercase tracking-widest w-fit">
-                共 {drawHistory.length.toLocaleString()} 筆紀錄
-              </div>
+            </div>
+
+            {/* Sub-tabs */}
+            <div className="flex items-center gap-2 mb-6 overflow-x-auto no-scrollbar">
+              <button 
+                className="px-4 py-2 rounded-xl text-sm font-black transition-all whitespace-nowrap bg-neutral-900 text-white shadow-lg shadow-neutral-900/20"
+              >
+                全部紀錄 ({drawHistory.length})
+              </button>
             </div>
 
             {drawHistory.length === 0 ? (
@@ -1555,7 +1584,7 @@ function ProfileContent() {
                     <thead>
                       <tr className="bg-neutral-50/50 border-y border-neutral-50 text-[13px] font-black text-neutral-400 uppercase tracking-widest">
                         <th className="w-16 px-4 py-3"></th>
-                        <th className="px-4 py-3">商品名稱 / 日期</th>
+                        <th className="px-4 py-3">獎項名稱 / 日期</th>
                         <th className="px-4 py-3">所選籤號</th>
                         <th className="px-4 py-3 text-right">消耗代幣(G)</th>
                       </tr>
@@ -1580,9 +1609,14 @@ function ProfileContent() {
                                         <div className="text-[13px] font-black text-neutral-400 uppercase tracking-widest mb-4">獲得獎項明細</div>
                                         <div className="grid grid-cols-1 gap-4">
                                           {item.items.map((result, idx) => (
-                                            <div key={idx} className="flex items-center gap-4 bg-white p-3 rounded-2xl border border-neutral-100 shadow-soft">
-                                              <span className="px-2 py-0.5 bg-accent-red/10 text-accent-red text-[13px] font-black rounded-md border border-accent-red/10 uppercase">{result.grade}</span>
-                                              <span className="text-sm font-black text-neutral-700 truncate">{result.name}</span>
+                                            <div key={idx} className="flex items-center justify-between gap-4 bg-white p-3 rounded-2xl border border-neutral-100 shadow-soft">
+                                              <div className="flex items-center gap-4 overflow-hidden">
+                                                <span className="px-2 py-0.5 bg-accent-red/10 text-accent-red text-[13px] font-black rounded-md border border-accent-red/10 uppercase shrink-0">{result.grade}</span>
+                                                <span className="text-sm font-black text-neutral-700 truncate">{result.name}</span>
+                                              </div>
+                                              <span className="px-2 py-1 bg-neutral-100 text-neutral-500 rounded-[8px] text-xs font-black font-amount border border-neutral-100 shrink-0">
+                                                {result.ticket_number}
+                                              </span>
                                             </div>
                                           ))}
                                         </div>
@@ -1610,11 +1644,17 @@ function ProfileContent() {
                 <h3 className="text-3xl font-black text-neutral-900 tracking-tight">儲值紀錄</h3>
                 <p className="text-sm text-neutral-400 font-black uppercase tracking-widest mt-2">管理您的代幣儲值明細</p>
               </div>
-              <div className="px-3 py-1 bg-neutral-50 rounded-xl lg:rounded-2xl border border-neutral-100 text-[11px] lg:text-[13px] font-black text-neutral-400 uppercase tracking-widest w-fit">
-                共 {topupHistory.length} 筆紀錄
-              </div>
             </div>
             
+            {/* Sub-tabs */}
+            <div className="flex items-center gap-2 mb-6 overflow-x-auto no-scrollbar">
+              <button 
+                className="px-4 py-2 rounded-xl text-sm font-black transition-all whitespace-nowrap bg-neutral-900 text-white shadow-lg shadow-neutral-900/20"
+              >
+                全部紀錄 ({topupHistory.length})
+              </button>
+            </div>
+
             {topupHistory.length === 0 ? (
               <div className="py-20 text-center text-neutral-400">
                 <Wallet className="w-12 h-12 mx-auto mb-4 opacity-20" />
@@ -1663,7 +1703,7 @@ function ProfileContent() {
                       {topupHistory.map((item) => (
                         <tr key={item.id} className="hover:bg-neutral-50/50 transition-all">
                           <td className="px-4 py-3">
-                            <div className="text-sm font-black text-neutral-900 font-amount">{new Date(item.created_at).toLocaleString('zh-TW')}</div>
+                            <div className="text-[13px] text-neutral-400 font-black uppercase tracking-widest">{new Date(item.created_at).toLocaleString('zh-TW')}</div>
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
@@ -1942,12 +1982,6 @@ function ProfileContent() {
               </div>
               <div className="flex items-center gap-2">
                 <button 
-                  onClick={handleCheckIn}
-                  className="w-9 h-9 rounded-full bg-accent-yellow/10 flex items-center justify-center text-accent-yellow hover:bg-accent-yellow hover:text-white transition-all border border-accent-yellow/20"
-                >
-                  <CalendarCheck className="w-4.5 h-4.5" />
-                </button>
-                <button 
                   onClick={() => handleTabChange('settings')}
                   className="w-9 h-9 rounded-full bg-white shadow-soft flex items-center justify-center text-neutral-400 hover:text-primary transition-colors border border-neutral-100"
                 >
@@ -2052,9 +2086,9 @@ function ProfileContent() {
 
           {/* 3. Desktop View (Hidden on mobile) */}
           <div className="hidden md:grid md:col-span-12 grid-cols-12 gap-4 lg:gap-6 w-full items-start">
-            <div className="md:col-span-3 lg:col-span-2 space-y-3 sticky top-24">
-              <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-card border border-neutral-100 dark:border-neutral-800 p-3">
-                <div className="flex flex-col gap-2.5">
+            <div className="md:col-span-3 lg:col-span-3 space-y-3 sticky top-24">
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-card border border-neutral-100 dark:border-neutral-800 p-3">
+              <div className="flex flex-col gap-2.5">
                   <div className="flex items-center gap-2.5">
                     <div className="relative flex-shrink-0">
                       <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-xl overflow-hidden border-2 border-neutral-50 dark:border-neutral-800 shadow-soft p-0.5 bg-white dark:bg-neutral-800">
@@ -2074,9 +2108,9 @@ function ProfileContent() {
                              toast.success('邀請碼已複製');
                            }
                         }}>
-                          <span className="text-[10px] font-black text-neutral-400 uppercase tracking-wider">邀請碼</span>
-                          <span className="text-[10px] font-mono font-black text-primary group-hover/invite:text-primary/80 transition-colors">{user.invite_code || '-'}</span>
-                          <Copy className="w-2.5 h-2.5 text-neutral-300 group-hover/invite:text-primary transition-colors" />
+                          <span className="text-[13px] font-black text-neutral-400 uppercase tracking-wider">邀請碼</span>
+                          <span className="text-[13px] font-mono font-black text-primary group-hover/invite:text-primary/80 transition-colors">{user.invite_code || '-'}</span>
+                          <Copy className="w-3.5 h-3.5 text-neutral-300 group-hover/invite:text-primary transition-colors" />
                         </div>
                       </div>
                     </div>
@@ -2084,36 +2118,36 @@ function ProfileContent() {
                   
                   <div className="flex items-center justify-between bg-neutral-50 dark:bg-neutral-800/50 p-2 rounded-lg border border-neutral-100 dark:border-neutral-800">
                     <div className="flex items-center gap-1.5">
-                      <div className="flex items-center justify-center w-4 h-4 rounded-full bg-accent-yellow shadow-sm">
-                        <span className="text-[9px] text-white font-black leading-none">G</span>
+                      <div className="flex items-center justify-center w-6 h-6 rounded-full bg-accent-yellow shadow-sm">
+                        <span className="text-[13px] text-white font-black leading-none">G</span>
                       </div>
-                      <span className="text-base font-black text-accent-red font-amount leading-none tracking-tighter">{user.points.toLocaleString()}</span>
+                      <span className="text-lg font-black text-accent-red font-amount leading-none tracking-tighter">{user.points.toLocaleString()}</span>
                     </div>
-                    <Link href="/topup" className="text-[10px] font-black text-primary hover:text-primary/80 transition-colors uppercase tracking-widest bg-white dark:bg-neutral-800 px-1.5 py-0.5 rounded border border-primary/10 shadow-sm">儲值</Link>
+                    <Link href="/topup" className="text-[13px] font-black text-primary hover:text-primary/80 transition-colors uppercase tracking-widest bg-white dark:bg-neutral-800 px-2 py-1 rounded border border-primary/10 shadow-sm">儲值</Link>
                   </div>
                 </div>
               </div>
               
-              <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-card border border-neutral-100 dark:border-neutral-800 p-1.5 overflow-hidden">
-                <div className="space-y-0.5">
-                  {navItems.map((item) => (
-                    <button 
-                      key={item.id} 
-                      onClick={() => handleTabChange(item.id as TabType)} 
-                      className={cn(
-                        "w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-black transition-all group text-left", 
-                        activeTab === item.id ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white"
-                      )}
-                    >
-                      <item.icon className={cn("w-3.5 h-3.5 stroke-[2.5]", activeTab === item.id ? "text-white" : "text-neutral-300 group-hover:text-primary transition-colors")} />
-                      <span className="truncate">{item.label}</span>
-                      <ChevronRight className={cn("ml-auto w-3 h-3 transition-transform hidden sm:block", activeTab === item.id ? "text-white/50" : "text-neutral-200 group-hover:text-neutral-400")} />
-                    </button>
-                  ))}
-                </div>
+              <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-card border border-neutral-100 dark:border-neutral-800 p-3 overflow-hidden">
+              <div className="space-y-1">
+                {navItems.map((item) => (
+                  <button 
+                    key={item.id} 
+                    onClick={() => handleTabChange(item.id as TabType)} 
+                    className={cn(
+                      "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-black transition-all group text-left", 
+                      activeTab === item.id ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white"
+                    )}
+                  >
+                    <item.icon className={cn("w-5 h-5 stroke-[2.5]", activeTab === item.id ? "text-white" : "text-neutral-300 group-hover:text-primary transition-colors")} />
+                    <span className="truncate">{item.label}</span>
+                    <ChevronRight className={cn("ml-auto w-4 h-4 transition-transform hidden sm:block", activeTab === item.id ? "text-white/50" : "text-neutral-200 group-hover:text-neutral-400")} />
+                  </button>
+                ))}
               </div>
             </div>
-            <div className="md:col-span-9 lg:col-span-10 w-full">
+          </div>
+          <div className="md:col-span-9 lg:col-span-9 w-full">
               <div className="bg-white dark:bg-neutral-900 rounded-2xl lg:rounded-3xl shadow-card border border-neutral-100 dark:border-neutral-800 min-h-[600px] lg:min-h-[700px] overflow-hidden">
                 {renderTabContent()}
               </div>

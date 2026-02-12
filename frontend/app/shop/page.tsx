@@ -26,6 +26,7 @@ function ShopContent() {
   const [localSearch, setLocalSearch] = useState(searchQuery);
   const [priceMin, setPriceMin] = useState('');
   const [priceMax, setPriceMax] = useState('');
+  const [isMobileSortOpen, setIsMobileSortOpen] = useState(false);
 
   // Fetch initial data
   useEffect(() => {
@@ -65,6 +66,25 @@ function ShopContent() {
     { id: 'gacha', name: '轉蛋' },
     { id: 'custom', name: '自製賞' },
   ];
+
+  const combinedTabs = useMemo(() => [
+    { id: 'all_reset', name: '全部商品', kind: 'reset' },
+    ...productTypes.filter(t => t.id !== 'all').map(t => ({ ...t, kind: 'type' })),
+    ...categories.map(c => ({ ...c, kind: 'category' }))
+  ], [categories]);
+
+  const handleTabClick = (item: any) => {
+    if (item.kind === 'reset') {
+      const params = new URLSearchParams(searchParams);
+      params.delete('category');
+      params.delete('type');
+      router.push(`/shop?${params.toString()}`);
+    } else if (item.kind === 'type') {
+      handleTypeChange(item.id);
+    } else if (item.kind === 'category') {
+      handleCategoryChange(item.id);
+    }
+  };
 
   const filteredProducts = useMemo(() => {
     let result = [...products];
@@ -155,117 +175,79 @@ function ShopContent() {
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 pb-20 transition-colors">
-      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-6">
-        {/* 1. Mobile Search & Sort Row */}
-        <div className="md:hidden flex flex-col gap-2 mb-2 animate-in fade-in slide-in-from-top-2">
+      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-2 md:pt-6">
+        {/* 1. Mobile Filter Row */}
+        <div className="md:hidden flex flex-col gap-3 mb-4 animate-in fade-in slide-in-from-top-2 relative z-30">
           <div className="flex items-center gap-2">
-            {/* Search Box with integrated Tags */}
-            <form onSubmit={handleSearch} className="flex-1 relative">
-              <div className="relative group">
-                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 group-focus-within:text-primary transition-colors">
-                  <Search className="w-4 h-4 stroke-[3]" />
-                </div>
-                
-                <div className="flex items-center gap-1.5 pl-10 pr-10 py-2.5 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-2xl shadow-soft focus-within:border-primary/30 transition-all overflow-x-auto scrollbar-hide">
-                  {/* Category Tag inside Search Box */}
-                  {activeCategory !== 'all' && (
-                    <button
-                      type="button"
-                      onClick={() => handleCategoryChange('all')}
-                      className="whitespace-nowrap shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-black bg-primary/10 text-primary border border-primary/10 uppercase tracking-wider"
-                    >
-                      {allCategories.find((c) => c.id === activeCategory)?.name}
-                      <X className="w-2.5 h-2.5" />
-                    </button>
-                  )}
-                  
-                  <input
-                    value={localSearch}
-                    onChange={(e) => setLocalSearch(e.target.value)}
-                    placeholder={activeCategory === 'all' ? "搜尋商品..." : ""}
-                    className="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 text-[13px] font-black placeholder:text-neutral-400 min-w-[80px] text-neutral-900 dark:text-white"
-                  />
-                </div>
+            {/* Scrollable Category Tabs */}
+            <div className="flex-1 overflow-x-auto scrollbar-hide">
+               <div className="flex gap-2">
+                 {combinedTabs.map((tab) => (
+                   <button
+                     key={`${tab.kind}-${tab.id}`}
+                     onClick={() => handleTabClick(tab)}
+                     className={cn(
+                      "flex-shrink-0 px-3 py-2 min-h-[40px] flex items-center rounded-xl text-sm font-black whitespace-nowrap transition-all",
+                       (tab.kind === 'reset' && activeType === 'all' && activeCategory === 'all') ||
+                       (tab.kind === 'type' && activeType === tab.id) ||
+                       (tab.kind === 'category' && activeCategory === tab.id)
+                         ? "bg-primary text-white shadow-lg shadow-primary/20"
+                         : "bg-white dark:bg-neutral-900 text-neutral-500 dark:text-neutral-400 border border-neutral-100 dark:border-neutral-800"
+                     )}
+                   >
+                     {tab.name}
+                   </button>
+                 ))}
+               </div>
+            </div>
 
-                {/* Clear All Button inside Search Box */}
-                {(activeCategory !== 'all' || localSearch) && (
-                  <button
-                    type="button"
-                    onClick={clearFilters}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-neutral-300 hover:text-accent-red transition-colors"
-                  >
-                    <X className="w-4 h-4 stroke-[3]" />
-                  </button>
+            {/* Sort Button */}
+            <div className="relative shrink-0">
+              <button 
+                onClick={() => setIsMobileSortOpen(!isMobileSortOpen)}
+                className={cn(
+                  "flex items-center justify-center w-11 h-11 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-2xl text-neutral-600 dark:text-neutral-400 shadow-soft active:scale-95 transition-all",
+                  isMobileSortOpen && "border-primary text-primary"
                 )}
-              </div>
-            </form>
-
-            {/* Mobile Sort Icon Only */}
-            <div className="relative group">
-              <button className="flex items-center justify-center w-11 h-11 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-2xl text-neutral-600 dark:text-neutral-400 shadow-soft active:scale-95 transition-all">
+              >
                 <SlidersHorizontal className="w-5 h-5 stroke-[2.5]" />
               </button>
-              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-neutral-900 rounded-3xl shadow-modal border border-neutral-100 dark:border-neutral-800 p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 transform origin-top-right scale-95 group-hover:scale-100">
-                {[
-                  { id: 'newest', label: '最新上架' },
-                  { id: 'price-asc', label: '價格: 低到高' },
-                  { id: 'price-desc', label: '價格: 高到低' },
-                ].map((opt) => (
-                  <button
-                    key={opt.id}
-                    onClick={() => setSortBy(opt.id as any)}
-                    className={cn(
-                      "w-full text-left px-4 py-3 text-sm font-black rounded-xl transition-colors",
-                      sortBy === opt.id ? "bg-primary/5 text-primary" : "text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white"
-                    )}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
+              
+              {/* Dropdown */}
+              {isMobileSortOpen && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setIsMobileSortOpen(false)} 
+                  />
+                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-neutral-900 rounded-3xl shadow-modal border border-neutral-100 dark:border-neutral-800 p-2 z-50 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+                    {[
+                      { id: 'newest', label: '最新上架' },
+                      { id: 'price-asc', label: '價格: 低到高' },
+                      { id: 'price-desc', label: '價格: 高到低' },
+                    ].map((opt) => (
+                      <button
+                        key={opt.id}
+                        onClick={() => {
+                          setSortBy(opt.id as any);
+                          setIsMobileSortOpen(false);
+                        }}
+                        className={cn(
+                          "w-full text-left px-4 py-3 text-sm font-black rounded-xl transition-colors",
+                          sortBy === opt.id ? "bg-primary/5 text-primary" : "text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white"
+                        )}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Mobile Type Tabs (Scrollable) */}
-        <div className="md:hidden -mx-2 px-2 mb-2 overflow-x-auto pb-1 scrollbar-hide">
-          <div className="flex gap-2">
-            {productTypes.map((type) => (
-              <button
-                key={type.id}
-                onClick={() => handleTypeChange(type.id)}
-                className={cn(
-                  "whitespace-nowrap px-4 py-2 rounded-xl text-[13px] font-black transition-all border active:scale-95",
-                  activeType === type.id
-                    ? "bg-primary border-primary text-white shadow-md shadow-primary/20"
-                    : "bg-white dark:bg-neutral-900 border-neutral-100 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800"
-                )}
-              >
-                {type.name}
-              </button>
-            ))}
-          </div>
-        </div>
 
-        {/* 2. Mobile Category Tabs (Scrollable) */}
-        <div className="md:hidden -mx-2 px-2 mb-2 overflow-x-auto pb-1 scrollbar-hide">
-          <div className="flex gap-2">
-            {allCategories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => handleCategoryChange(cat.id)}
-                className={cn(
-                  "whitespace-nowrap px-4 py-2 rounded-xl text-[13px] font-black transition-all border active:scale-95",
-                  activeCategory === cat.id
-                    ? "bg-primary border-primary text-white shadow-md shadow-primary/20"
-                    : "bg-white dark:bg-neutral-900 border-neutral-100 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800"
-                )}
-              >
-                {cat.name}
-              </button>
-            ))}
-          </div>
-        </div>
 
         {/* 3. Header Section (Desktop Title) */}
         <div className="hidden md:flex flex-col gap-4 sm:gap-6 mb-4">
@@ -358,10 +340,6 @@ function ShopContent() {
             <div className="bg-white dark:bg-neutral-900 rounded-2xl p-3 shadow-card border border-neutral-100 dark:border-neutral-800 transition-colors space-y-6">
               {/* Unified Menu */}
               <div>
-                <div className="flex items-center gap-3 mb-3 lg:mb-4 px-1">
-                  <Filter className="w-4 h-4 text-primary stroke-[2.5]" />
-                  <h2 className="text-[12px] lg:text-sm font-black text-neutral-900 dark:text-white uppercase tracking-widest">商品列表</h2>
-                </div>
                 <div className="space-y-1 lg:space-y-1">
                   {/* Fixed Types */}
                   {productTypes.map((type) => (
@@ -474,10 +452,9 @@ function ShopContent() {
                     name={product.name}
                     image={product.image_url || ''}
                     price={product.price}
-                    isHot={product.is_hot}
-                    category={product.category}
                     remaining={product.remaining}
                     total={product.total_count}
+                    isHot={product.is_hot}
                     type={product.type}
                   />
                 ))}

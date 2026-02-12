@@ -10,12 +10,15 @@ import ProductDetailSkeleton from '@/components/ProductDetailSkeleton';
 import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/Toast';
-import { ArrowLeft, Share2, Heart, ShieldCheck, Trophy, ChevronRight, AlertTriangle, FileCheck, Copy, Info, Flame } from 'lucide-react';
+import { ArrowLeft, Share2, Heart, ShieldCheck, Trophy, ChevronRight, AlertTriangle, FileCheck, Copy, Info, Flame, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import ProductBadge, { ProductType } from '@/components/ui/ProductBadge';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 import { TicketSelectionFlow } from '@/components/shop/TicketSelectionFlow';
+import { PurchaseConfirmationModal } from '@/components/shop/PurchaseConfirmationModal';
+import GachaMachine, { Prize } from '@/components/GachaMachine';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -32,15 +35,125 @@ export default function ProductDetailPage() {
   const [viewingPrize, setViewingPrize] = useState<{ name: string; image_url?: string; level: string; total: number; remaining: number } | null>(null);
   const [recommendations, setRecommendations] = useState<Database['public']['Tables']['products']['Row'][]>([]);
   
-  // Modal state for desktop ticket selection
-  const [isSelectModalOpen, setIsSelectModalOpen] = useState(false);
+  // Purchase Flow State
+  const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
+  const [isGachaOpen, setIsGachaOpen] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [wonPrizes, setWonPrizes] = useState<Prize[]>([]);
+
+  // Result Modal State
+  const [showResultModal, setShowResultModal] = useState(false);
+  const [drawResults, setDrawResults] = useState<{ ticket_number: number; prize_level: string; prize_name: string }[]>([]);
+  const [isLoadingResults, setIsLoadingResults] = useState(false);
+
+  const handleShowResults = async () => {
+    setShowResultModal(true);
+    if (drawResults.length > 0 || !product) return;
+
+    setIsLoadingResults(true);
+    try {
+      const { data, error } = await supabase
+        .from('draw_records')
+        .select('ticket_number, prize_level, prize_name')
+        .eq('product_id', product.id)
+        .order('ticket_number', { ascending: true });
+
+      if (error) throw error;
+      
+      // Sort results to put Last One at the end
+      const sortedData = (data || []).sort((a, b) => {
+        const isALastOne = a.prize_level.includes('Last One') || a.prize_level.includes('LAST ONE') || a.ticket_number === 0;
+        const isBLastOne = b.prize_level.includes('Last One') || b.prize_level.includes('LAST ONE') || b.ticket_number === 0;
+        
+        if (isALastOne && !isBLastOne) return 1;
+        if (!isALastOne && isBLastOne) return -1;
+        return a.ticket_number - b.ticket_number;
+      });
+
+      setDrawResults(sortedData);
+    } catch (error) {
+      console.error('Error fetching results:', error);
+      showToast('無法載入抽獎結果', 'error');
+    } finally {
+      setIsLoadingResults(false);
+    }
+  };
 
   const handleDrawClick = () => {
-    if (window.innerWidth >= 768) {
-      setIsSelectModalOpen(true);
-    } else {
-      router.push(`/shop/${params.id}/select`);
+    if (!user) {
+      router.push('/auth/login?redirect=/shop/' + params.id);
+      return;
     }
+
+    // Check product type for Ichiban flow
+    if (product?.type === 'ichiban') {
+      router.push(`/shop/${params.id}/select`);
+      return;
+    }
+
+    // [GA] Track begin_checkout event
+    console.log('[GA] event: begin_checkout', { items: [{ item_id: product?.id, item_name: product?.name }] });
+    setIsPurchaseModalOpen(true);
+  };
+
+  const handlePurchaseConfirm = async (quantity: number) => {
+    if (!product || !user) return;
+    
+    setIsProcessing(true);
+    try {
+      // [GA] Track purchase attempt
+      console.log('[GA] event: purchase_attempt', { item_id: product.id, quantity });
+      
+      const { data, error } = await supabase.rpc('play_gacha', {
+        p_product_id: product.id,
+        p_count: quantity
+      });
+
+      if (error) throw error;
+
+      // Transform result to Prize format for GachaMachine
+      const results = (data as any[]).map(item => ({
+        id: item.id,
+        name: item.name,
+        rarity: item.grade, // Map grade to rarity
+        image_url: item.image_url,
+        grade: item.grade
+      }));
+
+      // [GA] Track purchase success
+      console.log('[GA] event: purchase', { 
+        transaction_id: (data as any[])[0]?.ticket_number, // using first ticket as ref
+        value: product.price * quantity,
+        currency: 'G',
+        items: results.map(r => ({ item_id: r.id, item_name: r.name, item_category: r.grade }))
+      });
+
+      setWonPrizes(results);
+      setIsPurchaseModalOpen(false);
+      setIsGachaOpen(true);
+      
+      // Update local user points/tokens if possible, or wait for context update
+      // The context usually updates on its own or we can force it if exposed
+      
+    } catch (error: any) {
+      console.error('Purchase error:', error);
+      // [GA] Track purchase error
+      console.log('[GA] event: purchase_error', { error: error.message });
+      showToast(error.message || '購買失敗，請稍後再試', 'error');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleGachaComplete = () => {
+    // Navigate to warehouse with product filter
+    router.push(`/warehouse?product_id=${params.id}`);
+  };
+
+  const handleGachaContinue = () => {
+    setIsGachaOpen(false);
+    setWonPrizes([]);
+    // Optional: Refresh product data
   };
 
   useEffect(() => {
@@ -188,7 +301,7 @@ export default function ProductDetailPage() {
     : product.total_count;
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 pb-20 md:pb-12">
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 pb-32 md:pb-12 pt-14 md:pt-0">
       <div className="max-w-7xl mx-auto px-2 py-2 sm:py-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 lg:gap-6 items-start">
           {/* Left Column: Product Card (Sticky) */}
@@ -239,13 +352,18 @@ export default function ProductDetailPage() {
                 <div className="pt-2 hidden lg:block">
                   <div className="flex items-center gap-3">
                     <Button 
-                      onClick={handleDrawClick}
+                      onClick={totalRemaining === 0 ? handleShowResults : handleDrawClick}
                       size="lg"
-                      className="flex-1 h-[44px] text-lg font-black rounded-xl shadow-xl shadow-accent-red/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-                      variant="danger"
-                      disabled={totalRemaining === 0}
+                      className={cn(
+                        "flex-1 h-[44px] text-lg font-black rounded-xl shadow-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2",
+                        totalRemaining === 0 
+                          ? "bg-neutral-900 dark:bg-neutral-50 text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-200 shadow-neutral-900/20"
+                          : "shadow-accent-red/20"
+                      )}
+                      variant={totalRemaining === 0 ? "secondary" : "danger"}
+                      disabled={false}
                     >
-                      {totalRemaining === 0 ? '已售完' : '立即抽獎'}
+                      {totalRemaining === 0 ? '已完抽 (查看結果)' : (product.type === 'ichiban' ? '立即抽獎' : '立即轉蛋')}
                     </Button>
 
                     <button className="w-[44px] h-[44px] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-400 hover:text-primary hover:border-primary/50 rounded-xl flex items-center justify-center transition-all shadow-sm active:scale-95">
@@ -364,8 +482,11 @@ export default function ProductDetailPage() {
                   <div className="text-[13px] sm:text-sm font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest flex items-center gap-2">
                     <Trophy className="w-3.5 h-3.5" /> 隨機種子 (TXID)
                   </div>
-                  <div className="bg-neutral-50 dark:bg-neutral-800 border border-neutral-100 dark:border-neutral-700 rounded-2xl px-3 sm:px-5 py-3 sm:py-4 text-[13px] sm:text-sm text-neutral-400 dark:text-neutral-500 font-black tracking-widest uppercase">
-                    完抽後公布
+                  <div className={cn(
+                    "bg-neutral-50 dark:bg-neutral-800 border border-neutral-100 dark:border-neutral-700 rounded-2xl px-3 sm:px-5 py-3 sm:py-4 text-[13px] sm:text-sm font-black tracking-widest uppercase",
+                    (totalRemaining === 0 && product.seed) ? "text-neutral-600 dark:text-neutral-400 font-amount break-all" : "text-neutral-400 dark:text-neutral-500"
+                  )}>
+                    {(totalRemaining === 0 && product.seed) ? product.seed : '完抽後公布'}
                   </div>
                 </div>
                 
@@ -374,8 +495,8 @@ export default function ProductDetailPage() {
                     <FileCheck className="w-3.5 h-3.5" /> 哈希值 (TXID Hash)
                   </div>
                   <div className="flex items-center gap-2">
-                    <code className="flex-1 bg-neutral-50 dark:bg-neutral-800 border border-neutral-100 dark:border-neutral-700 rounded-2xl px-3 sm:px-5 py-3 sm:py-4 text-[13px] sm:text-sm font-amount text-neutral-600 dark:text-neutral-400 break-all font-bold leading-relaxed">
-                      c7111dd8...
+                    <code className="flex-1 bg-neutral-50 dark:bg-neutral-800 border border-neutral-100 dark:border-neutral-700 rounded-2xl px-3 sm:px-5 py-3 sm:py-4 text-[13px] sm:text-sm font-amount text-neutral-600 dark:text-neutral-400 truncate font-bold leading-relaxed">
+                      {product.txid_hash || 'Hash generating...'}
                     </code>
                     <button className="p-3 sm:p-4 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-2xl text-neutral-400 dark:text-neutral-500 transition-colors shrink-0 group shadow-soft bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800">
                       <Copy className="w-3.5 h-3.5 group-active:scale-90 transition-transform" />
@@ -503,8 +624,8 @@ export default function ProductDetailPage() {
       </Modal>
 
       {/* Mobile Fixed Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl border-t border-neutral-100 dark:border-neutral-800 h-16 px-4 flex items-center lg:hidden z-50 shadow-modal">
-        <div className="flex items-center gap-4 w-full">
+      <div className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl border-t border-neutral-100 dark:border-neutral-800 h-auto min-h-16 px-4 pb-safe pt-2 flex items-center lg:hidden z-50 shadow-modal">
+        <div className="flex items-center gap-4 w-full pb-2">
           <div className="flex flex-col items-center justify-center pl-2">
             <div className="text-[13px] font-black text-neutral-500 dark:text-neutral-400 leading-none mb-1 whitespace-nowrap">
               優惠前：<span className="line-through font-amount">{Math.round(product.price * 1.2).toLocaleString()}</span>
@@ -520,25 +641,98 @@ export default function ProductDetailPage() {
             </div>
           </div>
           <Button 
-            onClick={() => router.push(`/shop/${params.id}/select`)}
+            onClick={product.remaining === 0 ? handleShowResults : handleDrawClick}
             size="lg"
-            className="flex-1 h-[44px] text-base font-black rounded-xl shadow-xl shadow-accent-red/20 transition-all active:scale-[0.95]"
-            variant="danger"
-            disabled={product.remaining === 0}
+            className={cn(
+              "flex-1 h-[44px] text-base font-black rounded-xl shadow-xl transition-all active:scale-[0.95]",
+              product.remaining === 0 
+                ? "bg-neutral-900 dark:bg-neutral-50 text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-200 shadow-neutral-900/20"
+                : "shadow-accent-red/20"
+            )}
+            variant={product.remaining === 0 ? "secondary" : "danger"}
+            disabled={false}
           >
-            {product.remaining === 0 ? '已售完' : '立即抽獎'}
+            {product.remaining === 0 ? '已完抽 (查看結果)' : (product.type === 'ichiban' ? '立即抽獎' : '立即轉蛋')}
           </Button>
         </div>
       </div>
 
-      {/* Desktop Ticket Selection Modal */}
-      {isSelectModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-neutral-900 w-full max-w-5xl h-[85vh] rounded-3xl overflow-hidden shadow-2xl relative flex flex-col animate-in zoom-in-95 duration-200 border border-neutral-100 dark:border-neutral-800">
-            <TicketSelectionFlow isModal={true} onClose={() => setIsSelectModalOpen(false)} />
-          </div>
+      {/* Draw Results Modal */}
+      <Modal
+        isOpen={showResultModal}
+        onClose={() => setShowResultModal(false)}
+        title="抽獎結果一覽"
+        className="max-w-4xl"
+      >
+        <div className="min-h-[300px] max-h-[70vh] overflow-y-auto custom-scrollbar">
+          {isLoadingResults ? (
+            <div className="flex flex-col items-center justify-center h-[300px] gap-3">
+              <Loader2 className="w-8 h-8 text-primary animate-spin" />
+              <p className="text-sm font-bold text-neutral-500">正在載入抽獎結果...</p>
+            </div>
+          ) : drawResults.length > 0 ? (
+            <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2 sm:gap-3 p-1">
+              {drawResults.map((result) => {
+                const isLastOne = result.ticket_number === 0 || result.prize_level.includes('Last One') || result.prize_level.includes('LAST ONE');
+                return (
+                  <div
+                    key={result.ticket_number}
+                    className="aspect-square rounded-[8px] border-2 border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex flex-col items-center justify-center gap-1 shadow-sm px-0.5"
+                  >
+                    {!isLastOne && (
+                      <span className="text-[10px] sm:text-xs font-bold text-neutral-400 font-amount">
+                        {result.ticket_number.toString().padStart(2, '0')}
+                      </span>
+                    )}
+                    <span className={cn(
+                      "font-black text-center",
+                      ['A', 'B', 'C', 'Last One', 'LAST ONE'].some(t => result.prize_level.includes(t)) 
+                        ? "text-accent-red" 
+                        : "text-neutral-900 dark:text-neutral-200",
+                      isLastOne ? "text-[10px] sm:text-xs whitespace-nowrap" : "text-xs sm:text-sm"
+                    )}>
+                      {result.prize_level}賞
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-[300px] text-neutral-500">
+              <p>暫無抽獎記錄</p>
+            </div>
+          )}
         </div>
+        <div className="mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
+           <Button 
+            onClick={() => setShowResultModal(false)}
+            className="w-full py-4 bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 hover:bg-neutral-200 dark:hover:bg-neutral-700 font-bold"
+          >
+            關閉
+          </Button>
+        </div>
+      </Modal>
+
+      {/* Purchase Confirmation Modal */}
+      {product && (
+        <PurchaseConfirmationModal
+          isOpen={isPurchaseModalOpen}
+          onClose={() => !isProcessing && setIsPurchaseModalOpen(false)}
+          onConfirm={handlePurchaseConfirm}
+          product={product}
+          userPoints={user?.tokens || 0}
+          isProcessing={isProcessing}
+          onTopUp={() => router.push('/wallet')}
+        />
       )}
+
+      {/* Gacha Machine Overlay */}
+      <GachaMachine 
+        isOpen={isGachaOpen}
+        prizes={wonPrizes}
+        onGoToWarehouse={handleGachaComplete}
+        onContinue={handleGachaContinue}
+      />
     </div>
   );
 }

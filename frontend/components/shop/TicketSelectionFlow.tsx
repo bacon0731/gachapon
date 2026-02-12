@@ -6,11 +6,15 @@ import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/types/database.types';
 import { TicketSelector, Ticket } from '@/components/shop/TicketSelector';
 import { Button } from '@/components/ui';
-import { RotateCcw, Shuffle, X } from 'lucide-react';
+import { RotateCcw, Shuffle, X, LayoutGrid, Package, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { PurchaseConfirmation } from '@/components/shop/PurchaseConfirmation';
 import { IchibanTicket } from '@/components/IchibanTicket';
+import { PrizeResultModal } from '@/components/shop/PrizeResultModal';
 import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const HIGH_TIER_GRADES = ['A', 'B', 'C', 'Last One', 'LAST ONE', 'SP'];
 
 interface TicketSelectionFlowProps {
   isModal?: boolean;
@@ -33,16 +37,18 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
   const [isProcessing, setIsProcessing] = useState(false);
   const [isRevealing, setIsRevealing] = useState(false);
   const [isWaitingForReveal, setIsWaitingForReveal] = useState(false);
+  const [showResultModal, setShowResultModal] = useState(false);
+  const [showPrizeDetails, setShowPrizeDetails] = useState(false);
   const [drawnResults, setDrawnResults] = useState<any[]>([]);
+  const [abVariant, setAbVariant] = useState<'A' | 'B'>('B'); // A: Modal Flow (Old), B: Inline Flow (New)
 
+  // A/B Test Randomization
   useEffect(() => {
-    if (isRevealing) {
-      const timer = setTimeout(() => {
-        setIsRevealing(false);
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [isRevealing]);
+    // Randomize on client-side mount
+    setAbVariant(Math.random() > 0.5 ? 'A' : 'B');
+  }, []);
+
+  // Removed separate isRevealing effect since loading is now handled inside the modal
 
   useEffect(() => {
     const fetchData = async () => {
@@ -135,7 +141,9 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
         grade: r.grade + '賞',
         name: r.name,
         isOpened: false,
-        image_url: r.image_url
+        image_url: r.image_url,
+        is_last_one: r.is_last_one,
+        ticket_number: r.ticket_number
       }));
       
       setDrawnResults(results);
@@ -152,157 +160,172 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
 
   const handleOpenAll = () => {
     setDrawnResults(prev => prev.map(r => ({ ...r, isOpened: true })));
-    setIsWaitingForReveal(true);
-    setTimeout(() => {
-      setIsRevealing(true);
-      setIsWaitingForReveal(false);
-    }, 800);
   };
 
-  if (isLoading) return <div className="min-h-[50vh] flex items-center justify-center">Loading...</div>;
+  const isHighTier = (grade: string) => HIGH_TIER_GRADES.some(t => grade.includes(t));
+
+  if (isLoading) return (
+    <div className="min-h-[50vh] flex items-center justify-center">
+      <Loader2 className="w-8 h-8 text-primary animate-spin" />
+    </div>
+  );
   if (!product) return <div className="min-h-[50vh] flex items-center justify-center">Product not found</div>;
 
   // Prize Reveal View (Full Screen Overlay)
   if (drawnResults.length > 0) {
-    if (isRevealing) {
-      return (
-        <div className="fixed inset-0 z-[100] bg-neutral-900 flex flex-col items-center justify-center p-4">
-          <div className="flex flex-col items-center gap-6 animate-in fade-in zoom-in duration-500">
-            <div className="relative w-24 h-24 flex items-center justify-center">
-              <div className="absolute inset-0 border-4 border-white/20 rounded-full animate-[spin_3s_linear_infinite]" />
-              <div className="absolute inset-0 border-t-4 border-accent-yellow rounded-full animate-[spin_1s_linear_infinite]" />
-              <div className="text-4xl">🎁</div>
-            </div>
-            <div className="text-center space-y-2">
-              <h2 className="text-2xl font-black text-white">獎項結算中...</h2>
-              <p className="text-neutral-400 font-bold">恭喜中獎！</p>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
     const allOpened = drawnResults.every(r => r.isOpened);
     
     return (
-      <div className="fixed inset-0 z-[100] bg-neutral-900 flex flex-col items-center justify-center p-4 pb-safe overflow-hidden">
-        <h2 className="text-white text-2xl font-black mb-4 shrink-0">
-          {allOpened && !isWaitingForReveal ? '恭喜獲得' : '清單'}
-        </h2>
-        
-        <div className="flex-1 w-full max-w-5xl mx-auto overflow-y-auto p-4 custom-scrollbar pb-32">
-           {!allOpened || isWaitingForReveal ? (
-             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {drawnResults.map((result, idx) => (
-                <div key={idx} className="animate-in fade-in zoom-in duration-300 w-full flex justify-center" style={{ animationDelay: `${idx * 100}ms` }}>
-                  <IchibanTicket 
-                    grade={result.grade}
-                    prizeName={result.name}
-                    isOpened={result.isOpened}
-                    isLastOne={result.is_last_one}
-                    onOpen={() => {
-                      const newResults = [...drawnResults];
-                      newResults[idx].isOpened = true;
-                      setDrawnResults(newResults);
-
-                      if (newResults.every(r => r.isOpened)) {
-                        setIsWaitingForReveal(true);
-                        setTimeout(() => {
-                          setIsRevealing(true);
-                          setIsWaitingForReveal(false);
-                        }, 800);
-                      }
-                    }}
-                  />
-                </div>
-              ))}
-            </div>
-           ) : (
-             <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
-               {drawnResults.map((result, idx) => (
-                 <div key={idx} className="bg-[#2D3648] rounded-xl p-3 flex items-center gap-4 border border-[#3E4A61]">
-                   <div className="w-12 h-12 rounded-lg bg-[#1A202C] overflow-hidden shrink-0 border border-white/10">
-                     <img 
-                       src={result.image_url} 
-                       alt={result.grade} 
-                       className="w-full h-full object-cover"
-                     />
-                   </div>
-                   <div className="min-w-0 flex-1">
-                      <div className="text-[13px] text-neutral-400 font-bold mb-0.5">{result.grade}</div>
-                      <div className="text-white font-black truncate">{result.name}</div>
-                   </div>
-                   {result.is_last_one && (
-                     <span className="px-2 py-1 bg-yellow-500 text-black text-[10px] font-black rounded uppercase">Last One</span>
-                   )}
-                 </div>
-               ))}
-             </div>
-           )}
+      <div className="fixed inset-0 z-[2000] bg-neutral-900 flex flex-col items-center justify-center p-3 pb-safe overflow-hidden pt-1 md:pt-24">
+        {/* Background Image */}
+        <div className="absolute inset-0 z-0 overflow-hidden">
+          <img 
+            src="/images/gacha_bg.png" 
+            alt="" 
+            className="w-full h-full object-cover filter brightness-[0.85] blur-[3px] scale-105"
+          />
+          <div className="absolute inset-0 bg-neutral-900/50" />
         </div>
         
-        <div className="absolute bottom-0 left-0 right-0 bg-[#1A202C]/90 backdrop-blur-xl border-t border-white/10 pb-safe z-50">
-          <div className="p-4 w-full max-w-md mx-auto">
-            {!allOpened || isWaitingForReveal ? (
+        <div className="relative z-10 flex-1 w-full max-w-5xl mx-auto overflow-hidden flex flex-col">
+          <AnimatePresence mode="wait">
+            <motion.div 
+              key="tickets"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="flex-1 overflow-y-auto p-3 md:p-4 custom-scrollbar pb-28 md:pb-32 mt-2 md:mt-24"
+            >
+               <div className={cn(
+                "grid gap-3 md:gap-4 w-full",
+                showPrizeDetails 
+                  ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-5" 
+                  : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
+               )}>
+                {drawnResults.map((result, idx) => (
+                  <div key={idx} className="animate-in fade-in zoom-in duration-300 w-full flex justify-center" style={{ animationDelay: `${idx * 100}ms` }}>
+                    <IchibanTicket 
+                      grade={result.grade}
+                      prizeName={result.name}
+                      isOpened={result.isOpened}
+                      isLastOne={result.is_last_one}
+                      ticketNumber={result.ticket_number}
+                      imageUrl={result.image_url}
+                      showPrizeDetail={showPrizeDetails}
+                      onOpen={() => {
+                        const newResults = [...drawnResults];
+                        newResults[idx].isOpened = true;
+                        setDrawnResults(newResults);
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+        
+        <div className="absolute bottom-0 left-0 right-0 bg-[#1A202C]/90 backdrop-blur-xl border-t border-white/10 pb-safe pt-2 z-50 min-h-16 flex items-center">
+          <div className="px-4 w-full max-w-md mx-auto h-full flex items-center">
+            {!allOpened ? (
                <Button 
                  onClick={handleOpenAll} 
-                 className="w-full bg-white text-neutral-900 hover:bg-neutral-100 font-black h-[44px] rounded-xl text-base"
+                 className="w-full bg-white text-neutral-900 hover:bg-neutral-100 font-black h-11 rounded-xl text-base"
                >
                  全部開啟
                </Button>
             ) : (
-              <div className="flex gap-3">
-                <Button 
-                  variant="outline"
-                  onClick={() => router.push('/profile?tab=warehouse')} 
-                  className="flex-1 bg-transparent border-white/20 text-white hover:bg-white/10 h-[44px] rounded-xl font-black text-base"
+               <div className="flex gap-2 w-full h-11">
+                 <Button 
+                   onClick={() => router.push('/profile?tab=warehouse')} 
+                   className="flex-1 bg-neutral-200 hover:bg-neutral-300 text-neutral-700 font-black rounded-xl text-sm"
+                 >
+                   前往倉庫
+                 </Button>
+                 <Button 
+                  onClick={() => setShowPrizeDetails(!showPrizeDetails)} 
+                  className="flex-1 bg-neutral-200 hover:bg-neutral-300 text-neutral-700 font-black rounded-xl text-sm"
                 >
-                  前往倉庫
+                  {showPrizeDetails ? "顯示籤號" : "顯示獎項"}
                 </Button>
-                <Button 
-                  variant="danger" 
-                  onClick={() => window.location.reload()} 
-                  className="flex-1 h-[44px] rounded-xl font-black text-base"
-                >
-                  繼續抽獎
-                </Button>
-              </div>
+                 <Button 
+                   onClick={() => window.location.reload()} 
+                   className="flex-1 bg-accent-red hover:bg-accent-red/90 text-white font-black rounded-xl text-sm shadow-lg shadow-accent-red/30"
+                 >
+                   繼續抽獎
+                 </Button>
+               </div>
             )}
           </div>
         </div>
+
+        {/* Prize Result Modal for Variant A */}
+        <PrizeResultModal 
+          isOpen={showResultModal} 
+          onClose={() => setShowResultModal(false)}
+          prizes={drawnResults.map((r, i) => ({
+            id: String(i),
+            name: r.name,
+            grade: r.grade,
+            image_url: r.image_url,
+            is_last_one: r.is_last_one
+          }))}
+          onGoToWarehouse={() => router.push('/profile?tab=warehouse')}
+          onPlayAgain={() => window.location.reload()}
+        />
       </div>
     );
   }
 
+  // Modal Layout (Desktop) or Full Page (Mobile/Fallback)
   return (
-    <div className={cn("bg-neutral-50 flex flex-col pb-safe", isModal ? "h-full max-h-[85vh] rounded-3xl overflow-hidden" : "min-h-screen")}>
-      {/* Header for Modal */}
-      {isModal && (
-        <div className="flex items-center justify-between p-4 border-b border-neutral-100 bg-white sticky top-0 z-10">
-          <h3 className="text-lg font-black text-neutral-900">選擇籤號</h3>
-          <button 
-            onClick={() => onClose ? onClose() : router.back()}
-            className="p-2 hover:bg-neutral-100 rounded-full transition-colors"
-          >
-            <X className="w-5 h-5 text-neutral-500" />
-          </button>
+    <div className={cn(
+      "relative flex flex-col pb-safe bg-white dark:bg-neutral-900", 
+      isModal 
+        ? "w-full max-w-[640px] max-h-[80vh] h-full rounded-2xl overflow-hidden shadow-2xl mx-auto" 
+        : "h-screen overflow-hidden pt-0" // Fixed height for page view to support internal scrolling, added padding for fixed header
+    )}>
+      {/* Background Image */}
+      {!isModal && (
+        <div className="absolute inset-0 z-0 overflow-hidden">
+          <img 
+            src="/images/gacha_bg.png" 
+            alt="" 
+            className="w-full h-full object-cover filter brightness-[0.85] blur-[3px] scale-105"
+          />
+          <div className="absolute inset-0 bg-neutral-50/80 dark:bg-neutral-900/80" />
         </div>
       )}
 
-      <div className="flex-1 flex flex-col overflow-hidden relative">
-        <div className="text-center py-2 text-sm text-neutral-500 font-bold bg-neutral-50/50 border-b border-neutral-100 shrink-0">
+      {/* Header for Modal */}
+      <div className="flex items-center justify-between p-4 border-b border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 fixed top-0 left-0 right-0 z-10 shrink-0 md:sticky md:top-0">
+        <h3 className="text-lg font-black text-neutral-900 dark:text-white">選擇籤號</h3>
+        <button 
+          onClick={() => onClose ? onClose() : router.back()}
+          className="w-6 h-6 flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full transition-colors"
+        >
+          <X className="w-6 h-6 text-neutral-500" />
+        </button>
+      </div>
+
+      <div className={cn(
+        "flex-1 flex flex-col overflow-hidden relative z-0",
+        "pt-[60px] md:pt-0" // Add padding for fixed header on mobile modal
+      )}>
+        <div className="text-center py-2 text-sm text-neutral-500 font-bold bg-neutral-50/50 dark:bg-neutral-800/50 border-b border-neutral-100 dark:border-neutral-800 shrink-0">
           點擊號碼進行抽獎 (可複選，滿十抽送一抽活動進行中)
         </div>
         <TicketSelector 
           tickets={tickets} 
           selectedTickets={selectedTickets} 
           onToggle={toggleTicket}
-          className={cn("p-4 overflow-y-auto flex-1", isModal ? "pb-32" : "pb-32")}
+          className={cn("p-4 overflow-y-auto flex-1 custom-scrollbar", isModal ? "pb-24" : "pb-32")}
         />
       </div>
 
       {/* Footer Action Bar */}
-      <div className={cn("bg-white/90 backdrop-blur-xl border-t border-neutral-100 pb-safe z-40 shadow-modal", isModal ? "absolute bottom-0 left-0 right-0" : "fixed bottom-0 left-0 right-0")}>
+      <div className={cn("bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl border-t border-neutral-100 dark:border-neutral-800 pb-safe z-40 shadow-modal shrink-0", isModal ? "absolute bottom-0 left-0 right-0" : "fixed bottom-0 left-0 right-0")}>
         <div className="flex items-center gap-4 h-16 px-4">
           <div className="flex flex-col shrink-0 pl-1 justify-center h-full">
             <span className="text-[13px] text-neutral-400 font-black uppercase tracking-widest leading-none mb-0.5">已選 <span className="font-amount">{selectedTickets.length.toLocaleString()}</span> 張</span>
@@ -364,7 +387,7 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
            />
            
            {/* Bottom Sheet (Mobile) or Modal (Desktop/Modal Mode) */}
-           <div className={cn("relative w-full mx-auto z-10 transition-all", isModal ? "max-w-md" : "max-w-lg")}>
+           <div className={cn("relative w-full mx-auto z-10 transition-all", isModal ? "max-w-[600px]" : "max-w-lg")}>
              <PurchaseConfirmation
               product={product}
               selectedTickets={selectedTickets}

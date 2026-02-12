@@ -49,7 +49,7 @@ export function LogProvider({ children }: { children: ReactNode }) {
     }
   }, [logs])
 
-  // 獲取用戶 IP（模擬）
+  // 獲取會員 IP（模擬）
   const getUserIP = (): string => {
     // 實際應用中應該從請求中獲取真實 IP
     return '127.0.0.1'
@@ -63,7 +63,7 @@ export function LogProvider({ children }: { children: ReactNode }) {
       'operation_staff': '營運專員',
       'marketing_staff': '行銷專員',
       'admin': '管理員',
-      'user': '用戶'
+      'user': '會員'
     }
     return roleMap[role || ''] || '管理員'
   }

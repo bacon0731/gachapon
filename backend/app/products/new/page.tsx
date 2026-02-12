@@ -189,7 +189,7 @@ export default function NewProductPage() {
         major_prizes: formData.majorPrizes.length > 0 ? formData.majorPrizes : ['A賞'],
         started_at: startedAt,
         product_code: 'PENDING', // Will update after insert
-        image_url: productImageUrl
+        image_url: productImageUrl || '/images/item.png'
       }
 
       const { data: newProduct, error: insertError } = await supabase

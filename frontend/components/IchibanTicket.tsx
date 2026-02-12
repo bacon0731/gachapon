@@ -10,8 +10,11 @@ interface IchibanTicketProps {
   prizeName: string;
   isOpened?: boolean;
   isLastOne?: boolean;
+  ticketNumber?: number;
   onOpen?: () => void;
   className?: string;
+  imageUrl?: string;
+  showPrizeDetail?: boolean;
 }
 
 export const IchibanTicket: React.FC<IchibanTicketProps> = ({
@@ -19,8 +22,11 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
   prizeName,
   isOpened: externalIsOpened,
   isLastOne = false,
+  ticketNumber,
   onOpen,
   className,
+  imageUrl,
+  showPrizeDetail = false,
 }) => {
   const [internalIsOpened, setInternalIsOpened] = useState(false);
   const isOpened = externalIsOpened !== undefined ? externalIsOpened : internalIsOpened;
@@ -32,58 +38,160 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
     }
   };
 
+  if (showPrizeDetail) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        className={cn(
+          "relative w-full aspect-[3/4] flex flex-col items-center justify-between p-2 bg-transparent overflow-hidden",
+          className
+        )}
+      >
+        <div className="relative w-full flex-1 flex items-center justify-center bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden mb-2">
+          {imageUrl ? (
+            <img 
+              src={imageUrl} 
+              alt={prizeName}
+              className="w-full h-full object-contain p-2"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-neutral-50 text-neutral-300 font-bold">?</div>
+          )}
+          
+          <div className={cn(
+            "absolute top-2 left-2 px-2 py-1 rounded-md text-[10px] font-black shadow-sm z-10",
+            isLastOne ? "bg-black text-white" : "bg-neutral-900 text-white"
+          )}>
+            {grade}
+          </div>
+
+          {ticketNumber !== undefined && ticketNumber > 0 && (
+            <div className="absolute top-2 right-2 text-[10px] font-bold text-neutral-500 bg-white/90 px-1.5 py-0.5 rounded shadow-sm border border-neutral-100">
+              No.{ticketNumber}
+            </div>
+          )}
+        </div>
+        
+        <div className="w-full h-auto min-h-[2.5rem] flex items-start justify-center text-center">
+          <div className="text-sm font-black text-white drop-shadow-md leading-tight line-clamp-2">
+            {prizeName}
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
     <div 
       className={cn(
-        "relative w-full max-w-[320px] aspect-[2/1] group select-none perspective-1000",
+        "relative w-full max-w-[416px] aspect-[2/1] group select-none perspective-1000",
         !isOpened && "cursor-pointer",
         className
       )}
     >
       {/* Shadow layer for depth */}
-      <div className="absolute inset-0 bg-black/10 rounded-3xl blur-md translate-y-1 group-hover:translate-y-2 transition-transform" />
+      <div className="absolute inset-0 bg-black/10 rounded-[24px] blur-md translate-y-1 group-hover:translate-y-2 transition-transform" />
 
       {/* Main Ticket Base */}
-      <div className="absolute inset-0 rounded-3xl overflow-hidden shadow-xl bg-[#F3F4F6]">
-        {/* Background Image */}
-        <img 
-          src="/images/bg.svg" 
-          className="absolute inset-0 w-full h-full object-cover" 
-          alt="ticket background"
-          draggable={false}
-        />
+      <div className="absolute inset-0 rounded-[24px] shadow-xl bg-[#F3F4F6]">
+        
+        {/* Inner Content Wrapper - Clipped */}
+        <div className="absolute inset-0 rounded-[24px] overflow-hidden">
+          {/* Background Image */}
+          <img 
+            src="/images/bg.svg" 
+            className="absolute inset-0 w-full h-full object-cover sepia brightness-110 saturate-[5] hue-rotate-[-10deg] contrast-105" 
+            alt="ticket background"
+            draggable={false}
+          />
 
-        {/* The Result Content */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8, filter: 'blur(10px)' }}
-            animate={isOpened ? { opacity: 1, scale: 1, filter: 'blur(0px)' } : {}}
-            transition={{ delay: 0.3, duration: 0.6, type: 'spring' }}
-            className="flex flex-col items-center justify-center w-full z-10 px-4"
-          >
-            <div className="flex items-baseline gap-0.5 sm:gap-1 text-center justify-center">
-              <span className={cn(
-                "text-4xl sm:text-5xl font-black tracking-tighter leading-none font-amount",
-                isLastOne ? "text-yellow-600 drop-shadow-sm" : "text-neutral-900"
-              )}>
-                {(() => {
-                  if (isLastOne) return "LAST";
-                  const val = grade.replace('賞', '');
-                  const num = parseInt(val);
-                  return isNaN(num) ? val : num.toLocaleString();
-                })()}
-              </span>
-              <span className={cn(
-                "text-sm sm:text-lg font-black",
-                isLastOne ? "text-yellow-700" : "text-neutral-900"
-              )}>
-                {isLastOne ? "ONE" : "賞"}
-              </span>
-            </div>
-            <div className="text-[10px] sm:text-xs font-black text-neutral-800 text-center line-clamp-2 w-full mt-1 leading-tight">
-              {prizeName}
-            </div>
-          </motion.div>
+          {/* The Result Content */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <AnimatePresence mode="wait">
+              {!showPrizeDetail ? (
+                <motion.div
+                  key="grade"
+                  initial={{ opacity: 0, scale: 0.8, filter: 'blur(10px)' }}
+                  animate={isOpened ? { opacity: 1, scale: 1, filter: 'blur(0px)' } : {}}
+                  exit={{ opacity: 0, scale: 0.8, filter: 'blur(10px)' }}
+                  transition={{ delay: 0.3, duration: 0.6, type: 'spring' }}
+                  className="flex flex-col items-center justify-center w-full z-10 px-4 pl-12"
+                >
+                  <div className="flex items-baseline gap-0.5 sm:gap-1 text-center justify-center">
+                    <span className={cn(
+                      "text-4xl sm:text-5xl font-black tracking-tighter leading-none font-amount",
+                      isLastOne ? "text-yellow-600 drop-shadow-sm" : "text-neutral-900"
+                    )}>
+                      {(() => {
+                        if (isLastOne) return "LAST";
+                        const val = grade.replace('賞', '');
+                        const num = parseInt(val);
+                        return isNaN(num) ? val : num.toLocaleString();
+                      })()}
+                    </span>
+                    <span className={cn(
+                      "text-sm sm:text-lg font-black",
+                      isLastOne ? "text-yellow-700" : "text-neutral-900"
+                    )}>
+                      {isLastOne ? "ONE" : "賞"}
+                    </span>
+                  </div>
+                  <div className="text-[10px] sm:text-xs font-black text-neutral-800 text-center line-clamp-2 w-full mt-1 leading-tight">
+                    {prizeName}
+                  </div>
+                  {ticketNumber !== undefined && ticketNumber > 0 && (
+                    <div className="text-[10px] font-bold text-neutral-500 mt-1">
+                      No. {ticketNumber.toString().padStart(3, '0')}
+                    </div>
+                  )}
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="prize"
+                  initial={{ opacity: 0, rotateX: -90 }}
+                  animate={{ opacity: 1, rotateX: 0 }}
+                  exit={{ opacity: 0, rotateX: 90 }}
+                  transition={{ duration: 0.4 }}
+                  className="flex items-center w-full h-full z-10 p-3 pl-4 gap-3"
+                >
+                  {/* Image Container */}
+                  <div className="h-full aspect-square relative rounded-xl overflow-hidden bg-white shadow-sm border border-neutral-100 shrink-0 p-1">
+                    {imageUrl ? (
+                      <img 
+                        src={imageUrl} 
+                        alt={prizeName}
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-neutral-50 text-neutral-300 font-bold">?</div>
+                    )}
+                  </div>
+                  
+                  {/* Text Content */}
+                  <div className="flex-1 flex flex-col justify-center min-w-0 h-full py-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className={cn(
+                        "px-1.5 py-0.5 rounded text-[10px] font-black",
+                        isLastOne ? "bg-black text-white" : "bg-neutral-900 text-white"
+                      )}>
+                        {grade}
+                      </div>
+                      {ticketNumber !== undefined && ticketNumber > 0 && (
+                        <div className="text-[10px] font-bold text-neutral-400">
+                          No.{ticketNumber}
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-sm font-black text-neutral-900 leading-tight line-clamp-2 pr-2">
+                      {prizeName}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
 
         {/* The Tearable Cover Layer */}
@@ -121,18 +229,21 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
               className="absolute inset-0 touch-none cursor-grab active:cursor-grabbing"
             >
               <div className="absolute inset-0 backface-hidden flex items-center justify-center overflow-visible">
-                <img 
-                  src="/images/up.svg?v=5" 
-                  className="w-[105%] h-[105%] max-w-none object-cover" 
-                  alt="cover" 
-                  draggable={false}
-                />
+                {/* Cover Image Wrapper - Clipped */}
+                <div className="absolute inset-0 rounded-[24px] overflow-hidden">
+                  <img 
+                    src="/images/up.svg?v=5" 
+                    className="w-[105%] h-[105%] max-w-none object-cover -translate-x-2 -translate-y-0.5 sepia brightness-110 saturate-[5] hue-rotate-[-10deg] contrast-105" 
+                    alt="cover" 
+                    draggable={false}
+                  />
+                </div>
 
-                {/* Finger Swipe Guide */}
+                {/* Finger Swipe Guide - Not Clipped */}
                 <motion.div 
                   className="absolute left-[25%] top-1/2 -translate-y-1/2 pointer-events-none"
                   animate={{ 
-                    x: [0, 140],
+                    x: [0, 100],
                     opacity: [0, 1, 1, 0] 
                   }}
                   transition={{ 

@@ -1,4 +1,6 @@
--- Fix play_ichiban function to deduct user points and record warehouse items correctly
+-- Fix play_ichiban function to remove dependency on deleted profiles table
+-- This overrides the version from 107_fix_play_ichiban_deduction_and_warehouse.sql
+
 CREATE OR REPLACE FUNCTION public.play_ichiban(p_product_id BIGINT, p_ticket_numbers INTEGER[])
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -37,8 +39,8 @@ BEGIN
 
   v_total_cost := v_product_price * v_count;
 
-  -- Check user balance
-  SELECT tokens INTO v_user_tokens FROM users WHERE id = v_user_id::text;
+  -- Check user balance (Only from users table)
+  SELECT tokens INTO v_user_tokens FROM users WHERE id = v_user_id;
   
   IF v_user_tokens IS NULL THEN
      RAISE EXCEPTION 'User not found or no tokens';
@@ -49,8 +51,10 @@ BEGIN
   END IF;
 
   -- Deduct balance
-  UPDATE users SET tokens = tokens - v_total_cost WHERE id = v_user_id::text;
+  UPDATE users SET tokens = tokens - v_total_cost WHERE id = v_user_id;
   
+  -- Removed profiles update since table is dropped
+
   FOREACH v_ticket_no IN ARRAY p_ticket_numbers LOOP
     -- Check if ticket is already taken
     IF EXISTS (SELECT 1 FROM draw_records WHERE product_id = p_product_id AND ticket_number = v_ticket_no) THEN
@@ -93,7 +97,8 @@ BEGIN
     v_prizes_drawn := v_prizes_drawn || jsonb_build_object(
       'grade', v_prize.level,
       'name', v_prize.name,
-      'image_url', v_prize.image_url
+      'image_url', v_prize.image_url,
+      'ticket_number', v_ticket_no
     );
 
     -- Check if this was the last normal prize
@@ -132,7 +137,8 @@ BEGIN
               'grade', v_last_one_prize.level,
               'name', v_last_one_prize.name,
               'image_url', v_last_one_prize.image_url,
-              'is_last_one', true
+              'is_last_one', true,
+              'ticket_number', 0
             );
         END IF;
     END IF;

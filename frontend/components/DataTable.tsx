@@ -174,9 +174,9 @@ export default function DataTable<T extends { id: number | string }>({
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead>
-          <tr className="border-b border-neutral-200">
+          <tr className="border-b border-neutral-200 dark:border-neutral-800">
             {selectable && (
-              <th className={`text-left ${getDensityClasses()} text-sm font-semibold text-neutral-700 w-12`}>
+              <th className={`text-left ${getDensityClasses()} text-sm font-semibold text-neutral-700 dark:text-neutral-300 w-12`}>
                 <input
                   type="checkbox"
                   checked={isAllSelected}
@@ -187,7 +187,7 @@ export default function DataTable<T extends { id: number | string }>({
             )}
             {filteredColumns.map((column) => {
               const stickyClass = column.sticky 
-                ? 'sticky right-0 bg-white z-20 border-l border-neutral-200' 
+                ? 'sticky right-0 bg-white dark:bg-neutral-900 z-20 border-l border-neutral-200 dark:border-neutral-800' 
                 : ''
               
               if (column.sortable && onSort) {
@@ -207,7 +207,7 @@ export default function DataTable<T extends { id: number | string }>({
               return (
                 <th
                   key={column.key}
-                  className={`text-left ${getDensityClasses()} text-sm font-semibold text-neutral-700 ${column.className || ''} ${stickyClass}`}
+                  className={`text-left ${getDensityClasses()} text-sm font-semibold text-neutral-700 dark:text-neutral-300 ${column.className || ''} ${stickyClass}`}
                 >
                   {column.label}
                 </th>
@@ -228,9 +228,9 @@ export default function DataTable<T extends { id: number | string }>({
                   <tr 
                     ref={isHighlighted ? highlightedRef : undefined}
                     className={`
-                      border-b border-neutral-100 hover:bg-neutral-50 transition-colors
+                      border-b border-neutral-100 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors
                       ${isSelected ? 'bg-primary/5' : ''}
-                      ${isHighlighted ? 'bg-yellow-50 animate-pulse' : ''}
+                      ${isHighlighted ? 'bg-yellow-50 dark:bg-yellow-900/20 animate-pulse' : ''}
                       ${rowClassName ? rowClassName(item, index) : ''}
                     `}
                   >
@@ -247,13 +247,13 @@ export default function DataTable<T extends { id: number | string }>({
                     )}
                     {filteredColumns.map((column) => {
                       const stickyClass = column.sticky 
-                        ? 'sticky right-0 bg-white z-20 border-l border-neutral-200 group-hover:bg-neutral-50' 
+                        ? 'sticky right-0 bg-white dark:bg-neutral-900 z-20 border-l border-neutral-200 dark:border-neutral-800 group-hover:bg-neutral-50 dark:group-hover:bg-neutral-800' 
                         : ''
                         
                       return (
                         <td 
                           key={column.key} 
-                          className={`${getDensityClasses()} text-sm text-neutral-600 ${column.className || ''} ${stickyClass}`}
+                          className={`${getDensityClasses()} text-sm text-neutral-600 dark:text-neutral-400 ${column.className || ''} ${stickyClass}`}
                         >
                           {column.render ? column.render(item, index) : (item as any)[column.key]}
                         </td>
@@ -261,7 +261,7 @@ export default function DataTable<T extends { id: number | string }>({
                     })}
                   </tr>
                   {expandable && isExpanded && renderExpanded && (
-                    <tr className="bg-neutral-50/50">
+                    <tr className="bg-neutral-50/50 dark:bg-neutral-800/50">
                       <td colSpan={filteredColumns.length + (selectable ? 1 : 0)} className="p-0">
                         {renderExpanded(item)}
                       </td>
@@ -274,7 +274,7 @@ export default function DataTable<T extends { id: number | string }>({
             <tr>
               <td 
                 colSpan={filteredColumns.length + (selectable ? 1 : 0)} 
-                className="py-12 text-center text-neutral-500"
+                className="py-12 text-center text-neutral-500 dark:text-neutral-400"
               >
                 {emptyMessage}
               </td>

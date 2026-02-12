@@ -2,6 +2,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
@@ -57,9 +58,12 @@ function NavbarInner() {
   
   // Define page types
   const isHomePage = pathname === '/';
-  const isMainTab = pathname === '/shop' || pathname === '/news' || pathname === '/check-in' || (pathname === '/profile' && !activeTab);
+  const isMainTab = pathname === '/shop' || pathname === '/news' || pathname === '/check-in' || pathname === '/market' || (pathname === '/profile' && !activeTab);
   const isInnerPage = !isHomePage && !isMainTab;
   const isProductDetailPage = /^\/shop\/\d+$/.test(pathname);
+  const isNewsDetailPage = /^\/news\/[^/]+$/.test(pathname);
+
+  const isTicketSelectionPage = pathname.endsWith('/select');
 
   useEffect(() => {
     if (isProductDetailPage) {
@@ -95,11 +99,29 @@ function NavbarInner() {
           checkFollow();
         }
       }
+    } else if (isNewsDetailPage) {
+      // Extract UUID from path
+      const match = pathname.match(/^\/news\/([^/]+)$/);
+      if (match) {
+        const newsId = match[1];
+        const fetchNews = async () => {
+          const { data } = await supabase
+            .from('news')
+            .select('title')
+            .eq('id', newsId)
+            .single();
+          
+          if (data) {
+            setProductName(data.title);
+          }
+        };
+        fetchNews();
+      }
     } else {
       setProductName(null);
       setIsProductFollowed(false);
     }
-  }, [pathname, user, isProductDetailPage]);
+  }, [pathname, user, isProductDetailPage, isNewsDetailPage]);
 
   const handleFollowToggle = async () => {
     if (!user) {
@@ -127,7 +149,8 @@ function NavbarInner() {
 
   // 獲取頁面名稱
   const getPageTitle = () => {
-    if (pathname === '/shop') return '商城';
+    if (pathname === '/shop') return '全部商品';
+    if (pathname === '/market') return '市集';
     if (pathname === '/news') return '最新情報';
     if (pathname === '/check-in') return '每日簽到';
     if (pathname.endsWith('/select')) return '選擇籤號';
@@ -150,13 +173,15 @@ function NavbarInner() {
       if (tab === 'topup-history') return '儲值紀錄';
       if (tab === 'follows') return '我的關注';
       if (tab === 'settings') return '設定';
+      if (tab === 'market') return '市集管理';
+      if (tab === 'check-in') return '每日簽到';
       return '個人中心';
     }
     return '';
   };
 
   // Mock data
-  const hotSearches = ['航海王', '七龍珠', '鬼滅之刃', 'SPY×FAMILY', '寶可夢'];
+  const hotSearches = ['航海王', '七龍珠', '鬼滅之刃', 'SPY×FAMILY', '寶可夢', '進擊的巨人', '鏈鋸人', '約定的夢幻島', '東京復仇者', '排球少年'];
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
 
   const notifications = [
@@ -197,8 +222,21 @@ function NavbarInner() {
     setQuery(q);
     setIsSearchOpen(false);
     setIsDesktopSearchOpen(false);
-    router.push(`/shop?search=${encodeURIComponent(q)}`);
+    
+    if (pathname === '/market') {
+      router.push(`/market?search=${encodeURIComponent(q)}`);
+    } else {
+      router.push(`/shop?search=${encodeURIComponent(q)}`);
+    }
   };
+
+  const productTypes = [
+    { id: 'all', name: '全部' },
+    { id: 'custom', name: '自製賞' },
+    { id: 'ichiban', name: '一番賞' },
+    { id: 'blindbox', name: '盒玩' },
+    { id: 'gacha', name: '轉蛋' },
+  ];
 
   const clearHistory = () => {
     setSearchHistory([]);
@@ -214,11 +252,15 @@ function NavbarInner() {
 
   return (
     <>
-      <nav className={cn("bg-white dark:bg-neutral-900 border-b border-neutral-100 dark:border-neutral-800 sticky top-0 z-50 transition-colors")}>
+      <nav className={cn(
+        "bg-white dark:bg-neutral-900 border-b border-neutral-100 dark:border-neutral-800 top-0 z-50 transition-colors",
+        isProductDetailPage ? "fixed left-0 right-0 md:sticky" : "sticky",
+        ((pathname === '/profile' && !activeTab) || isTicketSelectionPage) && "hidden md:block"
+      )}>
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14">
             {/* 左：Logo + 標語 / 返回按鈕 */}
-            <div className="flex items-center gap-4 flex-1 md:flex-none">
+            <div className="flex items-center gap-2 md:gap-4 shrink-0">
               {showTitle ? (
                 <div className="flex items-center w-full md:w-auto overflow-hidden">
                   {showBackButton && (
@@ -238,50 +280,38 @@ function NavbarInner() {
                     </button>
                   )}
                   <span className={cn(
-                    "md:hidden text-lg font-black tracking-tight text-neutral-900 dark:text-white truncate",
+                    "md:hidden text-lg font-black tracking-tight text-neutral-900 dark:text-white truncate flex-1 text-center px-1 min-w-0",
                     !showBackButton && "ml-0" // Adjust margin if no back button
                   )}>
-                    {productName && isProductDetailPage ? productName : getPageTitle()}
+                    {(productName && (isProductDetailPage || isNewsDetailPage)) ? productName : getPageTitle()}
                   </span>
                 </div>
               ) : null}
               
               <Link href="/" className={cn("flex items-center group", !showLogo && "hidden md:flex")}>
-                <span className="text-xl font-black text-primary tracking-tighter transition-transform group-hover:scale-105">一番賞</span>
-                <div className="ml-1.5 px-1.5 py-0.5 bg-primary/5 rounded-md hidden lg:block">
-                  <span className="text-[11px] font-black text-primary uppercase tracking-widest leading-none">ONLINE</span>
+                <div className="relative w-[120px] h-[40px] transition-transform group-hover:scale-105">
+                  <Image
+                    src="/images/logo.png"
+                    alt="一番賞"
+                    fill
+                    className="object-contain object-left"
+                    priority
+                  />
                 </div>
               </Link>
               <div className="hidden md:flex items-center gap-3 lg:gap-5">
                 <Link href="/shop" className="text-[15px] lg:text-[16px] font-black text-neutral-600 dark:text-neutral-400 hover:text-primary transition-colors">全部商品</Link>
                 <Link href="/market" className="text-[15px] lg:text-[16px] font-black text-neutral-600 dark:text-neutral-400 hover:text-primary transition-colors flex items-center gap-1">
                   市集
-                  <span className="bg-accent-yellow/20 text-accent-yellow text-[9px] px-1.5 py-0.5 rounded-full">NEW</span>
+                  <span className="bg-gradient-to-r from-violet-600 to-blue-600 text-white text-[9px] px-1.5 py-0.5 rounded-full shadow-sm">NEW</span>
                 </Link>
                 <Link href="/news" className="text-[15px] lg:text-[16px] font-black text-neutral-600 dark:text-neutral-400 hover:text-primary transition-colors">最新情報</Link>
-                <Link href="/faq" className="text-[15px] lg:text-[16px] font-black text-neutral-600 dark:text-neutral-400 hover:text-primary transition-colors">常見問題</Link>
               </div>
             </div>
             
-            {/* 右：搜尋 + 通知 + 登入/使用者 */}
-            <div className="flex items-center gap-1 lg:gap-2">
-              {/* Dark Mode Toggle */}
-              <button
-                onClick={toggleTheme}
-                className="hidden md:flex p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-xl text-neutral-600 dark:text-neutral-400 transition-colors"
-              >
-                {theme === 'dark' ? <Sun className="w-5 h-5 stroke-[2.5]" /> : <Moon className="w-5 h-5 stroke-[2.5]" />}
-              </button>
-
-              {/* Mobile Right Action Button */}
-              {pathname === '/shop' && (
-                <button className="md:hidden p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-xl text-neutral-600 dark:text-neutral-400 transition-colors">
-                  <Filter className="w-5 h-5 stroke-[2.5]" />
-                </button>
-              )}
-
-              {/* Desktop Search */}
-              <div ref={searchContainerRef} className="hidden md:block w-[180px] lg:w-[280px] transition-all duration-300 relative">
+            {/* Search Bar - Responsive - Only show on Shop and Market pages */}
+            {(pathname === '/shop' || pathname === '/market') && (
+              <div ref={searchContainerRef} className="flex-1 w-full md:max-w-[280px] lg:max-w-[400px] mx-2 transition-all duration-300 relative">
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
@@ -296,13 +326,13 @@ function NavbarInner() {
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
                       onFocus={() => setIsDesktopSearchOpen(true)}
-                      placeholder="搜尋商品..."
-                      className="w-full h-9 pl-9 pr-4 bg-neutral-100 dark:bg-neutral-800 border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 text-[13px] font-bold transition-all placeholder:text-neutral-400 dark:text-white dark:placeholder:text-neutral-500"
+                      placeholder={pathname === '/market' ? "搜尋市集商品..." : "搜尋商品..."}
+                      className="w-full h-11 md:h-9 pl-9 pr-4 bg-neutral-100 dark:bg-neutral-800 border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 text-[13px] font-bold transition-all placeholder:text-neutral-400 dark:text-white dark:placeholder:text-neutral-500"
                     />
                   </div>
                 </form>
 
-                {/* Desktop Search Dropdown */}
+                {/* Search Dropdown */}
                 {isDesktopSearchOpen && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-neutral-900 rounded-2xl shadow-modal border border-neutral-100 dark:border-neutral-800 p-4 z-50 animate-in fade-in zoom-in-95 duration-200">
                     {/* Hot Searches */}
@@ -361,6 +391,19 @@ function NavbarInner() {
                   </div>
                 )}
               </div>
+            )}
+
+            {/* 右：搜尋 + 通知 + 登入/會員 */}
+            <div className="flex items-center gap-0.5 lg:gap-2 shrink-0">
+              {/* Dark Mode Toggle */}
+              <button
+                onClick={toggleTheme}
+                className="hidden md:flex p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-xl text-neutral-600 dark:text-neutral-400 transition-colors"
+              >
+                {theme === 'dark' ? <Sun className="w-5 h-5 stroke-[2.5]" /> : <Moon className="w-5 h-5 stroke-[2.5]" />}
+              </button>
+
+
 
               {/* Mobile Search Button - Hidden per user request */}
               {/* <button 
@@ -372,7 +415,7 @@ function NavbarInner() {
 
               {/* Product Page Mobile Actions */}
               {isProductDetailPage && (
-                <div className="flex items-center gap-1 md:hidden">
+                <div className="flex items-center gap-0 md:hidden">
                   <button className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-xl text-neutral-600 dark:text-neutral-400 transition-colors">
                     <Share2 className="w-5 h-5 stroke-[2.5]" />
                   </button>
@@ -535,7 +578,7 @@ function NavbarInner() {
                         className="w-full flex items-center gap-3 px-3.5 py-2.5 text-[14px] font-black text-neutral-400 hover:text-accent-red hover:bg-accent-red/5 rounded-xl transition-all"
                       >
                         <LogOut className="w-4 h-4" />
-                        登出帳號
+                        登出
                       </button>
                     </div>
                   </div>
@@ -548,6 +591,7 @@ function NavbarInner() {
                 )
               )}
             </div>
+            {/* Mobile Search & Tabs Sub-header - Removed and moved to page components */}
           </div>
         </div>
       </nav>

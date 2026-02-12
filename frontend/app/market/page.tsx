@@ -19,7 +19,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import MarketProductCard from '@/components/MarketProductCard';
 import ProductCardSkeleton from '@/components/ProductCardSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 interface MarketplaceListing {
   id: number;
@@ -42,15 +42,37 @@ interface MarketplaceListing {
 export default function MarketplacePage() {
   const { user, refreshProfile } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sortBy, setSortBy] = useState<'newest' | 'price_asc' | 'price_desc'>('newest');
   
   // Filters
-  const [activeType, setActiveType] = useState<string>('all');
+  const activeType = searchParams.get('type') || 'all';
+  const searchQuery = searchParams.get('search') || '';
   const [filterLevel, setFilterLevel] = useState<string | null>(null);
   const [priceMin, setPriceMin] = useState('');
   const [priceMax, setPriceMax] = useState('');
+  const [isMobileSortOpen, setIsMobileSortOpen] = useState(false);
+  const [localSearch, setLocalSearch] = useState(searchQuery);
+
+  useEffect(() => {
+    setLocalSearch(searchQuery);
+  }, [searchQuery]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const params = new URLSearchParams(searchParams.toString());
+    if (localSearch) params.set('search', localSearch);
+    else params.delete('search');
+    router.push(`/market?${params.toString()}`);
+  };
+
+  const setActiveType = (type: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('type', type);
+    router.push(`/market?${params.toString()}`);
+  };
   
   // Purchase Modal
   const [selectedListing, setSelectedListing] = useState<MarketplaceListing | null>(null);
@@ -121,6 +143,14 @@ export default function MarketplacePage() {
       result = result.filter(item => item.products.type === activeType);
     }
 
+    // Filter by Search
+    if (searchQuery) {
+      result = result.filter(item => 
+        item.products.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        item.product_prizes.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
     // Filter by Level
     if (filterLevel) {
       result = result.filter(item => item.product_prizes.level === filterLevel);
@@ -162,7 +192,7 @@ export default function MarketplacePage() {
       if (error) throw error;
       if (!data.success) throw new Error(data.message);
 
-      toast.success('購買成功！商品已存入您的倉庫');
+      toast.success('購買成功！獎項已存入您的倉庫');
       setSelectedListing(null);
       fetchListings(); // Refresh list
       refreshProfile(); // Refresh user balance
@@ -175,7 +205,7 @@ export default function MarketplacePage() {
   };
 
   const productTypes = [
-    { id: 'all', name: '全部商品' },
+    { id: 'all', name: '全部獎項' },
     { id: 'ichiban', name: '一番賞' },
     { id: 'blindbox', name: '盒玩' },
     { id: 'gacha', name: '轉蛋' },
@@ -201,64 +231,78 @@ export default function MarketplacePage() {
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 pb-20 transition-colors">
-      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-6">
-        {/* 1. Mobile Search & Sort Row */}
-        <div className="md:hidden flex flex-col gap-2 mb-2 animate-in fade-in slide-in-from-top-2">
-           <div className="flex items-center gap-2">
-            <div className="flex-1 relative group">
-              <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 group-focus-within:text-primary transition-colors">
-                <Search className="w-4 h-4 stroke-[3]" />
-              </div>
-              <input
-                placeholder="搜尋市集商品..."
-                className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-2xl shadow-soft focus:outline-none focus:border-primary/30 focus:ring-0 text-[13px] font-black text-neutral-900 dark:text-white placeholder:text-neutral-400 transition-all"
-              />
-            </div>
-            <div className="relative group">
-              <button className="flex items-center justify-center w-11 h-11 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-2xl text-neutral-600 dark:text-neutral-400 shadow-soft active:scale-95 transition-all">
-                <SlidersHorizontal className="w-5 h-5 stroke-[2.5]" />
-              </button>
-              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-neutral-900 rounded-3xl shadow-modal border border-neutral-100 dark:border-neutral-800 p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 transform origin-top-right scale-95 group-hover:scale-100">
-                {[
-                  { id: 'newest', label: '最新上架' },
-                  { id: 'price-asc', label: '價格: 低到高' },
-                  { id: 'price-desc', label: '價格: 高到低' },
-                ].map((opt) => (
-                  <button
-                    key={opt.id}
-                    onClick={() => setSortBy(opt.id as any)}
-                    className={cn(
-                      "w-full text-left px-4 py-3 text-sm font-black rounded-xl transition-colors",
-                      sortBy === opt.id ? "bg-primary/5 text-primary" : "text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white"
-                    )}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-2 md:pt-6">
+        {/* 1. Mobile Filter Row */}
+        <div className="md:hidden flex flex-col gap-3 mb-4 animate-in fade-in slide-in-from-top-2 relative z-30">
+          <div className="flex items-center gap-2">
+             {/* Scrollable Category Tabs */}
+             <div className="flex-1 overflow-x-auto scrollbar-hide">
+                <div className="flex gap-2">
+                  {productTypes.map((type) => (
+                    <button
+                      key={type.id}
+                      onClick={() => setActiveType(type.id)}
+                      className={cn(
+                        "flex-shrink-0 px-3 py-2 min-h-[40px] flex items-center rounded-xl text-sm font-black whitespace-nowrap transition-all",
+                        activeType === type.id
+                          ? "bg-primary text-white shadow-lg shadow-primary/20"
+                          : "bg-white dark:bg-neutral-900 text-neutral-500 dark:text-neutral-400 border border-neutral-100 dark:border-neutral-800"
+                      )}
+                    >
+                      {type.name}
+                    </button>
+                  ))}
+                </div>
+             </div>
+
+             {/* Sort Button */}
+             <div className="relative shrink-0">
+               <button 
+                 onClick={() => setIsMobileSortOpen(!isMobileSortOpen)}
+                 className={cn(
+                   "flex items-center justify-center w-11 h-11 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-2xl text-neutral-600 dark:text-neutral-400 shadow-soft active:scale-95 transition-all",
+                   isMobileSortOpen && "border-primary text-primary"
+                 )}
+               >
+                 <SlidersHorizontal className="w-5 h-5 stroke-[2.5]" />
+               </button>
+               
+               {/* Dropdown */}
+               {isMobileSortOpen && (
+                 <>
+                   <div 
+                     className="fixed inset-0 z-40" 
+                     onClick={() => setIsMobileSortOpen(false)} 
+                   />
+                   <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-neutral-900 rounded-3xl shadow-modal border border-neutral-100 dark:border-neutral-800 p-2 z-50 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+                     {[
+                       { id: 'newest', label: '最新上架' },
+                       { id: 'price_asc', label: '價格: 低到高' },
+                       { id: 'price_desc', label: '價格: 高到低' },
+                     ].map((opt) => (
+                       <button
+                         key={opt.id}
+                         onClick={() => {
+                           setSortBy(opt.id as any);
+                           setIsMobileSortOpen(false);
+                         }}
+                         className={cn(
+                           "w-full text-left px-4 py-3 text-sm font-black rounded-xl transition-colors",
+                           sortBy === opt.id ? "bg-primary/5 text-primary" : "text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white"
+                         )}
+                       >
+                         {opt.label}
+                       </button>
+                     ))}
+                   </div>
+                 </>
+               )}
+             </div>
           </div>
         </div>
 
-        {/* Mobile Type Tabs */}
-        <div className="md:hidden -mx-2 px-2 mb-2 overflow-x-auto pb-1 scrollbar-hide">
-          <div className="flex gap-2">
-            {productTypes.map((type) => (
-              <button
-                key={type.id}
-                onClick={() => setActiveType(type.id)}
-                className={cn(
-                  "whitespace-nowrap px-4 py-2 rounded-xl text-[13px] font-black transition-all border active:scale-95",
-                  activeType === type.id
-                    ? "bg-primary border-primary text-white shadow-md shadow-primary/20"
-                    : "bg-white dark:bg-neutral-900 border-neutral-100 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800"
-                )}
-              >
-                {type.name}
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* Mobile Type Tabs - REMOVED per request (Moved to Navbar) */}
+
 
         {/* Desktop Header */}
         <div className="hidden md:flex flex-col gap-4 sm:gap-6 mb-4">
@@ -266,7 +310,7 @@ export default function MarketplacePage() {
             <h1 className="flex items-baseline gap-4 text-2xl font-black text-neutral-900 dark:text-white tracking-tight">
               市集
               <span className="text-xs font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
-                <span className="font-amount">{filteredListings.length.toLocaleString()}</span> 個商品
+                <span className="font-amount">{filteredListings.length.toLocaleString()}</span> 個獎項
               </span>
             </h1>
 
@@ -354,10 +398,6 @@ export default function MarketplacePage() {
             <div className="bg-white dark:bg-neutral-900 rounded-2xl p-3 shadow-card border border-neutral-100 dark:border-neutral-800 transition-colors space-y-6">
               {/* Product Type Filter */}
               <div>
-                <div className="flex items-center gap-3 mb-3 lg:mb-4 px-1">
-                  <Filter className="w-4 h-4 lg:w-5 h-5 text-primary stroke-[2.5]" />
-                  <h2 className="text-[12px] lg:text-sm font-black text-neutral-900 dark:text-white uppercase tracking-widest">商品種類</h2>
-                </div>
                 <div className="space-y-1">
                   {productTypes.map((type) => (
                     <button
@@ -383,7 +423,6 @@ export default function MarketplacePage() {
               {/* Grade Filter */}
               <div>
                 <div className="flex items-center gap-3 mb-3 lg:mb-4 px-1">
-                  <Filter className="w-4 h-4 lg:w-5 h-5 text-accent-red stroke-[2.5]" />
                   <h2 className="text-[12px] lg:text-sm font-black text-neutral-900 dark:text-white uppercase tracking-widest">賞別篩選</h2>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
@@ -407,9 +446,6 @@ export default function MarketplacePage() {
               {/* Price Range */}
               <div>
                 <div className="flex items-center gap-3 mb-3 lg:mb-4 px-1">
-                  <div className="w-4 h-4 lg:w-5 h-5 flex items-center justify-center rounded-full bg-accent-yellow/20 text-accent-yellow">
-                    <span className="text-xs font-bold font-amount">$</span>
-                  </div>
                   <h2 className="text-[12px] lg:text-sm font-black text-neutral-900 dark:text-white uppercase tracking-widest">價格區間</h2>
                 </div>
                 <div className="px-1">
@@ -430,6 +466,9 @@ export default function MarketplacePage() {
                       className="w-full bg-neutral-100 dark:bg-neutral-800 rounded-xl px-2.5 py-2 text-center font-bold font-amount focus:outline-none focus:ring-2 focus:ring-primary/20" 
                     />
                   </div>
+                  <button className="w-full py-3 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-xs font-black uppercase tracking-widest hover:bg-primary dark:hover:bg-primary hover:text-white dark:hover:text-white transition-colors">
+                    套用篩選
+                  </button>
                 </div>
               </div>
             </div>
@@ -438,15 +477,15 @@ export default function MarketplacePage() {
           {/* Product Grid */}
           <div className="flex-1 w-full">
             {isLoading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
-                {Array.from({ length: 8 }).map((_, index) => (
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
+                {Array.from({ length: 10 }).map((_, index) => (
                   <div key={index} className="h-[280px]">
                     <ProductCardSkeleton />
                   </div>
                 ))}
               </div>
             ) : filteredListings.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
                 {filteredListings.map((item) => (
                   <MarketProductCard 
                     key={item.id} 
@@ -463,7 +502,7 @@ export default function MarketplacePage() {
               </div>
             ) : (
               <EmptyState 
-                title="找不到商品" 
+                title="找不到獎項" 
                 description="試試看調整篩選條件" 
                 actionLabel="清除篩選"
                 onAction={() => {

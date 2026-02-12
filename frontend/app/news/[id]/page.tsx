@@ -78,9 +78,15 @@ export default function NewsDetailPage() {
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 pb-20 transition-colors">
       {/* Breadcrumb - Hidden on mobile */}
-      <div className="hidden md:block bg-white dark:bg-neutral-900 border-b border-neutral-100 dark:border-neutral-800 sticky top-16 z-30 transition-colors">
+      <div className="hidden md:block bg-white dark:bg-neutral-900 border-b border-neutral-100 dark:border-neutral-800 sticky top-14 z-30 transition-colors">
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between text-sm text-neutral-500 dark:text-neutral-400">
           <div className="flex items-center">
+            <button 
+              onClick={() => router.back()}
+              className="mr-3 p-1 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
             <Link href="/" className="hover:text-primary font-black transition-colors uppercase tracking-wider text-sm">首頁</Link>
             <ChevronRight className="w-3.5 h-3.5 mx-2 text-neutral-300 dark:text-neutral-600" />
             <span className="text-neutral-900 dark:text-white font-black truncate max-w-[200px] md:max-w-[400px]">{newsItem.title}</span>
@@ -92,14 +98,6 @@ export default function NewsDetailPage() {
       </div>
 
       <div className="max-w-4xl mx-auto px-2 sm:px-4 py-3 md:py-8">
-        <button 
-          onClick={() => router.back()}
-          className="hidden md:flex items-center gap-2 text-neutral-400 hover:text-primary transition-colors mb-8 group"
-        >
-          <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
-          <span className="text-sm font-black uppercase tracking-widest">返回上一頁</span>
-        </button>
-
         <article className="bg-white dark:bg-neutral-900 rounded-3xl md:rounded-3xl shadow-card border border-neutral-100 dark:border-neutral-800 overflow-hidden transition-colors">
           {/* News Banner */}
           <div className="relative aspect-[21/9] bg-[#28324E]">

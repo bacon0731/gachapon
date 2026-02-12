@@ -91,6 +91,8 @@ export default function Home() {
                   name={product.name}
                   image={product.image_url || ''}
                   price={product.price}
+                  remaining={product.remaining}
+                  total={product.total_count}
                   isHot={product.is_hot}
                   type={product.type}
                 />
@@ -126,6 +128,8 @@ export default function Home() {
                   name={product.name}
                   image={product.image_url || ''}
                   price={product.price}
+                  remaining={product.remaining}
+                  total={product.total_count}
                   isHot={product.is_hot}
                   type={product.type}
                 />

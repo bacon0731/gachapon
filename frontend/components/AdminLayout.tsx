@@ -156,7 +156,7 @@ export default function AdminLayout({ children, pageTitle, pageSubtitle, breadcr
       'operation_staff': '營運專員',
       'marketing_staff': '行銷專員',
       'admin': '管理員',
-      'user': '用戶'
+      'user': '會員'
     }
     return roleMap[role || ''] || '管理員'
   }
