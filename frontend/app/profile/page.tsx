@@ -1958,12 +1958,12 @@ function ProfileContent() {
             {/* User Info + Settings Icon */}
             <div className="flex items-center justify-between px-0 mb-3">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-full overflow-hidden border-2 border-white shadow-soft">
+                <div className="w-11 h-11 rounded-full overflow-hidden border-2 border-white dark:border-neutral-800 shadow-soft">
                   <img src={user.avatar_url || 'https://github.com/shadcn.png'} alt={user.name} className="w-full h-full object-cover" />
                 </div>
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <h2 className="text-base font-black text-neutral-900 leading-tight">{user.name}</h2>
+                    <h2 className="text-base font-black text-neutral-900 dark:text-white leading-tight">{user.name}</h2>
                     <CheckCircle2 className="w-3.5 h-3.5 text-accent-emerald" />
                   </div>
                   <div className="flex items-center gap-2 mt-1.5" onClick={() => {
@@ -1972,7 +1972,7 @@ function ProfileContent() {
                       toast.success('邀請碼已複製');
                     }
                   }}>
-                    <div className="flex items-center gap-1.5 bg-neutral-100 px-2 py-1 rounded-lg active:scale-95 transition-transform cursor-pointer">
+                    <div className="flex items-center gap-1.5 bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded-lg active:scale-95 transition-transform cursor-pointer">
                       <span className="text-[13px] font-black text-neutral-400">邀請碼：</span>
                       <span className="text-[13px] font-mono font-black text-primary">{user.invite_code || '-'}</span>
                       <Copy className="w-3.5 h-3.5 text-neutral-400" />
@@ -1983,7 +1983,7 @@ function ProfileContent() {
               <div className="flex items-center gap-2">
                 <button 
                   onClick={() => handleTabChange('settings')}
-                  className="w-9 h-9 rounded-full bg-white shadow-soft flex items-center justify-center text-neutral-400 hover:text-primary transition-colors border border-neutral-100"
+                  className="w-9 h-9 rounded-full bg-white dark:bg-neutral-900 shadow-soft flex items-center justify-center text-neutral-400 hover:text-primary transition-colors border border-neutral-100 dark:border-neutral-800"
                 >
                   <Settings className="w-4.5 h-4.5" />
                 </button>
@@ -2018,14 +2018,14 @@ function ProfileContent() {
             </div>
 
             {/* Main Menu List */}
-            <div className="mx-0 bg-white rounded-2xl shadow-card border border-neutral-100 overflow-hidden divide-y divide-neutral-50">
+            <div className="mx-0 bg-white dark:bg-neutral-900 rounded-2xl shadow-card border border-neutral-100 dark:border-neutral-800 overflow-hidden divide-y divide-neutral-50 dark:divide-neutral-800">
               {navItems.filter(item => item.id !== 'topup-history').map((item) => (
-                <button key={item.id} onClick={() => handleTabChange(item.id as TabType)} className="w-full flex items-center justify-between p-3 hover:bg-neutral-50 transition-colors group">
+                <button key={item.id} onClick={() => handleTabChange(item.id as TabType)} className="w-full flex items-center justify-between p-3 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors group">
                   <div className="flex items-center gap-2.5">
-                    <div className={cn("w-8 h-8 rounded-xl bg-neutral-50 flex items-center justify-center group-hover:scale-110 transition-transform", item.color)}>
+                    <div className={cn("w-8 h-8 rounded-xl bg-neutral-50 dark:bg-neutral-800 flex items-center justify-center group-hover:scale-110 transition-transform", item.color)}>
                       <item.icon className="w-4 h-4 stroke-[2.5]" />
                     </div>
-                    <span className="text-[14px] font-black text-neutral-700">{item.label}</span>
+                    <span className="text-[14px] font-black text-neutral-700 dark:text-neutral-200">{item.label}</span>
                   </div>
                   <ChevronRight className="w-4 h-4 text-neutral-300 group-hover:text-neutral-500 group-hover:translate-x-1 transition-all" />
                 </button>
@@ -2033,7 +2033,7 @@ function ProfileContent() {
             </div>
 
             {/* Info Menu List */}
-            <div className="mx-0 bg-white rounded-2xl shadow-card border border-neutral-100 overflow-hidden divide-y divide-neutral-50">
+            <div className="mx-0 bg-white dark:bg-neutral-900 rounded-2xl shadow-card border border-neutral-100 dark:border-neutral-800 overflow-hidden divide-y divide-neutral-50 dark:divide-neutral-800">
               {[
                 { id: 'faq', label: '常見問題', icon: HelpCircle, color: 'text-neutral-400', href: '/faq' },
                 { id: 'about', label: '關於我們', icon: Info, color: 'text-neutral-400', href: '/about' },
@@ -2041,9 +2041,9 @@ function ProfileContent() {
                 { id: 'privacy', label: '隱私權政策', icon: Shield, color: 'text-neutral-400', href: '/privacy' },
                 { id: 'return-policy', label: '退換貨資訊', icon: RefreshCcw, color: 'text-neutral-400', href: '/return-policy' },
               ].map((item) => (
-                <Link key={item.id} href={item.href} className="w-full flex items-center justify-between p-2.5 hover:bg-neutral-50 transition-colors group">
+                <Link key={item.id} href={item.href} className="w-full flex items-center justify-between p-2.5 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors group">
                   <div className="flex items-center gap-2.5">
-                    <div className={cn("w-7 h-7 rounded-lg bg-neutral-50 flex items-center justify-center group-hover:scale-110 transition-transform", item.color)}>
+                    <div className={cn("w-7 h-7 rounded-lg bg-neutral-50 dark:bg-neutral-800 flex items-center justify-center group-hover:scale-110 transition-transform", item.color)}>
                       <item.icon className="w-3.5 h-3.5 stroke-[2.5]" />
                     </div>
                     <span className="text-[13px] font-bold text-neutral-500">{item.label}</span>
@@ -2057,10 +2057,10 @@ function ProfileContent() {
             <div className="mx-0">
               <button 
                 onClick={handleLogout} 
-                className="w-full flex items-center justify-between p-2.5 bg-white rounded-2xl hover:bg-neutral-50 transition-colors group border border-neutral-100 shadow-card"
+                className="w-full flex items-center justify-between p-2.5 bg-white dark:bg-neutral-900 rounded-2xl hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors group border border-neutral-100 dark:border-neutral-800 shadow-card"
               >
                 <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-neutral-50 flex items-center justify-center group-hover:scale-110 transition-transform text-neutral-400">
+                  <div className="w-7 h-7 rounded-lg bg-neutral-50 dark:bg-neutral-800 flex items-center justify-center group-hover:scale-110 transition-transform text-neutral-400">
                     <LogOut className="w-3.5 h-3.5 stroke-[2.5]" />
                   </div>
                   <span className="text-[13px] font-bold text-neutral-500">登出</span>
@@ -2079,7 +2079,7 @@ function ProfileContent() {
 
           {/* 2. Mobile Detail View (Only shown on mobile when a tab is active) */}
           <div className={cn("md:hidden col-span-1", !isMobileDetailOpen && "hidden")}>
-            <div className="bg-white rounded-2xl shadow-card border border-neutral-100 min-h-[500px] overflow-hidden">
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-card border border-neutral-100 dark:border-neutral-800 min-h-[500px] overflow-hidden">
               {renderTabContent()}
             </div>
           </div>

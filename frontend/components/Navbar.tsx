@@ -63,6 +63,8 @@ function NavbarInner() {
   const isProductDetailPage = /^\/shop\/\d+$/.test(pathname);
   const isNewsDetailPage = /^\/news\/[^/]+$/.test(pathname);
 
+  const showMobileThemeToggle = pathname === '/' || pathname === '/shop' || pathname === '/market' || pathname === '/news';
+
   const isTicketSelectionPage = pathname.endsWith('/select');
 
   useEffect(() => {
@@ -398,7 +400,10 @@ function NavbarInner() {
               {/* Dark Mode Toggle */}
               <button
                 onClick={toggleTheme}
-                className="hidden md:flex p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-xl text-neutral-600 dark:text-neutral-400 transition-colors"
+                className={cn(
+                  "p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-xl text-neutral-600 dark:text-neutral-400 transition-colors",
+                  showMobileThemeToggle ? "flex" : "hidden md:flex"
+                )}
               >
                 {theme === 'dark' ? <Sun className="w-5 h-5 stroke-[2.5]" /> : <Moon className="w-5 h-5 stroke-[2.5]" />}
               </button>
