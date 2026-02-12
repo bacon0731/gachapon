@@ -71,24 +71,7 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({
-      totalVisits: todayCount, // Showing Today's visits as the main number? Or total period?
-      // Usually "Visit Count" on dashboard card implies Total or Today.
-      // Let's return both or clarify.
-      // The mock returned 125.
-      // Let's return Total Period Visits as "totalVisitsPeriod" and Today as "totalVisits" ?
-      // In Dashboard code: const visitCountVal = visitStats.totalVisits || 0
-      // So it uses totalVisits.
-      // If I want to show "Visits" (metric), usually it's "Total Visits in Period" or "Active Users Today".
-      // Given the chart is "Trend", let's use Total Period Visits for the value?
-      // Or Today's visits?
-      // Let's stick to Total Period Visits for the main number if it makes sense, or Today.
-      // Actually, standard dashboards often show "Total Visits (Period)" or "Visits (Today)".
-      // Let's assume Total Period Visits is more impressive/useful for "Visit Count".
-      // But wait, the mock data returned: { totalVisits: 125, totalVisitsPeriod: 850 ... }
-      // And Dashboard used `visitStats.totalVisits`.
-      // So `totalVisits` corresponds to 125.
-      // Let's assume `totalVisits` is Today's visits.
-      totalVisits: todayCount, 
+      totalVisits: todayCount,
       totalVisitsPeriod: totalVisits,
       trend,
       chartData
