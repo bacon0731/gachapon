@@ -21,12 +21,14 @@ interface InventoryItem {
   products: {
     name: string
     image_url: string | null
+    price: number
   } | null
   product_prizes: {
     level: string
     name: string
     image_url: string | null
     recycle_value: number
+    quantity: number
   } | null
 }
 
@@ -66,13 +68,15 @@ export default function InventoryPage() {
           *,
           products (
             name,
-            image_url
+            image_url,
+            price
           ),
           product_prizes (
             level,
             name,
             image_url,
-            recycle_value
+            recycle_value,
+            quantity
           )
         `)
         .order('created_at', { ascending: false })
@@ -212,8 +216,18 @@ export default function InventoryPage() {
     let total = 0;
     selectedItems.forEach(id => {
       const item = items.find(i => i.id === id);
-      if (item && item.product_prizes?.recycle_value) {
-        total += item.product_prizes.recycle_value;
+      if (item && item.product_prizes) {
+        let value = item.product_prizes.recycle_value;
+        // Fallback calculation if recycle_value is 0 or null
+        if (!value && item.products?.price) {
+          const quantity = item.product_prizes.quantity || 0;
+          if (quantity >= 1 && quantity <= 4) {
+            value = item.products.price * 2;
+          } else {
+            value = 50;
+          }
+        }
+        total += value || 0;
       }
     });
     
@@ -399,8 +413,13 @@ export default function InventoryPage() {
                   isSelectionMode && selectedItems.includes(item.id) && "ring-2 ring-primary border-transparent"
                 )}
                 onClick={() => {
-                  if (isSelectionMode && item.status === 'in_warehouse') {
-                    toggleSelection(item.id)
+                  if (item.status === 'in_warehouse') {
+                    if (!isSelectionMode) {
+                      setIsSelectionMode(true)
+                      setSelectedItems([item.id])
+                    } else {
+                      toggleSelection(item.id)
+                    }
                   }
                 }}
               >

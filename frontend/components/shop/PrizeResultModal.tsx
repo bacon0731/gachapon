@@ -217,6 +217,23 @@ export const PrizeResultModal: React.FC<PrizeResultModalProps> = ({
                   </Button>
                 </div>
 
+                {/* Footer Actions - Mobile Only */}
+                <div className="flex md:hidden p-4 pb-12 bg-white border-t border-neutral-100 shrink-0 gap-3 safe-area-bottom">
+                  <Button
+                    onClick={onGoToWarehouse}
+                    variant="outline"
+                    className="flex-1 h-12 rounded-xl font-bold border-2 text-base"
+                  >
+                    前往倉庫
+                  </Button>
+                  <Button
+                    onClick={onPlayAgain}
+                    className="flex-1 h-12 rounded-xl font-bold bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20 text-base"
+                  >
+                    繼續抽獎
+                  </Button>
+                </div>
+
               </>
             )}
           </motion.div>

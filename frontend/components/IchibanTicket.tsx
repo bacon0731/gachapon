@@ -181,18 +181,18 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
                   <div className="flex-1 flex flex-col justify-center min-w-0 h-full py-1">
                     <div className="flex items-center gap-2 mb-1">
                       <div className={cn(
-                        "px-1.5 py-0.5 rounded text-xs font-black",
+                        "px-2 py-0.5 rounded text-sm font-black",
                         isLastOne ? "bg-black text-white" : "bg-neutral-900 text-white"
                       )}>
                         {grade}
                       </div>
                       {ticketNumber !== undefined && ticketNumber > 0 && (
-                        <div className="text-xs font-bold text-neutral-400">
+                        <div className="text-sm font-bold text-neutral-400">
                           No.{ticketNumber}
                         </div>
                       )}
                     </div>
-                    <div className="text-sm font-black text-neutral-900 leading-tight line-clamp-2 pr-2">
+                    <div className="text-base font-black text-neutral-900 leading-tight line-clamp-2 pr-2">
                       {prizeName}
                     </div>
                   </div>
