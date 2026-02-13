@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Package, RefreshCw, CheckCircle2, AlertCircle, ChevronRight, Search } from 'lucide-react'
+import { Package, RefreshCw, CheckCircle2, AlertCircle, ChevronRight, Search, X } from 'lucide-react'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
@@ -327,10 +327,18 @@ export default function InventoryPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
           <Input 
             placeholder="搜尋商品、獎項名稱..." 
-            className="pl-9 bg-white dark:bg-neutral-800"
+            className="pl-9 pr-10 bg-white dark:bg-neutral-800"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors p-1"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
 
         {/* Selection Bar (Mobile/Desktop) */}

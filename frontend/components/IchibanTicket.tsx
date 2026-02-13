@@ -144,11 +144,11 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
                       {isLastOne ? "ONE" : "賞"}
                     </span>
                   </div>
-                  <div className="text-[10px] sm:text-xs font-black text-[#D3D3D3] text-center line-clamp-1 w-full mt-0.5 leading-tight px-1">
+                  <div className="text-xs sm:text-sm font-black text-[#D3D3D3] text-center line-clamp-1 w-full mt-0.5 leading-tight px-1">
                     {prizeName}
                   </div>
                   {ticketNumber !== undefined && ticketNumber > 0 && (
-                    <div className="text-[9px] font-bold text-[#D3D3D3]/80 mt-0.5">
+                    <div className="text-[10px] sm:text-xs font-bold text-[#D3D3D3]/80 mt-0.5">
                       No. {ticketNumber.toString().padStart(3, '0')}
                     </div>
                   )}
@@ -181,13 +181,13 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
                   <div className="flex-1 flex flex-col justify-center min-w-0 h-full py-1">
                     <div className="flex items-center gap-2 mb-1">
                       <div className={cn(
-                        "px-1.5 py-0.5 rounded text-[10px] font-black",
+                        "px-1.5 py-0.5 rounded text-xs font-black",
                         isLastOne ? "bg-black text-white" : "bg-neutral-900 text-white"
                       )}>
                         {grade}
                       </div>
                       {ticketNumber !== undefined && ticketNumber > 0 && (
-                        <div className="text-[10px] font-bold text-neutral-400">
+                        <div className="text-xs font-bold text-neutral-400">
                           No.{ticketNumber}
                         </div>
                       )}

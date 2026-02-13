@@ -152,7 +152,7 @@ function NavbarInner() {
   // 獲取頁面名稱
   const getPageTitle = () => {
     if (pathname === '/shop') return '全部商品';
-    if (pathname === '/market') return '市集';
+    if (pathname === '/market') return '自由市集';
     if (pathname === '/news') return '最新情報';
     if (pathname === '/check-in') return '每日簽到';
     if (pathname.endsWith('/select')) return '選擇籤號';
@@ -329,8 +329,20 @@ function NavbarInner() {
                       onChange={(e) => setQuery(e.target.value)}
                       onFocus={() => setIsDesktopSearchOpen(true)}
                       placeholder={pathname === '/market' ? "搜尋市集商品..." : "搜尋商品..."}
-                      className="w-full h-11 md:h-9 pl-9 pr-4 bg-neutral-100 dark:bg-neutral-800 border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 text-[13px] font-bold transition-all placeholder:text-neutral-400 dark:text-white dark:placeholder:text-neutral-500"
+                      className="w-full h-11 md:h-9 pl-9 pr-8 bg-neutral-100 dark:bg-neutral-800 border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 text-[13px] font-bold transition-all placeholder:text-neutral-400 dark:text-white dark:placeholder:text-neutral-500"
                     />
+                    {query && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQuery('');
+                          handleSearch('');
+                        }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </form>
 
