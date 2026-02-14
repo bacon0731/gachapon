@@ -536,15 +536,7 @@ export default function ProductDetailPage() {
                   if (!lastOnePrize) return null;
                   
                   return (
-                    <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/30 dark:to-yellow-800/30 rounded-xl sm:rounded-2xl p-4 sm:p-5 text-neutral-900 dark:text-neutral-100 shadow-xl relative overflow-hidden group cursor-pointer border border-yellow-200/60 dark:border-yellow-700/40"
-                         onClick={() => setViewingPrize({
-                           name: lastOnePrize.name,
-                           image_url: lastOnePrize.image_url || undefined,
-                           level: lastOnePrize.level,
-                           total: lastOnePrize.total,
-                           remaining: lastOnePrize.remaining
-                         })}
-                    >
+                    <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/30 dark:to-yellow-800/30 rounded-xl sm:rounded-2xl p-4 sm:p-5 text-neutral-900 dark:text-neutral-100 shadow-xl relative overflow-hidden group border border-yellow-200/60 dark:border-yellow-700/40">
                       {/* Background Effect */}
                       <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-400/20 dark:bg-yellow-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
                       
