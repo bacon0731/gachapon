@@ -22,12 +22,33 @@ function LoginContent() {
     password: ''
   })
 
-  // If user is already logged in, redirect to home
+  const translateAuthError = (msg?: string | null) => {
+    if (!msg) return null
+    const m = msg.toLowerCase()
+    if (m.includes('invalid login credentials')) return '帳號或密碼不正確'
+    if (m.includes('email not confirmed')) return '電子郵件尚未驗證，請先完成驗證'
+    if (m.includes('too many requests') || m.includes('rate limit')) return '嘗試次數過多，請稍後再試'
+    if (m.includes('user not found')) return '找不到此帳號'
+    if (m.includes('network')) return '網路連線異常，請稍後再試'
+    return '登入失敗，請檢查帳號或密碼'
+  }
+
+  // If user is already logged in, redirect to home (do not wait on isAuthLoading)
   useEffect(() => {
-    if (user && !isAuthLoading) {
-      router.push('/')
+    if (user) {
+      let cancelled = false
+      router.replace('/')
+      const t = setTimeout(() => {
+        if (!cancelled && typeof window !== 'undefined' && window.location.pathname.startsWith('/login')) {
+          window.location.assign('/')
+        }
+      }, 500)
+      return () => {
+        cancelled = true
+        clearTimeout(t)
+      }
     }
-  }, [user, isAuthLoading, router])
+  }, [user, router])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -42,7 +63,7 @@ function LoginContent() {
       })
 
       if (error) {
-        setLocalError(error.message)
+        setLocalError(translateAuthError(error.message))
       } else {
         // Success - AuthContext will detect the change automatically
         // We can manually push to home
@@ -137,7 +158,7 @@ function LoginContent() {
               )}
               {(localError || errorParam) && (
                 <div className="p-2.5 bg-red-50/80 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-xl text-xs flex items-center justify-center border border-red-100 dark:border-red-900/50 backdrop-blur-sm">
-                  {localError || errorParam}
+                  {localError || translateAuthError(errorParam)}
                 </div>
               )}
             </form>

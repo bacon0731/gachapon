@@ -65,6 +65,7 @@ export default function MarketplacePage() {
   const searchParams = useSearchParams();
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'newest' | 'price_asc' | 'price_desc'>('newest');
   
   // Filters
@@ -88,7 +89,15 @@ export default function MarketplacePage() {
   const [supabase] = useState(() => createClient());
 
   const fetchListings = React.useCallback(async () => {
+    const LOAD_TIMEOUT_MS = 8000;
+    const withTimeout = async <T,>(p: Promise<T>) => {
+      return Promise.race<T>([
+        p,
+        new Promise<T>((_, reject) => setTimeout(() => reject(new Error('timeout')), LOAD_TIMEOUT_MS))
+      ]);
+    };
     setIsLoading(true);
+    setLoadError(null);
     try {
       let query = supabase
         .from('marketplace_listings')
@@ -114,7 +123,7 @@ export default function MarketplacePage() {
         query = query.order('price', { ascending: false });
       }
 
-      const { data, error } = await query;
+      const { data, error } = await withTimeout(query as unknown as Promise<unknown>);
 
       if (error) throw error;
 
@@ -132,7 +141,9 @@ export default function MarketplacePage() {
       setListings(formattedData);
     } catch (error) {
       console.error('Error fetching listings:', error);
-      toast.error('無法載入市集資料');
+      const message = '載入逾時或失敗，請稍後重試';
+      setLoadError(message);
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
@@ -343,7 +354,7 @@ export default function MarketplacePage() {
         <div className="hidden md:flex flex-col gap-4 sm:gap-6 mb-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
             <h1 className="flex items-baseline gap-4 text-2xl font-black text-neutral-900 dark:text-white tracking-tight">
-              市集
+              自由市集
               <span className="text-xs font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
                 <span className="font-amount">{filteredListings.length.toLocaleString()}</span> 個獎項
               </span>
@@ -519,6 +530,13 @@ export default function MarketplacePage() {
                   </div>
                 ))}
               </div>
+            ) : loadError ? (
+              <EmptyState 
+                title="無法載入市集資料" 
+                description={loadError}
+                actionLabel="重試"
+                onAction={() => fetchListings()}
+              />
             ) : filteredListings.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
                 {filteredListings.map((item) => (

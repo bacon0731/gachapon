@@ -1,6 +1,6 @@
 'use client'
 
-import { TextareaHTMLAttributes, forwardRef } from 'react'
+import { TextareaHTMLAttributes, forwardRef, useId } from 'react'
 import { cn } from '@/lib/utils'
 
 export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
@@ -12,7 +12,8 @@ export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElemen
 
 const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ label, error, helperText, fullWidth = true, className, id, ...props }, ref) => {
-    const textareaId = id || `textarea-${Math.random().toString(36).substr(2, 9)}`
+    const rid = useId()
+    const textareaId = id || `textarea-${rid}`
 
     return (
       <div className={cn('space-y-1.5', fullWidth && 'w-full')}>

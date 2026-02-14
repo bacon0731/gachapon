@@ -93,7 +93,31 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
         is_last_one: record.is_last_one || false,
         ticket_number: record.ticket_number
       }));
-      
+
+      // Fallback: 若查無最後賞記錄，但普通獎已為 0，補上一筆最後賞供顯示
+      if (!formattedResults.some(r => r.is_last_one)) {
+        const { data: prizeRows } = await supabase
+          .from('product_prizes')
+          .select('level, name, image_url, remaining')
+          .eq('product_id', product.id);
+        const normalRemaining = (prizeRows || [])
+          .filter(p => !(p.level?.toLowerCase?.().includes('last one') || p.level?.includes?.('最後賞')))
+          .reduce((sum, p) => sum + (p.remaining || 0), 0);
+        if (normalRemaining === 0) {
+          const loPrize = (prizeRows || []).find(p => p.level?.toLowerCase?.().includes('last one') || p.level?.includes?.('最後賞'));
+          if (loPrize) {
+            formattedResults.push({
+              grade: loPrize.level || 'Last One',
+              name: loPrize.name || '最後賞',
+              isOpened: true,
+              image_url: loPrize.image_url || '',
+              is_last_one: true,
+              ticket_number: 0
+            });
+          }
+        }
+      }
+
       setFullResults(formattedResults);
     } catch (err) {
       console.error(err);
@@ -220,6 +244,62 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
       // Check for Last One and trigger celebration
       if (results.some(r => r.is_last_one)) {
         setShowLastOneCelebration(true);
+      } else {
+        // Fallback: 若後端未回傳但庫存已經只剩最後賞，補取最後賞記錄
+        try {
+          const { data: prizeRows } = await supabase
+            .from('product_prizes')
+            .select('level, name, image_url, remaining')
+            .eq('product_id', product.id);
+          
+          const normalRemaining = (prizeRows || [])
+            .filter(p => !(p.level?.toLowerCase?.().includes('last one') || p.level?.includes?.('最後賞')))
+            .reduce((sum, p) => sum + (p.remaining || 0), 0);
+          
+          if (normalRemaining === 0) {
+            // 嘗試從抽獎紀錄取最後賞
+            const { data: loRecord } = await supabase
+              .from('draw_records')
+              .select('ticket_number, prize_level, prize_name, image_url, is_last_one')
+              .eq('product_id', product.id)
+              .eq('ticket_number', 0)
+              .order('id', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            
+            if (loRecord) {
+              const lastOne = {
+                grade: loRecord.prize_level,
+                name: loRecord.prize_name,
+                isOpened: true,
+                image_url: loRecord.image_url || '',
+                is_last_one: true,
+                ticket_number: 0
+              };
+              const augmented = [...results, lastOne];
+              setDrawnResults(augmented);
+              setShowLastOneCelebration(true);
+            } else {
+              // 仍找不到，從獎池資料補一筆 UI 資料，確保流程與按鈕狀態正確
+              const loPrize = (prizeRows || []).find(p => p.level?.toLowerCase?.().includes('last one') || p.level?.includes?.('最後賞'));
+              if (loPrize) {
+                const lastOne = {
+                  grade: loPrize.level || 'Last One',
+                  name: loPrize.name || '最後賞',
+                  isOpened: true,
+                  image_url: loPrize.image_url || '',
+                  is_last_one: true,
+                  ticket_number: 0
+                };
+                const augmented = [...results, lastOne];
+                setDrawnResults(augmented);
+                setShowLastOneCelebration(true);
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('Last One fallback check failed', e);
+        }
       }
       
       setShowConfirm(false); // Close confirmation modal
@@ -358,11 +438,7 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
               </Button>
               <Button 
                 onClick={() => {
-                  if (hasLastOne) {
-                    handleShowFullResults();
-                  } else {
-                    window.location.reload();
-                  }
+                  handleShowFullResults();
                 }} 
                 className={cn(
                   "flex-1 h-[44px] md:h-[52px] rounded-xl text-base md:text-lg font-black shadow-xl transition-colors",
@@ -381,12 +457,12 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
         {/* Prize Result Modal for Variant A */}
         {showResultModal && (
           <PrizeResultModal 
-            results={hasLastOne && fullResults.length > 0 ? fullResults : drawnResults}
+            results={(fullResults.length > 0 ? fullResults : drawnResults)}
             onClose={() => setShowResultModal(false)}
             onPlayAgain={() => window.location.reload()}
             onGoToWarehouse={() => router.push('/profile?tab=warehouse')}
             isLoading={isFetchingFullResults}
-            skipRevealAnimation={hasLastOne}
+            skipRevealAnimation={hasLastOne || fullResults.some(r => r.is_last_one)}
           />
         )}
       </div>

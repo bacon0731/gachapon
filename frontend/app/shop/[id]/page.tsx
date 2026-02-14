@@ -116,10 +116,40 @@ export default function ProductDetailPage() {
 
       if (error) throw error;
       
+      // 若查無最後賞，做一次保險：普通獎已為 0 則補上一筆最後賞
+      let rows = data || [];
+      const hasLastOneRow = rows.some(
+        r => r.is_last_one || r.prize_level.includes('Last One') || r.prize_level.includes('LAST ONE') || r.prize_level.includes('最後賞') || r.ticket_number === 0
+      );
+      if (!hasLastOneRow) {
+        const { data: prizeRows } = await supabase
+          .from('product_prizes')
+          .select('level, name, image_url, remaining')
+          .eq('product_id', product.id);
+        const normalRemaining = (prizeRows || [])
+          .filter(p => !(p.level?.toLowerCase?.().includes('last one') || p.level?.includes?.('最後賞')))
+          .reduce((sum, p) => sum + (p.remaining || 0), 0);
+        if (normalRemaining === 0) {
+          const loPrize = (prizeRows || []).find(p => p.level?.toLowerCase?.().includes('last one') || p.level?.includes?.('最後賞'));
+          if (loPrize) {
+            rows = [
+              ...rows, 
+              {
+                ticket_number: 0,
+                prize_level: loPrize.level || 'Last One',
+                prize_name: loPrize.name || '最後賞',
+                image_url: loPrize.image_url || '',
+                is_last_one: true
+              }
+            ];
+          }
+        }
+      }
+
       // Sort results to put Last One at the end
-      const sortedData = (data || []).sort((a, b) => {
-        const isALastOne = a.is_last_one || a.prize_level.includes('Last One') || a.prize_level.includes('LAST ONE') || a.ticket_number === 0;
-        const isBLastOne = b.is_last_one || b.prize_level.includes('Last One') || b.prize_level.includes('LAST ONE') || b.ticket_number === 0;
+      const sortedData = (rows || []).sort((a, b) => {
+        const isALastOne = a.is_last_one || a.prize_level.includes('Last One') || a.prize_level.includes('LAST ONE') || a.prize_level.includes('最後賞') || a.ticket_number === 0;
+        const isBLastOne = b.is_last_one || b.prize_level.includes('Last One') || b.prize_level.includes('LAST ONE') || b.prize_level.includes('最後賞') || b.ticket_number === 0;
         
         if (isALastOne && !isBLastOne) return 1;
         if (!isALastOne && isBLastOne) return -1;
@@ -395,6 +425,20 @@ export default function ProductDetailPage() {
                       unoptimized
                     />
                 </div>
+                
+                {/* Sold Out Overlay */}
+                {((typeof totalRemaining === 'number' && totalRemaining <= 0) || product.status === 'ended') && (
+                  <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/50 backdrop-blur-[1px]">
+                    <Image 
+                      src="/images/sale.svg" 
+                      alt="完抽" 
+                      width={120}
+                      height={120}
+                      className="w-28 h-auto transform scale-110 drop-shadow-xl"
+                      unoptimized
+                    />
+                  </div>
+                )}
                 
                 {/* Status Badges & Action Buttons */}
                 <div className="absolute top-4 left-4 right-4 z-10 flex items-start justify-between pointer-events-none">
@@ -694,6 +738,7 @@ export default function ProductDetailPage() {
                     isHot={item.is_hot || false}
                     category={item.category || ''}
                     type={item.type}
+                    status={item.status}
                   />
                 ))}
               </div>
@@ -793,7 +838,7 @@ export default function ProductDetailPage() {
             name: r.prize_name,
             isOpened: true,
             image_url: r.image_url || '',
-            is_last_one: r.is_last_one || r.prize_level.includes('Last One') || r.prize_level.includes('LAST ONE'),
+            is_last_one: r.is_last_one || r.prize_level.includes('Last One') || r.prize_level.includes('LAST ONE') || r.prize_level.includes('最後賞') || (r.ticket_number === 0),
             ticket_number: r.ticket_number || 0
           }))}
           skipRevealAnimation={true}

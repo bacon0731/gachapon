@@ -841,7 +841,11 @@ function ProfileContent() {
 
     switch (activeTab) {
       case 'check-in':
-        return <DailyCheckInTab />;
+        return (
+          <div className="p-3 lg:p-8">
+            <DailyCheckInTab />
+          </div>
+        );
       case 'warehouse':
         return (
           <div className="p-3 lg:p-8">

@@ -38,6 +38,7 @@ function ShopContent() {
   const [products, setProducts] = useState<(Database['public']['Tables']['products']['Row'] & { product_tags: { category_id: string }[] })[]>([]);
   const [categories, setCategories] = useState<Database['public']['Tables']['categories']['Row'][]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [supabase] = useState(() => createClient());
 
   const [priceMin, setPriceMin] = useState('');
@@ -46,12 +47,21 @@ function ShopContent() {
 
   // Fetch initial data
   useEffect(() => {
+    const LOAD_TIMEOUT_MS = 8000;
+    const withTimeout = async <T,>(p: Promise<T>) => {
+      return Promise.race<T>([
+        p,
+        new Promise<T>((_, reject) => setTimeout(() => reject(new Error('timeout')), LOAD_TIMEOUT_MS))
+      ]);
+    };
+
     const fetchData = async () => {
       try {
         setIsLoading(true);
+        setLoadError(null);
         const [productsRes, categoriesRes] = await Promise.all([
-          supabase.from('products').select('*, product_tags(category_id)').neq('status', 'pending'),
-          supabase.from('categories').select('*').eq('is_active', true).order('sort_order', { ascending: true })
+          withTimeout(supabase.from('products').select('*, product_tags(category_id)').neq('status', 'pending') as unknown as Promise<unknown>),
+          withTimeout(supabase.from('categories').select('*').eq('is_active', true).order('sort_order', { ascending: true }) as unknown as Promise<unknown>)
         ]);
 
         if (productsRes.error) throw productsRes.error;
@@ -63,6 +73,7 @@ function ShopContent() {
         setCategories(categoriesRes.data || []);
       } catch (error) {
         console.error('Error fetching data:', error);
+        setLoadError('載入逾時或失敗，請稍後重試');
       } finally {
         setIsLoading(false);
       }
@@ -442,6 +453,16 @@ function ShopContent() {
                   </div>
                 ))}
               </div>
+            ) : loadError ? (
+              <EmptyState 
+                title="無法載入商品" 
+                description={loadError}
+                actionLabel="重試"
+                onAction={() => {
+                  // simple reload to retry
+                  window.location.reload();
+                }}
+              />
             ) : filteredProducts.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2 md:gap-4">
                 {filteredProducts.map((product) => (
@@ -455,6 +476,7 @@ function ShopContent() {
                     total={product.total_count}
                     isHot={product.is_hot}
                     type={product.type}
+                    status={product.status}
                   />
                 ))}
               </div>

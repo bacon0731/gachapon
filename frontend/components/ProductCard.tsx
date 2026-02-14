@@ -21,6 +21,7 @@ interface ProductCardProps {
   hasTicket?: boolean;
   category?: string;
   type?: ProductType;
+  status?: 'active' | 'pending' | 'ended' | string;
 }
 
 export default function ProductCard({
@@ -32,6 +33,7 @@ export default function ProductCard({
   isHot = false,
   isNew = false,
   type,
+  status,
 }: ProductCardProps) {
   const [isFollowed, setIsFollowed] = useState(false);
   const { user } = useAuth();
@@ -115,7 +117,7 @@ export default function ProductCard({
           </div>
 
           {/* Sold Out Stamp */}
-          {remaining === 0 && (
+          {((typeof remaining === 'number' && remaining <= 0) || status === 'ended') && (
             <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/50 backdrop-blur-[1px]">
               <Image 
                 src="/images/sale.svg" 

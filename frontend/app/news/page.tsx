@@ -10,21 +10,33 @@ import { Skeleton } from '@/components/ui/Skeleton';
 export default function NewsPage() {
   const [news, setNews] = useState<Database['public']['Tables']['news']['Row'][]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [supabase] = useState(() => createClient());
 
   useEffect(() => {
+    const LOAD_TIMEOUT_MS = 8000;
+    const withTimeout = async <T,>(p: Promise<T>) => {
+      return Promise.race<T>([
+        p,
+        new Promise<T>((_, reject) => setTimeout(() => reject(new Error('timeout')), LOAD_TIMEOUT_MS))
+      ]);
+    };
     const fetchNews = async () => {
       try {
-        const { data, error } = await supabase
+        setLoadError(null);
+        const { data, error } = await withTimeout(
+          (supabase
           .from('news')
           .select('*')
           .eq('is_published', true)
-          .order('published_at', { ascending: false });
+          .order('published_at', { ascending: false })) as unknown as Promise<unknown>
+        );
         
         if (error) throw error;
         setNews(data || []);
       } catch (error) {
         console.error('Error fetching news:', error);
+        setLoadError('載入逾時或失敗，請稍後重試');
       } finally {
         setIsLoading(false);
       }
@@ -62,6 +74,8 @@ export default function NewsPage() {
               </div>
             ))}
           </div>
+        ) : loadError ? (
+          <div className="text-center text-sm text-neutral-500 dark:text-neutral-400 font-black">{loadError}</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {news.map((item) => (

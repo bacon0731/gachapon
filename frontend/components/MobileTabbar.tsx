@@ -62,7 +62,7 @@ function MobileTabbarInner() {
   const tabs = [
     { name: '首頁', href: '/', icon: Home },
     { name: '商品', href: '/shop', icon: ShoppingBag },
-    { name: '市集', href: '/market', icon: Search, isCenter: true },
+    { name: '自由市集', href: '/market', icon: Search, isCenter: true },
     { name: '情報', href: '/news', icon: Newspaper },
     { name: '會員', href: '/profile', icon: User },
   ];

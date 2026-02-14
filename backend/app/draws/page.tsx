@@ -151,7 +151,7 @@ export default function DrawsPage() {
       key: 'created_at',
       label: '時間',
       sortable: true,
-      render: (record) => <span className="text-gray-500">{formatDateTime(record.created_at)}</span>
+      render: (record) => <span className="text-gray-500 font-mono whitespace-nowrap">{formatDateTime(record.created_at)}</span>
     },
     {
       key: 'user',

@@ -16,14 +16,25 @@ export default function Home() {
   const [newProducts, setNewProducts] = useState<Database['public']['Tables']['products']['Row'][]>([]);
   const [banners, setBanners] = useState<Database['public']['Tables']['banners']['Row'][]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [supabase] = useState(() => createClient());
 
   useEffect(() => {
+    const LOAD_TIMEOUT_MS = 8000;
+    const withTimeout = async <T,>(p: Promise<T>) => {
+      return Promise.race<T>([
+        p,
+        new Promise<T>((_, reject) => setTimeout(() => reject(new Error('timeout')), LOAD_TIMEOUT_MS))
+      ]);
+    };
+
     const fetchData = async () => {
       try {
+        setIsLoading(true);
+        setLoadError(null);
         const [productsData, bannersData] = await Promise.all([
-          supabase.from('products').select('*').neq('status', 'pending').order('created_at', { ascending: false }),
-          supabase.from('banners').select('*').order('sort_order', { ascending: true }).eq('is_active', true)
+          withTimeout(supabase.from('products').select('*').neq('status', 'pending').order('created_at', { ascending: false }) as unknown as Promise<unknown>),
+          withTimeout(supabase.from('banners').select('*').order('sort_order', { ascending: true }).eq('is_active', true) as unknown as Promise<unknown>)
         ]);
 
         if (productsData.data) {
@@ -36,6 +47,7 @@ export default function Home() {
         }
       } catch (error) {
         console.error('Error fetching data:', error);
+        setLoadError('載入逾時或失敗，請稍後重試');
       } finally {
         setIsLoading(false);
       }
@@ -82,6 +94,10 @@ export default function Home() {
                   <ProductCardSkeleton />
                 </div>
               ))
+            ) : loadError ? (
+              <div className="col-span-full text-center text-sm text-neutral-500 dark:text-neutral-400 font-black">
+                {loadError}
+              </div>
             ) : (
               hotProducts.map((product) => (
                 <ProductCard 
@@ -94,6 +110,7 @@ export default function Home() {
                   total={product.total_count}
                   isHot={product.is_hot}
                   type={product.type}
+                  status={product.status}
                 />
               ))
             )}
@@ -119,6 +136,10 @@ export default function Home() {
                   <ProductCardSkeleton />
                 </div>
               ))
+            ) : loadError ? (
+              <div className="col-span-full text-center text-sm text-neutral-500 dark:text-neutral-400 font-black">
+                {loadError}
+              </div>
             ) : (
               newProducts.map((product) => (
                 <ProductCard 
@@ -131,6 +152,7 @@ export default function Home() {
                   total={product.total_count}
                   isHot={product.is_hot}
                   type={product.type}
+                  status={product.status}
                 />
               ))
             )}

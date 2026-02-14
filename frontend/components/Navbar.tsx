@@ -209,8 +209,8 @@ function NavbarInner() {
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
   // Debounce search effect
@@ -348,7 +348,7 @@ function NavbarInner() {
               <div className="hidden md:flex items-center gap-3 lg:gap-5">
                 <Link href="/shop" className="text-[15px] lg:text-[16px] font-black text-neutral-600 dark:text-neutral-400 hover:text-primary transition-colors">全部商品</Link>
                 <Link href="/market" className="text-[15px] lg:text-[16px] font-black text-neutral-600 dark:text-neutral-400 hover:text-primary transition-colors flex items-center gap-1">
-                  市集
+                  自由市集
                   <span className="bg-gradient-to-r from-violet-600 to-blue-600 text-white text-[9px] px-1.5 py-0.5 rounded-full shadow-sm">NEW</span>
                 </Link>
                 <Link href="/news" className="text-[15px] lg:text-[16px] font-black text-neutral-600 dark:text-neutral-400 hover:text-primary transition-colors">最新情報</Link>
@@ -372,7 +372,7 @@ function NavbarInner() {
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
                       onFocus={() => setIsDesktopSearchOpen(true)}
-                      placeholder={pathname === '/market' ? "搜尋市集商品..." : "搜尋商品..."}
+                      placeholder={pathname === '/market' ? "搜尋自由市集商品..." : "搜尋商品..."}
                       className="w-full h-11 md:h-9 pl-9 pr-8 bg-neutral-100 dark:bg-neutral-800 border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 text-[13px] font-bold transition-all placeholder:text-neutral-400 dark:text-white dark:placeholder:text-neutral-500"
                     />
                     {query && (
@@ -620,16 +620,16 @@ function NavbarInner() {
                     </div>
 
                     <div className="space-y-0.5">
-                      <Link href="/topup" className="w-full bg-primary text-white text-[14px] font-black py-2.5 rounded-xl shadow-md shadow-primary/20 hover:bg-primary/90 transition-all active:scale-[0.98] flex items-center justify-center gap-2 mb-1.5">
+                      <Link href="/topup" onClick={() => setIsMenuOpen(false)} className="w-full bg-primary text-white text-[14px] font-black py-2.5 rounded-xl shadow-md shadow-primary/20 hover:bg-primary/90 transition-all active:scale-[0.98] flex items-center justify-center gap-2 mb-1.5">
                         立即儲值
                       </Link>
                       
-                      <Link href="/profile" className="flex items-center gap-3 px-3.5 py-2.5 text-[14px] font-black text-neutral-600 dark:text-neutral-300 hover:text-primary dark:hover:text-primary hover:bg-primary/5 dark:hover:bg-primary/10 rounded-xl transition-all">
+                      <Link href="/profile" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 px-3.5 py-2.5 text-[14px] font-black text-neutral-600 dark:text-neutral-300 hover:text-primary dark:hover:text-primary hover:bg-primary/5 dark:hover:bg-primary/10 rounded-xl transition-all">
                         <UserIcon className="w-4 h-4" />
                         會員中心
                       </Link>
 
-                      <Link href="/profile?tab=follows" className="flex items-center gap-3 px-3.5 py-2.5 text-[14px] font-black text-neutral-600 dark:text-neutral-300 hover:text-primary dark:hover:text-primary hover:bg-primary/5 dark:hover:bg-primary/10 rounded-xl transition-all">
+                      <Link href="/profile?tab=follows" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 px-3.5 py-2.5 text-[14px] font-black text-neutral-600 dark:text-neutral-300 hover:text-primary dark:hover:text-primary hover:bg-primary/5 dark:hover:bg-primary/10 rounded-xl transition-all">
                         <Heart className="w-4 h-4" />
                         我的關注
                       </Link>
@@ -637,7 +637,7 @@ function NavbarInner() {
                       <div className="h-px bg-neutral-50 dark:bg-neutral-800 mx-2 my-1"></div>
                       
                       <button
-                        onClick={logout}
+                        onClick={() => { setIsMenuOpen(false); logout(); }}
                         className="w-full flex items-center gap-3 px-3.5 py-2.5 text-[14px] font-black text-neutral-400 hover:text-accent-red hover:bg-accent-red/5 rounded-xl transition-all"
                       >
                         <LogOut className="w-4 h-4" />

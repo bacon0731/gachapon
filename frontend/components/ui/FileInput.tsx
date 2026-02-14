@@ -1,6 +1,6 @@
 'use client'
 
-import { InputHTMLAttributes, forwardRef } from 'react'
+import { InputHTMLAttributes, forwardRef, useId } from 'react'
 import { cn } from '@/lib/utils'
 
 export interface FileInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
@@ -13,7 +13,8 @@ export interface FileInputProps extends Omit<InputHTMLAttributes<HTMLInputElemen
 
 const FileInput = forwardRef<HTMLInputElement, FileInputProps>(
   ({ label, error, helperText, fullWidth = true, className, id, accept, ...props }, ref) => {
-    const inputId = id || `file-input-${Math.random().toString(36).substr(2, 9)}`
+    const rid = useId()
+    const inputId = id || `file-input-${rid}`
 
     return (
       <div className={cn('space-y-1.5', fullWidth && 'w-full')}>

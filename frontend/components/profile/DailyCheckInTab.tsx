@@ -16,6 +16,14 @@ export default function DailyCheckInTab() {
   });
   const [supabase] = useState(() => createClient());
 
+  const t = (msg?: string) => {
+    const m = (msg || '').toLowerCase();
+    if (m.includes('already checked in')) return '今日已簽到';
+    if (m.includes('check-in success') || m.includes('checked in successfully')) return '簽到成功';
+    if (m.includes('function') && m.includes('not found')) return '簽到功能未初始化';
+    return msg || '';
+  };
+
   const fetchStatus = useCallback(async () => {
     try {
       const { data, error } = await supabase.rpc('get_check_in_status', { p_user_id: user!.id });
@@ -45,12 +53,13 @@ export default function DailyCheckInTab() {
         await refreshProfile();
         fetchStatus();
       } else {
-        toast.info(data.message || '今日已簽到');
+        const msg = t(data.message) || '今日已簽到';
+        toast.info(msg);
       }
     } catch (err: unknown) {
       console.error('Check-in Error:', err);
       const errorMessage = err instanceof Error ? err.message : (err as { message?: string })?.message || '簽到失敗';
-      toast.error(errorMessage);
+      toast.error(t(errorMessage) || '簽到失敗');
     } finally {
       setCheckingIn(false);
     }
@@ -126,7 +135,7 @@ export default function DailyCheckInTab() {
         </div>
       </div>
 
-      <div className="max-w-xl mx-auto">
+      <div className="max-w-2xl mx-auto">
         <div className="bg-white dark:bg-neutral-900 rounded-3xl p-6 md:p-8 shadow-card border border-neutral-100 dark:border-neutral-800 text-center">
           <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
             <CalendarCheck className="w-10 h-10 text-primary" />
@@ -137,7 +146,7 @@ export default function DailyCheckInTab() {
               <span className="text-xs font-normal text-neutral-400">目前連簽: {status.consecutive_days} 天</span>
           </p>
           
-          <div className="grid grid-cols-4 gap-3 mb-8">
+          <div className="grid grid-cols-4 sm:grid-cols-7 gap-3 mb-8">
           {days.map((item, idx) => (
             <div 
               key={idx}
@@ -145,8 +154,8 @@ export default function DailyCheckInTab() {
                 relative p-2 md:p-3 rounded-2xl border flex flex-col items-center justify-center gap-1 transition-all
                 ${item.status === 'checked' ? 'bg-primary/5 border-primary/20 text-primary' : ''}
                 ${item.status === 'today' ? 'bg-white dark:bg-neutral-800 border-primary ring-2 ring-primary/10 scale-110 z-10' : ''}
-                ${item.status === 'upcoming' ? 'bg-neutral-50 dark:bg-neutral-800 border-neutral-100 dark:border-neutral-700 text-neutral-400 dark:text-neutral-500' : ''}
-                ${item.isBig ? 'col-span-2 aspect-auto py-4' : 'aspect-square'}
+                ${item.status === 'upcoming' ? 'bg-neutral-50 dark:bg-neutral-800 border-neutral-100 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400' : ''}
+                ${item.isBig ? 'col-span-2 sm:col-span-1 aspect-auto py-4 sm:aspect-square' : 'aspect-square'}
               `}
             >
               <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Day {item.day}</span>

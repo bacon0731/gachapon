@@ -1,6 +1,6 @@
 'use client'
 
-import { SelectHTMLAttributes, forwardRef } from 'react'
+import { SelectHTMLAttributes, forwardRef, useId } from 'react'
 import { cn } from '@/lib/utils'
 
 export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
@@ -13,7 +13,8 @@ export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 
 const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, error, helperText, options, fullWidth = true, className, id, ...props }, ref) => {
-    const selectId = id || `select-${Math.random().toString(36).substr(2, 9)}`
+    const rid = useId()
+    const selectId = id || `select-${rid}`
 
     return (
       <div className={cn('space-y-1.5', fullWidth && 'w-full')}>

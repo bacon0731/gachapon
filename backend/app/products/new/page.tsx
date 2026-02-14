@@ -35,7 +35,13 @@ export default function NewProductPage() {
     startedAt: '',  // 開賣時間（選填，格式：YYYY-MM-DD）
   })
   
-  const availableLevels = ['A賞', 'B賞', 'C賞', 'D賞', 'E賞', 'F賞', 'G賞', 'H賞']
+  const availableLevels = ['A賞', 'B賞', 'C賞', 'D賞', 'E賞', 'F賞', 'G賞', 'H賞', '最後賞']
+
+  const isLastOneLevel = (level: string) => {
+    if (!level) return false
+    const l = level.toLowerCase()
+    return l.includes('last one') || level.includes('最後賞')
+  }
 
   // 在客戶端設置日期，避免 Hydration Error
   useEffect(() => {
@@ -76,17 +82,23 @@ export default function NewProductPage() {
     fetchCategories()
   }, [])
 
-  // 自動計算商品總數和剩餘數量（根據獎項數量）
-  const calculatedTotalCount = prizes.reduce((sum, prize) => sum + prize.total, 0)
-  const calculatedRemaining = prizes.reduce((sum, prize) => sum + prize.remaining, 0)
+  // 自動計算商品總數和剩餘數量（排除最後賞）
+  const normalPrizes = prizes.filter(p => !isLastOneLevel(p.level))
+  const calculatedTotalCount = normalPrizes.reduce((sum, prize) => sum + prize.total, 0)
+  const calculatedRemaining = normalPrizes.reduce((sum, prize) => sum + prize.remaining, 0)
 
   // 當獎項數量變化時，自動更新機率
   useEffect(() => {
     if (calculatedTotalCount > 0) {
-      setPrizes(prevPrizes => prevPrizes.map(prize => ({
-        ...prize,
-        probability: prize.total > 0 ? (prize.total / calculatedTotalCount) * 100 : 0
-      })))
+      setPrizes(prevPrizes => prevPrizes.map(prize => {
+        if (isLastOneLevel(prize.level)) {
+          return { ...prize, probability: 0 }
+        }
+        return {
+          ...prize,
+          probability: prize.total > 0 ? (prize.total / calculatedTotalCount) * 100 : 0
+        }
+      }))
     } else {
       setPrizes(prevPrizes => prevPrizes.map(prize => ({
         ...prize,
@@ -632,7 +644,17 @@ export default function NewProductPage() {
                           value={prize.level}
                           onChange={(e) => {
                             const updated = [...prizes]
-                            updated[index].level = e.target.value
+                            const newLevel = e.target.value
+                            updated[index].level = newLevel
+                            // 最後賞預設固定 1 張，機率為 0
+                            if (isLastOneLevel(newLevel)) {
+                              // 若尚未設定或為 0，設為 1
+                              const fixed = updated[index]
+                              const ensureOne = (v: number) => (v && v > 0 ? v : 1)
+                              fixed.total = ensureOne(fixed.total)
+                              fixed.remaining = ensureOne(fixed.remaining)
+                              fixed.probability = 0
+                            }
                             setPrizes(updated)
                           }}
                           className="w-full px-3 py-2 bg-white border-2 border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 hover:border-neutral-300 shadow-sm appearance-none cursor-pointer"
@@ -646,6 +668,7 @@ export default function NewProductPage() {
                           <option value="F賞">F賞</option>
                           <option value="G賞">G賞</option>
                           <option value="H賞">H賞</option>
+                          <option value="最後賞">最後賞</option>
                         </select>
                         <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
                           <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -672,9 +695,13 @@ export default function NewProductPage() {
                           setPrizes(updated)
                         }}
                         className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm font-mono text-gray-700"
+                        disabled={isLastOneLevel(prize.level)}
                         min="0"
                         placeholder="0"
                       />
+                      {isLastOneLevel(prize.level) && (
+                        <p className="text-xs text-gray-500 mt-0.5">最後賞固定 1 張</p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-neutral-700 mb-1.5">
@@ -691,9 +718,12 @@ export default function NewProductPage() {
                         <span className="ml-1 text-blue-500" title="根據總數量和商品總數自動計算">🔒</span>
                       </label>
                       <div className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm font-mono text-gray-700">
-                        {calculatedTotalCount > 0 && prize.total > 0 
-                          ? ((prize.total / calculatedTotalCount) * 100).toFixed(2)
-                          : '0.00'
+                        {isLastOneLevel(prize.level)
+                          ? '0.00'
+                          : (calculatedTotalCount > 0 && prize.total > 0 
+                              ? ((prize.total / calculatedTotalCount) * 100).toFixed(2)
+                              : '0.00'
+                            )
                         }%
                       </div>
                       <p className="text-xs text-gray-500 mt-0.5">自動計算，不可編輯</p>

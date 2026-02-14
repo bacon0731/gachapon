@@ -335,13 +335,13 @@ export default function AdminsPage() {
       key: 'created_at',
       label: '建立時間',
       sortable: true,
-      render: (admin) => <span className="text-gray-500">{formatDateTime(admin.created_at)}</span>
+      render: (admin) => <span className="text-gray-500 font-mono whitespace-nowrap">{formatDateTime(admin.created_at)}</span>
     },
     {
       key: 'last_login_at',
       label: '最後登入',
       sortable: true,
-      render: (admin) => <span className="text-gray-500">{formatDateTime(admin.last_login_at)}</span>
+      render: (admin) => <span className="text-gray-500 font-mono whitespace-nowrap">{formatDateTime(admin.last_login_at)}</span>
     },
     {
       key: 'actions',
