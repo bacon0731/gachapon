@@ -228,18 +228,7 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
   };
 
   // If we are showing results, render the result flow (New: Inline, Old: Modal)
-  if (showResultModal) {
-    return (
-      <PrizeResultModal 
-        results={drawnResults}
-        onClose={() => router.push('/shop')}
-        onPlayAgain={() => {
-          setShowResultModal(false);
-          setDrawnResults([]);
-        }}
-      />
-    );
-  }
+  // Logic moved to inside the Reveal View block to prevent intercepting Last One full results
 
   if (isLoading) return (
     <div className="min-h-[50vh] flex items-center justify-center">
