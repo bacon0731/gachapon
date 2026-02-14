@@ -1,11 +1,5 @@
 'use client';
 
-import { Heart } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { cn } from '@/lib/utils';
-import { createClient } from '@/lib/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
 import Image from 'next/image';
 
 interface MarketProductCardProps {
@@ -21,7 +15,6 @@ interface MarketProductCardProps {
 }
 
 export default function MarketProductCard({
-  productId,
   name,
   image,
   price,
@@ -30,64 +23,6 @@ export default function MarketProductCard({
   isUserOwned,
   onClick,
 }: MarketProductCardProps) {
-  const [isFollowed, setIsFollowed] = useState(false);
-  const { user } = useAuth();
-  const [supabase] = useState(() => createClient());
-
-  useEffect(() => {
-    if (!user || !productId) return;
-
-    const checkFollowStatus = async () => {
-      const { count } = await supabase
-        .from('product_follows')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('product_id', productId);
-      
-      setIsFollowed(!!count);
-    };
-
-    checkFollowStatus();
-  }, [user, productId, supabase]);
-
-  const handleFollow = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (!user) {
-      toast.error('請先登入');
-      return;
-    }
-
-    if (!productId) {
-      return;
-    }
-
-    const newStatus = !isFollowed;
-    setIsFollowed(newStatus);
-
-    try {
-      if (newStatus) {
-        const { error } = await supabase
-          .from('product_follows')
-          .insert({ user_id: user.id, product_id: productId });
-        if (error) throw error;
-        toast.success('已加入關注清單');
-      } else {
-        const { error } = await supabase
-          .from('product_follows')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('product_id', productId);
-        if (error) throw error;
-        toast.success('已取消關注');
-      }
-    } catch (error) {
-      console.error('Error toggling follow:', error);
-      setIsFollowed(!newStatus);
-      toast.error('操作失敗，請稍後再試');
-    }
-  };
 
   return (
     <div 
@@ -150,17 +85,7 @@ export default function MarketProductCard({
                 </div>
               </div>
 
-              <button 
-                onClick={handleFollow}
-                className={cn(
-                  "w-7 h-7 rounded-lg flex items-center justify-center transition-all shadow-lg active:scale-90",
-                  isFollowed 
-                    ? "bg-accent-red text-white shadow-accent-red/20" 
-                    : "bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md text-neutral-400 hover:text-accent-red hover:bg-white dark:hover:bg-neutral-800 border border-neutral-100 dark:border-neutral-700"
-                )}
-              >
-                <Heart className={cn("w-3.5 h-3.5", isFollowed && "fill-current")} />
-              </button>
+              
             </div>
           </div>
         </div>
