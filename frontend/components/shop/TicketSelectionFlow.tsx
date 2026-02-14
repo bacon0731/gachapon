@@ -7,9 +7,11 @@ import { Database } from '@/types/database.types';
 import { TicketSelector, Ticket } from '@/components/shop/TicketSelector';
 import { Button } from '@/components/ui';
 import { X, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { PurchaseConfirmation } from '@/components/shop/PurchaseConfirmation';
 import { IchibanTicket } from '@/components/IchibanTicket';
+import { LastOneCelebrationModal } from '@/components/shop/LastOneCelebrationModal';
 import { PrizeResultModal } from '@/components/shop/PrizeResultModal';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -44,6 +46,7 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
   const [isProcessing, setIsProcessing] = useState(false);
   const [showResultModal, setShowResultModal] = useState(false);
   const [showPrizeDetails, setShowPrizeDetails] = useState(false);
+  const [showLastOneCelebration, setShowLastOneCelebration] = useState(false);
   const [drawnResults, setDrawnResults] = useState<{
     grade: string;
     name: string;
@@ -52,6 +55,54 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
     is_last_one: boolean;
     ticket_number: number;
   }[]>([]);
+  
+  // Full results for Last One winner
+  const [fullResults, setFullResults] = useState<{
+    grade: string;
+    name: string;
+    isOpened: boolean;
+    image_url: string;
+    is_last_one: boolean;
+    ticket_number: number;
+  }[]>([]);
+  const [isFetchingFullResults, setIsFetchingFullResults] = useState(false);
+
+  const handleShowFullResults = async () => {
+    if (!product) return;
+    
+    setIsFetchingFullResults(true);
+    setShowResultModal(true);
+    
+    try {
+      const { data, error } = await supabase
+        .from('draw_records')
+        .select('ticket_number, prize_level, prize_name, image_url, is_last_one')
+        .eq('product_id', product.id)
+        .order('ticket_number', { ascending: true });
+
+      if (error) throw error;
+
+      // Sort results: Normal tickets by number, Last One at the end (or handled by Modal sorting)
+      // The Modal expects normal array. It has its own sorting.
+      // But we should format it correctly.
+      const formattedResults = data.map(record => ({
+        grade: record.prize_level,
+        name: record.prize_name,
+        isOpened: true, // All opened in history view
+        image_url: record.image_url || '',
+        is_last_one: record.is_last_one || false,
+        ticket_number: record.ticket_number
+      }));
+      
+      setFullResults(formattedResults);
+    } catch (err) {
+      console.error(err);
+      toast.error('無法載入抽獎結果');
+      setShowResultModal(false);
+    } finally {
+      setIsFetchingFullResults(false);
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -143,7 +194,7 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
       const results = (data as unknown as PlayIchibanResult[]).map((r) => ({
         grade: r.grade,
         name: r.name,
-        isOpened: false,
+        isOpened: r.is_last_one ? true : false, // Last One starts as 'visually opened' but hidden content
         image_url: r.image_url,
         is_last_one: r.is_last_one,
         ticket_number: r.ticket_number
@@ -151,6 +202,12 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
       
       setDrawnResults(results);
       if (refreshProfile) refreshProfile();
+      
+      // Check for Last One and trigger celebration
+      if (results.some(r => r.is_last_one)) {
+        setShowLastOneCelebration(true);
+      }
+      
       setShowConfirm(false); // Close confirmation modal
       
     } catch (err: unknown) {
@@ -166,7 +223,8 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
   };
 
   const handleOpenAll = () => {
-    setDrawnResults(prev => prev.map(r => ({ ...r, isOpened: true })));
+    // Only open tickets that are NOT Last One (Last One is already opened state)
+    setDrawnResults(prev => prev.map(r => r.is_last_one ? r : { ...r, isOpened: true }));
   };
 
   // If we are showing results, render the result flow (New: Inline, Old: Modal)
@@ -193,9 +251,19 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
   // Prize Reveal View (Full Screen Overlay)
   if (drawnResults.length > 0) {
     const allOpened = drawnResults.every(r => r.isOpened);
-    
+    const hasLastOne = drawnResults.some(r => r.is_last_one);
+    const normalTickets = drawnResults.filter(r => !r.is_last_one);
+    const allNormalOpened = normalTickets.length === 0 || normalTickets.every(r => r.isOpened);
+
     return (
       <div className="fixed inset-0 z-[2000] bg-neutral-900 flex flex-col items-center justify-center p-3 pb-safe overflow-hidden pt-1 md:pt-24">
+        {/* Last One Celebration Modal */}
+        <AnimatePresence>
+          {showLastOneCelebration && (
+            <LastOneCelebrationModal onClose={() => setShowLastOneCelebration(false)} />
+          )}
+        </AnimatePresence>
+
         {/* Background Image */}
         <div className="absolute inset-0 z-0 overflow-hidden">
           <Image 
@@ -216,77 +284,106 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
-              className="flex-1 overflow-y-auto p-3 md:p-4 custom-scrollbar pb-28 md:pb-32 mt-2 md:mt-24"
+              className="flex-1 overflow-y-auto p-3 md:p-4 custom-scrollbar pb-28 md:pb-32 mt-2 md:mt-12 lg:mt-24"
             >
                <div className={cn(
-                "grid gap-3 md:gap-4 w-full",
+                "grid gap-3 md:gap-x-12 md:gap-y-14 w-full",
                 showPrizeDetails 
                   ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-5" 
                   : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
                )}>
-                {drawnResults.map((result, idx) => (
-                  <div key={idx} className="animate-in fade-in zoom-in duration-300 w-full flex justify-center" style={{ animationDelay: `${idx * 100}ms` }}>
+                {drawnResults.map((result, idx) => {
+                  const isLastOne = result.is_last_one;
+                  const isHidden = isLastOne && !allNormalOpened;
+                  const displayImage = isHidden ? '/images/last_one_hidden.png' : result.image_url;
+                  
+                  return (
+                  <div key={idx} className={cn(
+                    "animate-in fade-in zoom-in duration-300 w-full flex justify-center relative",
+                    isLastOne && "order-last" // Ensure Last One is always last
+                  )} style={{ animationDelay: `${idx * 100}ms` }}>
+                    {isLastOne && isHidden && (
+                       <div className="absolute inset-0 bg-yellow-500/20 rounded-xl blur-xl animate-pulse z-0 pointer-events-none" />
+                    )}
                     <IchibanTicket 
                       grade={result.grade}
                       prizeName={result.name}
-                      isOpened={result.isOpened}
+                      isOpened={isLastOne ? true : result.isOpened} // Last One is always visually opened
                       isLastOne={result.is_last_one}
                       ticketNumber={result.ticket_number}
-                      imageUrl={result.image_url}
+                      imageUrl={displayImage}
+                      coverImageUrl={undefined} // No cover for Last One
                       showPrizeDetail={showPrizeDetails}
+                      className={cn(isLastOne && "z-10")}
                       onOpen={() => {
+                        if (isLastOne) return; // Last One is already opened
                         const newResults = [...drawnResults];
                         newResults[idx].isOpened = true;
                         setDrawnResults(newResults);
                       }}
                     />
                   </div>
-                ))}
+                )})}
               </div>
             </motion.div>
           </AnimatePresence>
         </div>
         
-        <div className="absolute bottom-0 left-0 right-0 bg-[#1A202C]/90 backdrop-blur-xl border-t border-white/10 pb-safe pt-2 z-50 min-h-16 flex items-center">
-          <div className="px-4 w-full max-w-md mx-auto h-full flex items-center">
-            {!allOpened ? (
-               <Button 
-                 onClick={handleOpenAll} 
-                 className="w-full bg-white text-neutral-900 hover:bg-neutral-100 font-black h-11 rounded-xl text-base"
-               >
-                 全部開啟
-               </Button>
-            ) : (
-               <div className="flex gap-2 w-full h-11">
-                 <Button 
-                   onClick={() => router.push('/profile?tab=warehouse')} 
-                   className="flex-1 bg-neutral-200 hover:bg-neutral-300 text-neutral-700 font-black rounded-xl text-sm"
-                 >
-                   前往倉庫
-                 </Button>
-                 <Button 
-                  onClick={() => setShowPrizeDetails(!showPrizeDetails)} 
-                  className="flex-1 bg-neutral-200 hover:bg-neutral-300 text-neutral-700 font-black rounded-xl text-sm"
-                >
-                  {showPrizeDetails ? "顯示籤號" : "顯示獎項"}
-                </Button>
-                 <Button 
-                   onClick={() => window.location.reload()} 
-                   className="flex-1 bg-accent-red hover:bg-accent-red/90 text-white font-black rounded-xl text-sm shadow-lg shadow-accent-red/30"
-                 >
-                   繼續抽獎
-                 </Button>
-               </div>
-            )}
-          </div>
+      {/* Bottom Action Bar */}
+      <div className="absolute bottom-0 left-0 right-0 bg-white dark:bg-neutral-900 border-t border-neutral-100 dark:border-neutral-800 z-50 pb-safe">
+        <div className="h-16 px-4 md:px-6 flex items-center justify-center w-full max-w-md mx-auto">
+          {!allOpened ? (
+            <Button 
+              onClick={handleOpenAll} 
+              className="w-full h-[44px] md:h-[52px] rounded-xl text-base md:text-lg font-black bg-[#3B82F6] hover:bg-[#2563EB] text-white shadow-xl shadow-blue-500/20"
+            >
+              全部開啟
+            </Button>
+          ) : (
+            <div className="flex gap-3 w-full">
+              <Button 
+                onClick={() => router.push('/profile?tab=warehouse')} 
+                className="flex-1 h-[44px] md:h-[52px] rounded-xl text-base md:text-lg font-black bg-neutral-200 hover:bg-neutral-300 text-neutral-700 shadow-sm"
+              >
+                前往倉庫
+              </Button>
+              <Button 
+                onClick={() => setShowPrizeDetails(!showPrizeDetails)} 
+                className="flex-1 h-[44px] md:h-[52px] rounded-xl text-base md:text-lg font-black bg-neutral-200 hover:bg-neutral-300 text-neutral-700 shadow-sm"
+              >
+                {showPrizeDetails ? "顯示籤號" : "顯示獎項"}
+              </Button>
+              <Button 
+                onClick={() => {
+                  if (hasLastOne) {
+                    handleShowFullResults();
+                  } else {
+                    window.location.reload();
+                  }
+                }} 
+                className={cn(
+                  "flex-1 h-[44px] md:h-[52px] rounded-xl text-base md:text-lg font-black shadow-xl transition-colors",
+                  hasLastOne 
+                    ? "bg-neutral-900 hover:bg-neutral-800 text-white shadow-neutral-900/20" 
+                    : "bg-accent-red hover:bg-accent-red/90 text-white shadow-accent-red/20"
+                )}
+              >
+                {hasLastOne ? "查看結果" : "繼續抽獎"}
+              </Button>
+            </div>
+          )}
         </div>
+      </div>
 
         {/* Prize Result Modal for Variant A */}
         {showResultModal && (
           <PrizeResultModal 
-            results={drawnResults}
+            results={hasLastOne && fullResults.length > 0 ? fullResults : drawnResults}
             onClose={() => setShowResultModal(false)}
             onPlayAgain={() => window.location.reload()}
+            onGoToWarehouse={() => router.push('/profile?tab=warehouse')}
+            isLoading={isFetchingFullResults}
+            skipRevealAnimation={hasLastOne}
           />
         )}
       </div>

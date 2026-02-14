@@ -14,6 +14,7 @@ interface IchibanTicketProps {
   onOpen?: () => void;
   className?: string;
   imageUrl?: string;
+  coverImageUrl?: string;
   showPrizeDetail?: boolean;
 }
 
@@ -26,6 +27,7 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
   onOpen,
   className,
   imageUrl,
+  coverImageUrl,
   showPrizeDetail = false,
 }) => {
   const [internalIsOpened, setInternalIsOpened] = useState(false);
@@ -91,6 +93,9 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
     <div 
       className={cn(
         "relative w-full max-w-[416px] aspect-[2/1] group select-none perspective-1000",
+        // Desktop: scale up by 19% (scale-[1.19])
+        // Mobile: default scale
+        "lg:scale-[1.19] lg:origin-center",
         !isOpened && "cursor-pointer",
         className
       )}
@@ -99,7 +104,7 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
       <div className="absolute inset-0 bg-black/10 rounded-[12px] blur-md translate-y-1 group-hover:translate-y-2 transition-transform will-change-transform" />
 
       {/* Main Ticket Base */}
-      <div className="absolute inset-0 rounded-[12px] shadow-xl bg-[#F3F4F6] overflow-hidden will-change-transform">
+      <div className="absolute inset-0 rounded-[12px] shadow-xl bg-[#F3F4F6] will-change-transform">
         
         {/* Inner Content Wrapper - Clipped */}
         <div className="absolute inset-0 rounded-[12px] overflow-hidden">
@@ -127,7 +132,7 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
                 >
                   <div className="flex items-baseline gap-0.5 sm:gap-1 text-center justify-center -mb-1">
                     <span className={cn(
-                      "text-4xl sm:text-5xl font-black tracking-tighter leading-none font-amount",
+                      "text-[40px] sm:text-5xl lg:text-[43px] font-black tracking-tighter leading-none font-amount",
                       isLastOne ? "text-yellow-600 drop-shadow-sm" : "text-[#D3D3D3]"
                     )}>
                       {(() => {
@@ -138,17 +143,17 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
                       })()}
                     </span>
                     <span className={cn(
-                      "text-sm sm:text-lg font-black",
+                      "text-lg sm:text-lg lg:text-[16px] font-black",
                       isLastOne ? "text-yellow-700" : "text-[#D3D3D3]"
                     )}>
                       {isLastOne ? "ONE" : "賞"}
                     </span>
                   </div>
-                  <div className="text-xs sm:text-sm font-black text-[#D3D3D3] text-center line-clamp-1 w-full mt-0.5 leading-tight px-1">
+                  <div className="text-base sm:text-sm lg:text-[12.5px] font-black text-[#D3D3D3] text-center line-clamp-1 w-full mt-0.5 lg:-mt-[1px] leading-tight px-1">
                     {prizeName}
                   </div>
                   {ticketNumber !== undefined && ticketNumber > 0 && (
-                    <div className="text-[10px] sm:text-xs font-bold text-[#D3D3D3]/80 mt-0.5">
+                    <div className="text-sm sm:text-xs lg:text-[11px] font-bold text-[#D3D3D3]/80 mt-0.5 lg:-mt-[1px]">
                       No. {ticketNumber.toString().padStart(3, '0')}
                     </div>
                   )}
@@ -241,7 +246,7 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
                 <div className="absolute inset-0 rounded-[12px] overflow-hidden">
                   <div className="relative w-[105%] h-[105%] -translate-x-2 -translate-y-0.5">
                     <Image 
-                      src="/images/up.svg?v=8" 
+                      src={coverImageUrl || "/images/up.svg?v=8"}
                       className="object-cover" 
                       alt="cover" 
                       draggable={false}
@@ -253,7 +258,7 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
 
                 {/* Finger Swipe Guide - Not Clipped */}
                 <motion.div 
-                  className="absolute left-[25%] top-1/2 -translate-y-1/2 pointer-events-none"
+                  className="absolute left-[25%] top-[65%] -translate-y-1/2 pointer-events-none"
                   animate={{ 
                     x: [0, 100],
                     opacity: [0, 1, 1, 0] 

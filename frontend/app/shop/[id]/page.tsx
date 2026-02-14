@@ -160,6 +160,7 @@ export default function ProductDetailPage() {
         grade: string;
         image_url: string;
         ticket_number?: number;
+        is_last_one?: boolean;
       }
 
       // Transform result to Prize format for GachaMachine
@@ -169,7 +170,9 @@ export default function ProductDetailPage() {
         name: item.name,
         rarity: item.grade, // Map grade to rarity
         image_url: item.image_url,
-        grade: item.grade
+        grade: item.grade,
+        is_last_one: item.is_last_one,
+        ticket_number: item.ticket_number
       }));
 
       // [GA] Track purchase success
@@ -200,7 +203,7 @@ export default function ProductDetailPage() {
 
   const handleGachaComplete = () => {
     // Navigate to warehouse with product filter
-    router.push(`/warehouse?product_id=${params.id}`);
+    router.push(`/profile?tab=warehouse&product_id=${params.id}`);
   };
 
   const handleGachaContinue = () => {
@@ -460,7 +463,7 @@ export default function ProductDetailPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-50 dark:divide-neutral-800">
-                    {prizes.map((prize, index) => (
+                    {prizes.filter(p => p.level !== 'Last One' && p.level !== 'LAST ONE' && !p.level.includes('最後賞')).map((prize, index) => (
                       <tr 
                         key={index} 
                         className={cn(
@@ -504,6 +507,58 @@ export default function ProductDetailPage() {
                 </table>
               </div>
             </div>
+
+            {/* Last One Prize Card - Moved outside the table card */}
+            {prizes.find(p => p.level === 'Last One' || p.level === 'LAST ONE' || p.level.includes('最後賞')) && (
+              <div className="bg-white dark:bg-neutral-900 rounded-2xl sm:rounded-3xl shadow-card border border-neutral-100 dark:border-neutral-800 p-1">
+                {(() => {
+                  const lastOnePrize = prizes.find(p => p.level === 'Last One' || p.level === 'LAST ONE' || p.level.includes('最後賞'));
+                  if (!lastOnePrize) return null;
+                  
+                  return (
+                    <div className="bg-gradient-to-br from-neutral-900 to-neutral-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 text-white shadow-xl relative overflow-hidden group cursor-pointer"
+                         onClick={() => setViewingPrize({
+                           name: lastOnePrize.name,
+                           image_url: lastOnePrize.image_url || undefined,
+                           level: lastOnePrize.level,
+                           total: lastOnePrize.total,
+                           remaining: lastOnePrize.remaining
+                         })}
+                    >
+                      {/* Background Effect */}
+                      <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
+                      
+                      <div className="flex items-center gap-4 relative z-10">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/10 rounded-xl flex-shrink-0 relative overflow-hidden border border-white/10">
+                          <Image 
+                            src={lastOnePrize.image_url || '/images/item.png'} 
+                            alt={lastOnePrize.name}
+                            fill
+                            className="object-cover transition-transform duration-500 group-hover:scale-110"
+                            unoptimized
+                          />
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1.5">
+                             <span className="px-2 py-0.5 bg-white text-neutral-900 text-[10px] font-black rounded uppercase tracking-wider shadow-lg shadow-white/20">
+                               LAST ONE
+                             </span>
+                             <span className="text-[10px] sm:text-xs text-neutral-400 font-bold uppercase tracking-wider">最後賞</span>
+                          </div>
+                          <h3 className="text-base sm:text-lg font-black text-white leading-tight mb-1 truncate">
+                            {lastOnePrize.name}
+                          </h3>
+                          <p className="text-[10px] sm:text-xs text-neutral-400 font-bold">
+                            購買最後一張籤即可獲得此獎項
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
 
             {/* Fairness Verification Card */}
             <div className="bg-white dark:bg-neutral-900 rounded-2xl sm:rounded-3xl shadow-card border border-neutral-100 dark:border-neutral-800 p-3 sm:p-6 space-y-3 sm:space-y-6">

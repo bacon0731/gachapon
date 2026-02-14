@@ -7,10 +7,12 @@ import { type Product } from '@/types/product'
 import { formatDateTime } from '@/utils/dateFormat'
 import { normalizePrizeLevels } from '@/utils/normalizePrizes'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useState, useEffect, useRef, Fragment } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 
 export default function ProductsPage() {
+  const router = useRouter()
   const { addLog } = useLog()
   const { highlightedProductId, setHighlightedProductId } = useProduct()
   const highlightedRowRef = useRef<HTMLTableRowElement>(null)
@@ -94,6 +96,19 @@ export default function ProductsPage() {
       }
     }
     fetchSmallItemsCount()
+
+    // Fetch dismantled items count
+    const fetchDismantledCount = async () => {
+      const { count, error } = await supabase
+        .from('draw_records')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'dismantled')
+      
+      if (!error && count !== null) {
+        setDismantledCount(count)
+      }
+    }
+    fetchDismantledCount()
   }, [])
 
   const [expandedProducts, setExpandedProducts] = useState<Set<number>>(new Set())
@@ -123,6 +138,7 @@ export default function ProductsPage() {
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [selectedProducts, setSelectedProducts] = useState<Set<number>>(new Set())
   const [smallItemsCount, setSmallItemsCount] = useState(0)
+  const [dismantledCount, setDismantledCount] = useState(0)
   const observerTarget = useRef<HTMLDivElement>(null)
   
   // 密度控制
@@ -178,9 +194,13 @@ export default function ProductsPage() {
   const handleExportCSV = () => {
     const headers = ['編號', '商品名稱', '分類', '種類', '價格(TWD)', '庫存/銷量', '大獎狀態', '上架', '建立時間', '開賣時間', '完抽時間']
     const csvData = sortedProducts.map(product => {
-      // 使用統一的統計函數，從實際抽獎記錄計算
-      const calculatedRemaining = product.prizes.reduce((sum, s) => sum + s.remaining, 0)
-      const totalCount = product.prizes.reduce((sum, s) => sum + s.total, 0)
+      // 使用統一的統計函數，從實際抽獎記錄計算 (排除 LAST ONE 賞)
+      const calculatedRemaining = product.prizes
+        .filter(p => p.level !== 'last_one' && p.level !== 'LAST ONE')
+        .reduce((sum, s) => sum + s.remaining, 0)
+      const totalCount = product.prizes
+        .filter(p => p.level !== 'last_one' && p.level !== 'LAST ONE')
+        .reduce((sum, s) => sum + s.total, 0)
       const calculatedSales = product.sales
       const stockAndSales = `庫存：${calculatedRemaining}/${totalCount} 銷量：${calculatedSales}`
       const majorStatus = isMajorDepleted(product) ? '廢套' : '正常'
@@ -522,8 +542,8 @@ export default function ProductsPage() {
         {/* 統計卡片 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
           <StatsCard
-            title="總商品數"
-            value={totalProducts}
+            title="進行中 / 總商品數"
+            value={`${activeProducts} / ${totalProducts}`}
             onClick={() => { 
               setSelectedStatus('all')
               setSelectedCategory('all')
@@ -534,18 +554,10 @@ export default function ProductsPage() {
             }}
           />
           <StatsCard
-            title="進行中"
-            value={activeProducts}
-            onClick={() => { 
-              setSelectedStatus('active')
-              setSelectedCategory('all')
-              setSelectedMajorStatus('all')
-              setSelectedLowStock(false)
-              setSelectedHot(false)
-              setSearchQuery('')
-            }}
-            isActive={selectedStatus === 'active' && selectedMajorStatus === 'all' && !selectedLowStock && !selectedHot && !searchQuery}
-            activeColor="primary"
+            title="分解數"
+            value={dismantledCount}
+            onClick={() => router.push('/dismantled')}
+            isActive={false}
           />
           <StatsCard
             title="低庫存（<10）"
@@ -592,8 +604,8 @@ export default function ProductsPage() {
           <StatsCard
             title="小物數量"
             value={totalSmallItems}
-            actionLabel="查看清單"
-            actionLink="/small-items"
+            onClick={() => router.push('/small-items')}
+            isActive={false}
           />
         </div>
 
@@ -833,7 +845,9 @@ export default function ProductsPage() {
                             {product.isHot && <span className="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-700 whitespace-nowrap flex-shrink-0">熱賣</span>}
                             {(() => {
                               // 根據實際庫存判斷是否顯示「已完抽」
-                              const calculatedRemaining = product.prizes.reduce((sum, s) => sum + s.remaining, 0)
+                              const calculatedRemaining = product.prizes
+                                .filter(p => p.level !== 'last_one' && p.level !== 'LAST ONE')
+                                .reduce((sum, s) => sum + s.remaining, 0)
                               const isSoldOut = calculatedRemaining === 0 && product.status !== 'pending'
                               return isSoldOut && <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700 whitespace-nowrap flex-shrink-0">已完抽</span>
                             })()}
@@ -866,9 +880,13 @@ export default function ProductsPage() {
                         <td className={`${getDensityClasses()} text-sm whitespace-nowrap`}>
                           {(() => {
                             // 使用統一的統計函數，從實際抽獎記錄計算
-                            // 計算總庫存和總數
-                            const calculatedRemaining = product.prizes.reduce((sum, s) => sum + s.remaining, 0)
-                            const totalCount = product.prizes.reduce((sum, s) => sum + s.total, 0)
+                            // 計算總庫存和總數 (排除 LAST ONE 賞)
+                            const calculatedRemaining = product.prizes
+                              .filter(p => !['last_one', 'last one'].includes(p.level.toLowerCase()))
+                              .reduce((sum, s) => sum + s.remaining, 0)
+                            const totalCount = product.prizes
+                              .filter(p => !['last_one', 'last one'].includes(p.level.toLowerCase()))
+                              .reduce((sum, s) => sum + s.total, 0)
                             // 銷量從實際抽獎記錄計算
                             const calculatedSales = product.sales
                             return (
@@ -1018,12 +1036,16 @@ export default function ProductsPage() {
                         <td colSpan={2 + Object.values(visibleColumns).filter(Boolean).length} className="py-4 px-4">
                           <div className="pl-8 space-y-2">
                             {(() => {
-                              // 計算所有獎項的剩餘數量總和
-                              const totalRemaining = product.prizes.reduce((sum, p) => sum + p.remaining, 0)
+                              // 計算所有獎項的剩餘數量總和 (排除 LAST ONE)
+                              const totalRemaining = product.prizes
+                                .filter(p => !['last_one', 'last one'].includes(p.level.toLowerCase()))
+                                .reduce((sum, p) => sum + p.remaining, 0)
                               
                               return product.prizes.map((prize, idx) => {
                                 // 計算當前機率：該獎項剩餘數量 / 所有獎項剩餘數量總和 × 100%
-                                const currentProbability = totalRemaining > 0 
+                                // 如果是 LAST ONE，不計算機率
+                                const isLastOne = ['last_one', 'last one'].includes(prize.level.toLowerCase())
+                                const currentProbability = (!isLastOne && totalRemaining > 0)
                                   ? ((prize.remaining / totalRemaining) * 100).toFixed(2)
                                   : '0.00'
                                 

@@ -21,7 +21,8 @@ export default function Navbar() {
 }
 
 function NavbarInner() {
-  const [query, setQuery] = useState('');
+  const searchParams = useSearchParams();
+  const [query, setQuery] = useState(searchParams.get('search') || '');
   const { user, logout, isLoading, isAuthenticated } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { showToast } = useToast();
@@ -36,7 +37,6 @@ function NavbarInner() {
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const [supabase] = useState(() => createClient());
 
   // Check if we just logged in
@@ -213,22 +213,66 @@ function NavbarInner() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Debounce search effect
+  useEffect(() => {
+    // Only trigger on shop or market pages
+    if (pathname !== '/shop' && pathname !== '/market') return;
+
+    const timer = setTimeout(() => {
+      const trimmedQ = query.trim();
+      const currentSearch = searchParams.get('search') || '';
+      
+      // Avoid redundant updates
+      if (trimmedQ === currentSearch) return;
+
+      if (trimmedQ) {
+        const url = pathname === '/market' 
+          ? `/market?search=${encodeURIComponent(trimmedQ)}`
+          : `/shop?search=${encodeURIComponent(trimmedQ)}`;
+        router.replace(url);
+      } else {
+        const url = pathname === '/market' ? '/market' : '/shop';
+        router.replace(url);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [query, pathname, router, searchParams]);
+
   const handleSearch = (q: string) => {
-    if (!q.trim()) return;
+    const trimmedQ = q.trim();
+
+    if (!trimmedQ) {
+      setQuery('');
+      setIsSearchOpen(false);
+      setIsDesktopSearchOpen(false);
+      // Let the effect handle the URL update or force it if needed, 
+      // but usually setting query is enough. 
+      // However, for explicit clear, we might want immediate action.
+      // But the effect will handle it in 500ms. 
+      // If user clicks 'X', they expect instant clear.
+      // So we should keep immediate navigation in handleSearch for explicit actions.
+      if (pathname === '/market') {
+        router.push('/market');
+      } else {
+        router.push('/shop');
+      }
+      return;
+    }
     
     // Save history
-    const newHistory = [q, ...searchHistory.filter(h => h !== q)].slice(0, 5);
+    const newHistory = [trimmedQ, ...searchHistory.filter(h => h !== trimmedQ)].slice(0, 5);
     setSearchHistory(newHistory);
     localStorage.setItem('searchHistory', JSON.stringify(newHistory));
     
-    setQuery(q);
+    setQuery(trimmedQ);
     setIsSearchOpen(false);
     setIsDesktopSearchOpen(false);
     
     if (pathname === '/market') {
-      router.push(`/market?search=${encodeURIComponent(q)}`);
+      router.push(`/market?search=${encodeURIComponent(trimmedQ)}`);
     } else {
-      router.push(`/shop?search=${encodeURIComponent(q)}`);
+      router.push(`/shop?search=${encodeURIComponent(trimmedQ)}`);
     }
   };
 
@@ -262,7 +306,7 @@ function NavbarInner() {
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14">
             {/* 左：Logo + 標語 / 返回按鈕 */}
-            <div className="flex items-center gap-2 md:gap-4 shrink-0">
+            <div className="flex items-center gap-2 md:gap-4 flex-none min-w-0">
               {showTitle ? (
                 <div className="flex items-center w-full md:w-auto overflow-hidden">
                   {showBackButton && (
@@ -282,7 +326,7 @@ function NavbarInner() {
                     </button>
                   )}
                   <span className={cn(
-                    "md:hidden text-lg font-black tracking-tight text-neutral-900 dark:text-white truncate flex-1 text-center px-1 min-w-0",
+                    "md:hidden text-lg font-black tracking-tight text-neutral-900 dark:text-white truncate flex-none text-left px-1 min-w-0 max-w-[120px]",
                     !showBackButton && "ml-0" // Adjust margin if no back button
                   )}>
                     {(productName && (isProductDetailPage || isNewsDetailPage)) ? productName : getPageTitle()}

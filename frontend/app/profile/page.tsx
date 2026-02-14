@@ -216,22 +216,23 @@ interface GroupedDrawHistoryItem {
   items: { grade: string; name: string; ticket_number: string }[];
 }
 
-interface DbDrawRecord {
-  id: number;
-  ticket_number: number;
-  created_at: string;
-  status: string;
-  product_prizes: {
-    level: string;
-    name: string;
-    image_url: string;
-    recycle_value: number;
-  } | null;
-  products: {
-    name: string;
-    price?: number;
-  } | null;
-}
+  interface DbDrawRecord {
+    id: number;
+    ticket_number: number;
+    created_at: string;
+    status: string;
+    product_prizes: {
+      level: string;
+      name: string;
+      image_url: string;
+      recycle_value: number;
+      total?: number;
+    } | null;
+    products: {
+      name: string;
+      price?: number;
+    } | null;
+  }
 
 const getStatusConfig = (status: string) => {
   switch (status) {
@@ -355,8 +356,8 @@ function ProfileContent() {
               ticket_number,
               created_at,
               status,
-              product_prizes ( level, name, image_url, recycle_value ),
-              products ( name )
+              product_prizes ( level, name, image_url, recycle_value, total ),
+              products ( name, price )
             `)
             .eq('user_id', user.id)
             .eq('status', 'in_warehouse')
@@ -364,17 +365,31 @@ function ProfileContent() {
             
           if (error) throw error;
 
-          const items = (data as unknown as DbDrawRecord[]).map((item) => ({
-            id: item.id.toString(),
-            name: item.product_prizes?.name || '未知獎品',
-            series: item.products?.name || '未知系列',
-            grade: item.product_prizes?.level || '?',
-            status: item.status as WarehouseItem['status'],
-            image: item.product_prizes?.image_url || 'https://placehold.co/400',
-            date: new Date(item.created_at).toLocaleString('zh-TW'),
-            ticketNo: item.ticket_number?.toString() || '',
-            recycleValue: item.product_prizes?.recycle_value || 0
-          }));
+          const items = (data as unknown as DbDrawRecord[]).map((item) => {
+            let recycleValue = item.product_prizes?.recycle_value || 0;
+            const price = item.products?.price || 0;
+            const quantity = item.product_prizes?.total || 0;
+
+            if (price > 0) {
+              if (quantity >= 1 && quantity <= 4) {
+                recycleValue = Math.floor(price / 2);
+              } else {
+                recycleValue = 50;
+              }
+            }
+
+            return {
+              id: item.id.toString(),
+              name: item.product_prizes?.name || '未知獎品',
+              series: item.products?.name || '未知系列',
+              grade: item.product_prizes?.level || '?',
+              status: item.status as WarehouseItem['status'],
+              image: item.product_prizes?.image_url || 'https://placehold.co/400',
+              date: new Date(item.created_at).toLocaleString('zh-TW'),
+              ticketNo: item.ticket_number?.toString() || '',
+              recycleValue
+            };
+          });
           setWarehouseItems(items);
         } else if (activeWarehouseTab === 'dismantled') {
            const { data, error } = await supabase
@@ -838,38 +853,79 @@ function ProfileContent() {
               </div>
               <div className="flex items-center gap-3">
                 {activeWarehouseTab === 'all' && selectedForDelivery.length > 0 && (
-                  <div className="flex items-center gap-2">
-                    <button 
-                      onClick={() => setSelectedForDelivery([])}
-                      className="px-3 py-2 text-neutral-400 hover:text-neutral-600 text-[13px] font-black transition-colors"
-                    >
-                      重選
-                    </button>
-                    <button 
-                      onClick={handleDismantleClick}
-                      className="flex items-center justify-center bg-accent-red text-white px-4 py-2 rounded-xl lg:rounded-2xl shadow-lg shadow-accent-red/30 hover:scale-105 active:scale-95 transition-all whitespace-nowrap"
-                    >
-                      <span className="text-[13px] font-black">分解 ({selectedForDelivery.length})</span>
-                    </button>
-                    {/* Sell Button - Only if 1 item is selected */}
-                    {selectedForDelivery.length === 1 && (
+                  <>
+                    {/* Desktop Bulk Actions */}
+                    <div className="hidden md:flex items-center gap-2">
                       <button 
-                        onClick={() => {
-                          const item = warehouseItems.find(i => i.id === selectedForDelivery[0]);
-                          if (item) handleSellClick(item);
-                        }}
-                        className="flex items-center justify-center bg-accent-yellow text-white px-4 py-2 rounded-xl lg:rounded-2xl shadow-lg shadow-accent-yellow/30 hover:scale-105 active:scale-95 transition-all whitespace-nowrap"
+                        onClick={() => setSelectedForDelivery([])}
+                        className="px-3 py-2 text-neutral-400 hover:text-neutral-600 text-[13px] font-black transition-colors"
                       >
-                        <span className="text-[13px] font-black">上架市集</span>
+                        重選
                       </button>
-                    )}
-                    <button 
-                      onClick={() => setShowDeliveryModal(true)}
-                      className="flex items-center justify-center bg-primary text-white px-4 py-2 rounded-xl lg:rounded-2xl shadow-lg shadow-primary/30 hover:scale-105 active:scale-95 transition-all whitespace-nowrap"
-                    >
-                      <span className="text-[13px] font-black">申請配送 ({selectedForDelivery.length})</span>
-                    </button>
-                  </div>
+                      <button 
+                        onClick={handleDismantleClick}
+                        className="flex items-center justify-center bg-accent-red text-white px-4 py-2 rounded-xl lg:rounded-2xl shadow-lg shadow-accent-red/30 hover:scale-105 active:scale-95 transition-all whitespace-nowrap"
+                      >
+                        <span className="text-[13px] font-black">分解 ({selectedForDelivery.length})</span>
+                      </button>
+                      {/* Sell Button - Only if 1 item is selected */}
+                      {selectedForDelivery.length === 1 && (
+                        <button 
+                          onClick={() => {
+                            const item = warehouseItems.find(i => i.id === selectedForDelivery[0]);
+                            if (item) handleSellClick(item);
+                          }}
+                          className="flex items-center justify-center bg-accent-yellow text-white px-4 py-2 rounded-xl lg:rounded-2xl shadow-lg shadow-accent-yellow/30 hover:scale-105 active:scale-95 transition-all whitespace-nowrap"
+                        >
+                          <span className="text-[13px] font-black">上架市集</span>
+                        </button>
+                      )}
+                      <button 
+                        onClick={() => setShowDeliveryModal(true)}
+                        className="flex items-center justify-center bg-primary text-white px-4 py-2 rounded-xl lg:rounded-2xl shadow-lg shadow-primary/30 hover:scale-105 active:scale-95 transition-all whitespace-nowrap"
+                      >
+                        <span className="text-[13px] font-black">申請配送 ({selectedForDelivery.length})</span>
+                      </button>
+                    </div>
+
+                    {/* Mobile Fixed Bulk Actions Bar */}
+                    <div className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-xl border-t border-neutral-100 dark:border-neutral-800 h-16 px-4 flex items-center justify-between md:hidden z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+                      <div className="flex items-center gap-2">
+                         <span className="text-sm font-black text-neutral-900 dark:text-white">已選 {selectedForDelivery.length}</span>
+                         <button 
+                           onClick={() => setSelectedForDelivery([])} 
+                           className="text-xs text-neutral-400 font-bold px-2 py-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg"
+                         >
+                           重選
+                         </button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                         <button 
+                           onClick={handleDismantleClick} 
+                           className="bg-accent-red text-white px-3 py-2 rounded-xl shadow-lg shadow-accent-red/20 text-xs font-black"
+                         >
+                           分解
+                         </button>
+                         {selectedForDelivery.length === 1 && (
+                            <button 
+                              onClick={() => {
+                                const item = warehouseItems.find(i => i.id === selectedForDelivery[0]);
+                                if (item) handleSellClick(item);
+                              }}
+                              className="bg-accent-yellow text-white px-3 py-2 rounded-xl shadow-lg shadow-accent-yellow/20 text-xs font-black"
+                            >
+                              上架
+                            </button>
+                         )}
+                         <button 
+                           onClick={() => setShowDeliveryModal(true)} 
+                           className="bg-primary text-white px-3 py-2 rounded-xl shadow-lg shadow-primary/20 text-xs font-black"
+                         >
+                           配送
+                         </button>
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             </div>
@@ -919,10 +975,10 @@ function ProfileContent() {
                         return (
                           <div 
                             key={item.id} 
-                            onClick={() => setViewingItem(item)}
-                            className={cn("bg-white dark:bg-neutral-900 rounded-2xl border p-3 space-y-3 shadow-sm relative overflow-hidden transition-all active:scale-95", isSelected ? "border-accent-emerald ring-2 ring-accent-emerald/20" : "border-neutral-100 dark:border-neutral-800")}
+                            onClick={() => toggleDeliverySelection(item.id)}
+                            className={cn("bg-white dark:bg-neutral-900 rounded-2xl border shadow-sm relative overflow-hidden transition-all active:scale-95", isSelected ? "border-accent-emerald ring-2 ring-accent-emerald/20" : "border-neutral-100 dark:border-neutral-800")}
                           >
-                            <div className="aspect-square bg-[#28324E] rounded-xl overflow-hidden relative">
+                            <div className="aspect-square bg-[#28324E] relative">
                               <Image 
                                 src={item.image || '/images/item.png'} 
                                 alt={item.name} 
@@ -945,7 +1001,7 @@ function ProfileContent() {
                                 <span className="px-2 py-0.5 bg-accent-red text-white text-[10px] font-black rounded-md uppercase">{item.grade}</span>
                               </div>
                             </div>
-                            <div>
+                            <div className="p-3">
                               <h4 className="text-[13px] font-black text-neutral-900 dark:text-white leading-tight line-clamp-2 min-h-[2.5em]">{item.name}</h4>
                               <p className="text-[10px] text-neutral-400 font-bold mt-1 truncate">{item.series}</p>
                             </div>
@@ -970,7 +1026,7 @@ function ProfileContent() {
                           {warehouseItems.map((item) => {
                             const isSelected = selectedForDelivery.includes(item.id);
                             return (
-                              <tr key={item.id} onClick={() => setViewingItem(item)} className={cn("transition-all group cursor-pointer hover:bg-neutral-50/50 dark:hover:bg-neutral-800/50", isSelected && "bg-accent-emerald/5 hover:bg-accent-emerald/10")}>
+                              <tr key={item.id} onClick={() => toggleDeliverySelection(item.id)} className={cn("transition-all group cursor-pointer hover:bg-neutral-50/50 dark:hover:bg-neutral-800/50", isSelected && "bg-accent-emerald/5 hover:bg-accent-emerald/10")}>
                                 <td 
                                   className="px-3 lg:px-4 py-2 lg:py-3"
                                   onClick={(e) => {

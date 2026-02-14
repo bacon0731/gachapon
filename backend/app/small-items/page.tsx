@@ -159,7 +159,10 @@ export default function SmallItemsPage() {
   return (
     <AdminLayout
       pageTitle="小物資源庫管理"
-      breadcrumbs={[{ label: '小物資源庫', href: '/small-items' }]}
+      breadcrumbs={[
+        { label: '商品管理', href: '/products' },
+        { label: '小物資源庫管理', href: '/small-items' }
+      ]}
     >
       <div className="space-y-6">
         {/* 統計卡片 */}
