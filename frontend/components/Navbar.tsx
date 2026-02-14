@@ -326,7 +326,7 @@ function NavbarInner() {
                     </button>
                   )}
                   <span className={cn(
-                    "md:hidden text-lg font-black tracking-tight text-neutral-900 dark:text-white truncate flex-none text-left px-1 min-w-0 max-w-[120px]",
+                    "md:hidden text-lg font-black tracking-tight text-neutral-900 dark:text-white truncate text-left px-1 min-w-0 max-w-[60vw] sm:max-w-[70vw] flex-1",
                     !showBackButton && "ml-0" // Adjust margin if no back button
                   )}>
                     {(productName && (isProductDetailPage || isNewsDetailPage)) ? productName : getPageTitle()}
