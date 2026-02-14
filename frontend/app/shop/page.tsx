@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, Suspense } from 'react';
+import { useState, useMemo, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/types/database.types';
@@ -45,8 +45,7 @@ function ShopContent() {
   const [priceMax, setPriceMax] = useState('');
   const [isMobileSortOpen, setIsMobileSortOpen] = useState(false);
 
-  // Fetch initial data
-  useEffect(() => {
+  const fetchData = useCallback(async () => {
     const LOAD_TIMEOUT_MS = 8000;
     const withTimeout = async <T,>(p: Promise<T>) => {
       return Promise.race<T>([
@@ -55,31 +54,49 @@ function ShopContent() {
       ]);
     };
 
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        setLoadError(null);
-        const [productsRes, categoriesRes] = await Promise.all([
-          withTimeout(supabase.from('products').select('*, product_tags(category_id)').neq('status', 'pending') as unknown as Promise<unknown>),
-          withTimeout(supabase.from('categories').select('*').eq('is_active', true).order('sort_order', { ascending: true }) as unknown as Promise<unknown>)
-        ]);
+    try {
+      setIsLoading(true);
+      setLoadError(null);
+      type ProductRow = Database['public']['Tables']['products']['Row'];
+      type CategoryRow = Database['public']['Tables']['categories']['Row'];
+      const [productsRes, categoriesRes] = await Promise.all([
+        withTimeout(supabase.from('products').select('*, product_tags(category_id)').neq('status', 'pending') as unknown as Promise<unknown>),
+        withTimeout(supabase.from('categories').select('*').eq('is_active', true).order('sort_order', { ascending: true }) as unknown as Promise<unknown>)
+      ]);
 
-        if (productsRes.error) throw productsRes.error;
-        if (categoriesRes.error) throw categoriesRes.error;
+      const pRes = productsRes as unknown as { data?: (ProductRow & { product_tags: { category_id: string }[] })[]; error?: { message?: string } };
+      const cRes = categoriesRes as unknown as { data?: CategoryRow[]; error?: { message?: string } };
+      if (pRes.error) throw pRes.error;
+      if (cRes.error) throw cRes.error;
 
-        // Transform the data to match the expected type if needed, 
-        // though Supabase return should match if relation exists
-        setProducts((productsRes.data as unknown as (Database['public']['Tables']['products']['Row'] & { product_tags: { category_id: string }[] })[]) || []);
-        setCategories(categoriesRes.data || []);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        setLoadError('載入逾時或失敗，請稍後重試');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchData();
+      setProducts((pRes.data as (ProductRow & { product_tags: { category_id: string }[] })[]) || []);
+      setCategories((cRes.data as CategoryRow[]) || []);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setLoadError('載入逾時或失敗，請稍後重試');
+    } finally {
+      setIsLoading(false);
+    }
   }, [supabase]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('realtime-products-shop')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
+        fetchData();
+      })
+      .on('broadcast', { event: 'products_updated' }, () => {
+        fetchData();
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, fetchData]);
 
   const allCategories = useMemo(() => [
     { id: 'all', name: '全部商品', sort_order: -1, is_active: true, created_at: '' },

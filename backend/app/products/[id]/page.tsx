@@ -318,31 +318,29 @@ export default function EditProductPage() {
       }
 
       // 2. Prepare Product Data
-      const productData = {
+      const productData: any = {
         name: formData.name,
         category: formData.category,
-        category_id: formData.categoryId,
         type: formData.type,
         price: parseInt(formData.price) || 0,
         remaining: calculatedRemaining,
         status: formData.status,
         is_hot: formData.isHot,
         total_count: calculatedTotalCount,
-        release_year: formData.releaseYear,
-        release_month: formData.releaseMonth,
         distributor: formData.distributor,
         rarity: formData.rarity,
         major_prizes: formData.majorPrizes.length > 0 ? formData.majorPrizes : ['A賞'],
-        started_at: formData.startedAt ? (formData.startedAt.includes(':') ? formData.startedAt : `${formData.startedAt} 00:00:00`) : null,
         ended_at: formData.status === 'ended' ? formData.endedAt : null,
         txid_hash: formData.txidHash || null,
         seed: formData.seed || null,
         image_url: productImageUrl,
       }
 
-      // If becoming active and no started_at, set to now
-      if (productData.status === 'active' && !productData.started_at) {
-        productData.started_at = new Date().toISOString()
+      if (formData.releaseYear && formData.releaseMonth) {
+        const m = String(formData.releaseMonth).padStart(2, '0')
+        productData.release_date = `${formData.releaseYear}-${m}-01`
+      } else {
+        productData.release_date = null
       }
 
       // Update Product
@@ -443,12 +441,33 @@ export default function EditProductPage() {
         if (insertError) throw insertError
       }
 
+      try {
+        const names = ['realtime-products-home', 'realtime-products-shop']
+        await Promise.all(
+          names.map(async (name) => {
+            const channel = supabase.channel(name)
+            await new Promise<void>((resolve) => {
+              channel.subscribe((status) => {
+                if (status === 'SUBSCRIBED') resolve()
+              })
+            })
+            await channel.send({
+              type: 'broadcast',
+              event: 'products_updated',
+              payload: { id: productId, is_hot: productData.is_hot, status: productData.status }
+            })
+            supabase.removeChannel(channel)
+          })
+        )
+      } catch {}
+
       addLog('修改商品', '商品管理', `修改商品「${formData.name}」`, 'success')
       router.push('/products')
       
     } catch (e: any) {
-      console.error('Failed to update product:', e)
-      alert(`更新商品失敗：${e.message || '請稍後再試'}`)
+      const msg = e?.message || e?.error_description || JSON.stringify(e || {})
+      console.error('Failed to update product:', msg)
+      alert(`更新商品失敗：${msg || '請稍後再試'}`)
     } finally {
       setIsSubmitting(false)
     }

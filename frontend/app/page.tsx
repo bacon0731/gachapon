@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Database } from '@/types/database.types';
 import ProductCard from '@/components/ProductCard';
 import ProductCardSkeleton from '@/components/ProductCardSkeleton';
@@ -19,7 +19,7 @@ export default function Home() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [supabase] = useState(() => createClient());
 
-  useEffect(() => {
+  const fetchData = useCallback(async () => {
     const LOAD_TIMEOUT_MS = 8000;
     const withTimeout = async <T,>(p: Promise<T>) => {
       return Promise.race<T>([
@@ -28,33 +28,54 @@ export default function Home() {
       ]);
     };
 
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        setLoadError(null);
-        const [productsData, bannersData] = await Promise.all([
-          withTimeout(supabase.from('products').select('*').neq('status', 'pending').order('created_at', { ascending: false }) as unknown as Promise<unknown>),
-          withTimeout(supabase.from('banners').select('*').order('sort_order', { ascending: true }).eq('is_active', true) as unknown as Promise<unknown>)
-        ]);
+    try {
+      setIsLoading(true);
+      setLoadError(null);
+      type ProductRow = Database['public']['Tables']['products']['Row'];
+      type BannerRow = Database['public']['Tables']['banners']['Row'];
+      const [productsData, bannersData] = await Promise.all([
+        withTimeout(supabase.from('products').select('*').neq('status', 'pending').order('created_at', { ascending: false }) as unknown as Promise<unknown>),
+        withTimeout(supabase.from('banners').select('*').order('sort_order', { ascending: true }).eq('is_active', true) as unknown as Promise<unknown>)
+      ]);
 
-        if (productsData.data) {
-          setNewProducts(productsData.data.slice(0, 10));
-          setHotProducts(productsData.data.filter(p => p.is_hot).slice(0, 10));
-        }
+      const prodRes = productsData as unknown as { data?: ProductRow[] };
+      const bannRes = bannersData as unknown as { data?: BannerRow[] };
 
-        if (bannersData.data) {
-          setBanners(bannersData.data);
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        setLoadError('載入逾時或失敗，請稍後重試');
-      } finally {
-        setIsLoading(false);
+      if (prodRes.data) {
+        const p = prodRes.data;
+        setNewProducts(p.slice(0, 10));
+        setHotProducts(p.filter(pr => pr.is_hot).slice(0, 10));
       }
-    };
 
-    fetchData();
+      if (bannRes.data) {
+        setBanners(bannRes.data);
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setLoadError('載入逾時或失敗，請稍後重試');
+    } finally {
+      setIsLoading(false);
+    }
   }, [supabase]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('realtime-products-home')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
+        fetchData();
+      })
+      .on('broadcast', { event: 'products_updated' }, () => {
+        fetchData();
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, fetchData]);
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 pb-20 transition-colors">

@@ -20,6 +20,16 @@ export default function ProductsPage() {
   
   const [products, setProducts] = useState<Product[]>([])
 
+  const getDisplayCode = (product: Product): string => {
+    const prefix =
+      product.type === 'gacha' ? 'GA' :
+      product.type === 'ichiban' ? 'IJ' :
+      'CU'
+    const digits = (product.productCode || '').replace(/\D/g, '')
+    const code = digits.slice(-6).padStart(6, '0')
+    return `${prefix}${code}`
+  }
+
   const fetchProducts = async () => {
     try {
       setIsLoading(true)
@@ -83,6 +93,15 @@ export default function ProductsPage() {
   }
 
   useEffect(() => {
+    // 還原排序狀態
+    try {
+      const raw = localStorage.getItem('products_sort')
+      if (raw) {
+        const obj = JSON.parse(raw)
+        if (obj.field) setSortField(obj.field)
+        if (obj.dir) setSortDirection(obj.dir)
+      }
+    } catch {}
     fetchProducts()
     
     // Fetch small items count
@@ -215,7 +234,7 @@ export default function ProductsPage() {
       const typeName = typeMap[product.type || 'ichiban'] || '一番賞'
 
       return [
-        product.productCode,
+        getDisplayCode(product),
         product.name,
         product.category,
         typeName,
@@ -410,10 +429,16 @@ export default function ProductsPage() {
     }
   }
 
+  useEffect(() => {
+    try {
+      localStorage.setItem('products_sort', JSON.stringify({ field: sortField, dir: sortDirection }))
+    } catch {}
+  }, [sortField, sortDirection])
+
   const filteredProducts = products.filter(product => {
     const matchSearch = !searchQuery || 
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.productCode.includes(searchQuery) ||
+      getDisplayCode(product).includes(searchQuery) ||
       product.prizes.some(prize => prize.name.toLowerCase().includes(searchQuery.toLowerCase()))
     const matchCategory = selectedCategory === 'all' || product.category === selectedCategory
     const matchStatus = selectedStatus === 'all' || product.status === selectedStatus
@@ -435,9 +460,9 @@ export default function ProductsPage() {
     switch (sortField) {
       case 'name': aValue = a.name; bValue = b.name; break
       case 'productCode': 
-        // 將編號字符串轉換為數字進行排序
-        aValue = parseInt(a.productCode) || 0
-        bValue = parseInt(b.productCode) || 0
+        // 以顯示編號的數字部分排序
+        aValue = parseInt(getDisplayCode(a).replace(/\D/g, '')) || 0
+        bValue = parseInt(getDisplayCode(b).replace(/\D/g, '')) || 0
         break
       case 'category': aValue = a.category; bValue = b.category; break
       case 'type': aValue = a.type || 'ichiban'; bValue = b.type || 'ichiban'; break
@@ -832,7 +857,7 @@ export default function ProductsPage() {
                       </td>
                       {visibleColumns.productCode && (
                         <td className={`${getDensityClasses()} text-sm text-neutral-700 font-mono whitespace-nowrap`}>
-                          <span className="whitespace-nowrap">{product.productCode}</span>
+                          <span className="whitespace-nowrap">{getDisplayCode(product)}</span>
                         </td>
                       )}
                       {visibleColumns.name && (
@@ -1051,7 +1076,7 @@ export default function ProductsPage() {
                                 
                                 return (
                                   <div key={idx} className="flex items-center gap-3 text-sm">
-                                    <span className="text-neutral-500 font-mono text-xs min-w-[80px]">{product.productCode}-{(idx + 1).toString().padStart(2, '0')}</span>
+                                    <span className="text-neutral-500 font-mono text-xs min-w-[80px]">{getDisplayCode(product)}{(idx + 1).toString().padStart(2, '0')}</span>
                                     <img src={prize.imageUrl} alt={prize.name} className="w-10 h-10 object-cover rounded-lg" />
                                     <span className="text-neutral-700 min-w-[100px]">{prize.name}</span>
                                     <span className="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-700">{prize.level}</span>
