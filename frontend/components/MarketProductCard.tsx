@@ -16,7 +16,6 @@ interface MarketProductCardProps {
   price: number;
   grade?: string;
   series?: string;
-  sellerName?: string;
   isUserOwned?: boolean;
   onClick?: () => void;
 }
@@ -28,7 +27,6 @@ export default function MarketProductCard({
   price,
   grade,
   series,
-  sellerName,
   isUserOwned,
   onClick,
 }: MarketProductCardProps) {
@@ -150,9 +148,6 @@ export default function MarketProductCard({
                     <span className="text-[11px] font-black text-neutral-400">/個</span>
                   </div>
                 </div>
-                {sellerName && (
-                  <p className="text-[10px] text-neutral-400 mt-0.5">賣家: {sellerName}</p>
-                )}
               </div>
 
               <button 

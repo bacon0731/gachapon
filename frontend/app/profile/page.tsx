@@ -19,7 +19,6 @@ import {
   RefreshCcw,
   RefreshCw,
   Wallet,
-  Plus,
   Clock,
   Heart,
   User,
@@ -2281,8 +2280,8 @@ function ProfileContent() {
                     </div>
                     <span className="text-2xl font-black font-amount tracking-tighter leading-none">{user.points.toLocaleString()}</span>
                   </div>
-                  <Link href="/topup" className="bg-accent-yellow text-white w-9 h-9 rounded-xl flex items-center justify-center shadow-lg shadow-accent-yellow/30 hover:scale-105 active:scale-95 transition-all">
-                    <Plus className="w-5 h-5 stroke-[3]" />
+                  <Link href="/topup" className="bg-accent-yellow text-white px-3 h-9 rounded-xl flex items-center justify-center shadow-lg shadow-accent-yellow/30 hover:scale-105 active:scale-95 transition-all text-sm font-black">
+                    <span>儲值</span>
                   </Link>
                 </div>
               </div>

@@ -530,7 +530,6 @@ export default function MarketplacePage() {
                     price={item.price}
                     grade={item.product_prizes.level}
                     series={item.products.name}
-                    sellerName={item.seller_name}
                     productId={item.products.id}
                     isUserOwned={user?.id === item.seller_id}
                     onClick={() => setSelectedListing(item)}
@@ -644,7 +643,7 @@ export default function MarketplacePage() {
                     <button
                       onClick={handleCancelListing}
                       disabled={isPurchasing}
-                      className="flex-1 py-3.5 rounded-2xl font-black text-sm bg-red-500 text-white shadow-lg shadow-red-500/25 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
+                      className="flex-1 py-3.5 rounded-2xl font-black text-sm bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-all border border-neutral-100 dark:border-neutral-700"
                     >
                       {isPurchasing ? (
                         <>
@@ -652,10 +651,7 @@ export default function MarketplacePage() {
                           處理中...
                         </>
                       ) : (
-                        <>
-                          <X className="w-4 h-4" />
-                          取消上架
-                        </>
+                        <span>取消上架</span>
                       )}
                     </button>
                   ) : (
