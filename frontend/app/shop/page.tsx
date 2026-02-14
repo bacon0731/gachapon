@@ -38,7 +38,7 @@ function ShopContent() {
   const [products, setProducts] = useState<(Database['public']['Tables']['products']['Row'] & { product_tags: { category_id: string }[] })[]>([]);
   const [categories, setCategories] = useState<Database['public']['Tables']['categories']['Row'][]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
 
   const [priceMin, setPriceMin] = useState('');
   const [priceMax, setPriceMax] = useState('');

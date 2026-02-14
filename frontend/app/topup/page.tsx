@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button, Input } from '@/components/ui';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/lib/supabase/client';
@@ -36,11 +36,12 @@ export default function TopupPage() {
   const { user, isAuthenticated, refreshProfile } = useAuth();
   const { showToast } = useToast();
   const router = useRouter();
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
   
   const [selectedPlan, setSelectedPlan] = useState(TOPUP_PLANS[2]);
   const [selectedMethod, setSelectedMethod] = useState(PAYMENT_METHODS[0].id);
   const [isProcessing, setIsProcessing] = useState(false);
+  const isProcessingRef = useRef(false);
   const [cardInfo, setCardInfo] = useState({
     number: '',
     expiry: '',
@@ -56,12 +57,15 @@ export default function TopupPage() {
   }
 
   const handleTopup = async () => {
+    if (isProcessing || isProcessingRef.current) return;
+    
     if (selectedMethod === 'credit_card' && (!cardInfo.number || !cardInfo.expiry || !cardInfo.cvc)) {
       showToast('請填寫完整的信用卡資訊', 'error');
       return;
     }
     
     setIsProcessing(true);
+    isProcessingRef.current = true;
     
     try {
       if (!user) throw new Error('User not found');
@@ -87,9 +91,11 @@ export default function TopupPage() {
     } catch (error: unknown) {
       console.error('Topup Error:', error);
       showToast((error as Error).message || '儲值失敗，請稍後再試', 'error');
-    } finally {
+      // Only reset processing state on error, success redirects
       setIsProcessing(false);
-    }
+      isProcessingRef.current = false;
+    } 
+    // Do not reset in finally block for success case to prevent double submission during redirect delay
   };
 
   return (

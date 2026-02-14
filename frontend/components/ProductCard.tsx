@@ -35,7 +35,7 @@ export default function ProductCard({
 }: ProductCardProps) {
   const [isFollowed, setIsFollowed] = useState(false);
   const { user } = useAuth();
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
 
   useEffect(() => {
     if (!user) return;

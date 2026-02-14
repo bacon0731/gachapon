@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 export default function NewsPage() {
   const [news, setNews] = useState<Database['public']['Tables']['news']['Row'][]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
 
   useEffect(() => {
     const fetchNews = async () => {

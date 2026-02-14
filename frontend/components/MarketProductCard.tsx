@@ -17,6 +17,7 @@ interface MarketProductCardProps {
   grade?: string;
   series?: string;
   sellerName?: string;
+  isUserOwned?: boolean;
   onClick?: () => void;
 }
 
@@ -28,11 +29,12 @@ export default function MarketProductCard({
   grade,
   series,
   sellerName,
+  isUserOwned,
   onClick,
 }: MarketProductCardProps) {
   const [isFollowed, setIsFollowed] = useState(false);
   const { user } = useAuth();
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
 
   useEffect(() => {
     if (!user || !productId) return;
@@ -116,6 +118,11 @@ export default function MarketProductCard({
                  </div>
                )}
             </div>
+            {isUserOwned && (
+              <div className="px-2 py-1 rounded-lg bg-primary/90 backdrop-blur-md text-white text-[10px] font-black border border-white/10 shadow-sm">
+                個人
+              </div>
+            )}
           </div>
         </div>
 

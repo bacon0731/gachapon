@@ -14,7 +14,7 @@ export default function DailyCheckInTab() {
     checked_in_today: false,
     next_reward: 10
   });
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
 
   const fetchStatus = useCallback(async () => {
     try {

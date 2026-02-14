@@ -25,7 +25,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const { user: authUser, logout: authLogout } = useAuth()
   const [user, setUser] = useState<AdminUser | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const supabase = createClient()
+  const [supabase] = useState(() => createClient())
   const router = useRouter()
 
   useEffect(() => {

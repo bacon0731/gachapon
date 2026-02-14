@@ -85,7 +85,7 @@ export default function MarketplacePage() {
   const [selectedListing, setSelectedListing] = useState<MarketplaceListing | null>(null);
   const [isPurchasing, setIsPurchasing] = useState(false);
 
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
 
   const fetchListings = React.useCallback(async () => {
     setIsLoading(true);
@@ -207,6 +207,33 @@ export default function MarketplacePage() {
       console.error('Purchase Error:', error);
       const message = error instanceof Error ? error.message : '購買失敗';
       toast.error(message);
+    } finally {
+      setIsPurchasing(false);
+    }
+  };
+
+  const handleCancelListing = async () => {
+    if (!selectedListing || !user) return;
+
+    setIsPurchasing(true);
+    try {
+      const { data, error } = await supabase.rpc('cancel_listing', {
+        p_listing_id: selectedListing.id,
+        p_user_id: user.id
+      });
+
+      if (error) throw error;
+      if (data.success) {
+        toast.success(data.message);
+        setSelectedListing(null);
+        await fetchListings();
+        await refreshProfile();
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      console.error('Cancel listing error:', error);
+      toast.error((error as Error).message || '取消上架失敗');
     } finally {
       setIsPurchasing(false);
     }
@@ -503,10 +530,11 @@ export default function MarketplacePage() {
                     price={item.price}
                     grade={item.product_prizes.level}
                     series={item.products.name}
-            sellerName={item.seller_name}
-            productId={item.products.id}
-            onClick={() => setSelectedListing(item)}
-          />
+                    sellerName={item.seller_name}
+                    productId={item.products.id}
+                    isUserOwned={user?.id === item.seller_id}
+                    onClick={() => setSelectedListing(item)}
+                  />
         ))}
               </div>
             ) : (
@@ -612,23 +640,43 @@ export default function MarketplacePage() {
                   >
                     取消
                   </button>
-                  <button
-                    onClick={handlePurchase}
-                    disabled={isPurchasing || (user?.tokens || 0) < selectedListing.price}
-                    className="flex-1 py-3.5 rounded-2xl font-black text-sm bg-primary text-white shadow-lg shadow-primary/25 hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
-                  >
-                    {isPurchasing ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        處理中...
-                      </>
-                    ) : (
-                      <>
-                        <ShoppingCart className="w-4 h-4" />
-                        確認購買
-                      </>
-                    )}
-                  </button>
+                  {user?.id === selectedListing.seller_id ? (
+                    <button
+                      onClick={handleCancelListing}
+                      disabled={isPurchasing}
+                      className="flex-1 py-3.5 rounded-2xl font-black text-sm bg-red-500 text-white shadow-lg shadow-red-500/25 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
+                    >
+                      {isPurchasing ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          處理中...
+                        </>
+                      ) : (
+                        <>
+                          <X className="w-4 h-4" />
+                          取消上架
+                        </>
+                      )}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handlePurchase}
+                      disabled={isPurchasing || (user?.tokens || 0) < selectedListing.price}
+                      className="flex-1 py-3.5 rounded-2xl font-black text-sm bg-primary text-white shadow-lg shadow-primary/25 hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
+                    >
+                      {isPurchasing ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          處理中...
+                        </>
+                      ) : (
+                        <>
+                          <ShoppingCart className="w-4 h-4" />
+                          確認購買
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             </motion.div>

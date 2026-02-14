@@ -15,7 +15,7 @@ export default function NewsDetailPage() {
   const router = useRouter();
   const [newsItem, setNewsItem] = useState<Database['public']['Tables']['news']['Row'] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
 
   useEffect(() => {
     const fetchNewsItem = async () => {

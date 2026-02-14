@@ -33,7 +33,7 @@ interface PlayIchibanResult {
 export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectionFlowProps) {
   const params = useParams();
   const router = useRouter();
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
   const { user, refreshProfile } = useAuth();
   
   const [product, setProduct] = useState<Database['public']['Tables']['products']['Row'] | null>(null);
@@ -176,6 +176,20 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
     
     setSelectedTickets(selected.sort((a, b) => a - b));
     setShowRandomMenu(false);
+  };
+
+  const handleBuyAll = () => {
+    const allAvailable = tickets
+      .filter(t => !t.isSold)
+      .map(t => t.number);
+    
+    if (allAvailable.length === 0) {
+        toast.error('已無剩餘籤號');
+        return;
+    }
+    
+    setSelectedTickets(allAvailable);
+    setShowConfirm(true);
   };
 
   const handlePurchase = async () => {
@@ -469,6 +483,13 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
                 </>
               )}
             </div>
+            <button 
+              onClick={handleBuyAll}
+              disabled={tickets.every(t => t.isSold)}
+              className="px-3 h-[44px] bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-black text-sm flex items-center justify-center transition-colors shadow-lg shadow-purple-600/30 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              包套
+            </button>
             <Button 
               onClick={() => setShowConfirm(true)}
               disabled={selectedTickets.length === 0}

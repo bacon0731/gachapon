@@ -16,7 +16,7 @@ export default function Home() {
   const [newProducts, setNewProducts] = useState<Database['public']['Tables']['products']['Row'][]>([]);
   const [banners, setBanners] = useState<Database['public']['Tables']['banners']['Row'][]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
 
   useEffect(() => {
     const fetchData = async () => {

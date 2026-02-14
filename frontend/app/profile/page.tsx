@@ -257,7 +257,7 @@ function ProfileContent() {
   const { user, logout, refreshProfile, isLoading: isAuthLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
 
   // Redirect if not logged in
   useEffect(() => {
@@ -1327,8 +1327,11 @@ function ProfileContent() {
                                 setSellPrice(0);
                                 return;
                               }
-                              const num = parseInt(val);
+                              let num = parseInt(val);
                               if (!isNaN(num)) {
+                                if (num > 50000) {
+                                  num = 50000;
+                                }
                                 setSellPrice(num);
                                 // Remove leading zeros immediately if the input differs from the parsed number
                                 if (val !== num.toString()) {
@@ -1355,11 +1358,11 @@ function ProfileContent() {
                             </ul>
                             <div className="pt-2 flex justify-between text-sm font-black text-neutral-700 dark:text-neutral-300 border-t border-neutral-200 dark:border-neutral-700 mt-2">
                               <span>預計手續費 (5%)</span>
-                              <span>{Math.floor(sellPrice * 0.05)} 代幣</span>
+                              <span>{Math.floor(sellPrice * 0.05).toLocaleString()} 代幣</span>
                             </div>
                             <div className="flex justify-between text-sm font-black text-neutral-900 dark:text-white">
                               <span>預計實收</span>
-                              <span>{sellPrice - Math.floor(sellPrice * 0.05)} 代幣</span>
+                              <span>{(sellPrice - Math.floor(sellPrice * 0.05)).toLocaleString()} 代幣</span>
                             </div>
                           </div>
                         </div>
@@ -1456,8 +1459,8 @@ function ProfileContent() {
                                  <p className="text-[10px] text-neutral-400 font-bold mt-1 truncate">{item.product.series}</p>
                                </div>
                                <div className="flex items-center justify-between">
-                                 <span className="text-accent-yellow font-black font-amount text-sm">{item.price} G</span>
-                                 <span className="text-[10px] text-neutral-400 font-bold">{item.created_at}</span>
+                                 <span className="text-accent-yellow font-black font-amount text-sm">{item.price.toLocaleString()} G</span>
+                                <span className="text-[10px] text-neutral-400 font-bold">{item.created_at}</span>
                                </div>
                             </div>
                           </div>
@@ -1509,7 +1512,7 @@ function ProfileContent() {
                                 </div>
                               </td>
                               <td className="px-3 lg:px-4 py-2 lg:py-3">
-                                <span className="text-sm lg:text-base font-black text-accent-yellow font-amount">{item.price} G</span>
+                                <span className="text-sm lg:text-base font-black text-accent-yellow font-amount">{item.price.toLocaleString()} G</span>
                               </td>
                               <td className="px-3 lg:px-4 py-2 lg:py-3">
                                 <span className="text-[12px] lg:text-[13px] font-black text-neutral-400">{item.created_at}</span>
@@ -1567,9 +1570,9 @@ function ProfileContent() {
                                  )}
                                </div>
                                <div className="flex items-center justify-between">
-                                 <span className="text-accent-yellow font-black font-amount text-sm">{item.price} G</span>
-                                 <span className="text-[10px] text-neutral-400 font-bold">{item.updated_at}</span>
-                               </div>
+                                <span className="text-accent-yellow font-black font-amount text-sm">{item.price.toLocaleString()} G</span>
+                                <span className="text-[10px] text-neutral-400 font-bold">{item.updated_at}</span>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -1619,14 +1622,14 @@ function ProfileContent() {
                                 </span>
                               </td>
                               <td className="px-3 lg:px-4 py-2 lg:py-3">
-                                <span className="text-sm lg:text-base font-black text-accent-yellow font-amount">{item.price} G</span>
+                                <span className="text-sm lg:text-base font-black text-accent-yellow font-amount">{item.price.toLocaleString()} G</span>
                               </td>
                               <td className="px-3 lg:px-4 py-2 lg:py-3">
                                 <span className="text-[12px] lg:text-[13px] font-black text-neutral-400">{item.updated_at}</span>
                               </td>
                               <td className="px-3 lg:px-4 py-2 lg:py-3 text-right">
                                 <span className="text-sm lg:text-base font-black text-accent-emerald font-amount">
-                                  +{Math.floor(item.price * 0.95)} G
+                                  +{Math.floor(item.price * 0.95).toLocaleString()} G
                                 </span>
                               </td>
                             </tr>

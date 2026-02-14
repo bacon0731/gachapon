@@ -35,7 +35,7 @@ export default function AdminLayout({ children, pageTitle, pageSubtitle, breadcr
   const [isAlertOpen, setIsAlertOpen] = useState(false)
   
   // Supabase for data fetching
-  const supabase = createClient()
+  const [supabase] = useState(() => createClient())
   const [products, setProducts] = useState<(Database['public']['Tables']['products']['Row'] & { prizes: Database['public']['Tables']['prizes']['Row'][] })[]>([])
 
   useEffect(() => {

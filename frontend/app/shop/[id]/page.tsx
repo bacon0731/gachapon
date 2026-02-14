@@ -18,13 +18,14 @@ import Image from 'next/image';
 
 import { PurchaseConfirmationModal } from '@/components/shop/PurchaseConfirmationModal';
 import GachaMachine, { Prize } from '@/components/GachaMachine';
+import { PrizeResultModal } from '@/components/shop/PrizeResultModal';
 
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
   const { showToast } = useToast();
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
 
   const [product, setProduct] = useState<Database['public']['Tables']['products']['Row'] | null>(null);
   const [prizes, setPrizes] = useState<Database['public']['Tables']['product_prizes']['Row'][]>([]);
@@ -42,7 +43,13 @@ export default function ProductDetailPage() {
 
   // Result Modal State
   const [showResultModal, setShowResultModal] = useState(false);
-  const [drawResults, setDrawResults] = useState<{ ticket_number: number; prize_level: string; prize_name: string }[]>([]);
+  const [drawResults, setDrawResults] = useState<{ 
+    ticket_number: number; 
+    prize_level: string; 
+    prize_name: string;
+    image_url?: string;
+    is_last_one?: boolean;
+  }[]>([]);
   const [isLoadingResults, setIsLoadingResults] = useState(false);
 
   useEffect(() => {
@@ -102,7 +109,7 @@ export default function ProductDetailPage() {
     try {
       const { data, error } = await supabase
         .from('draw_records')
-        .select('ticket_number, prize_level, prize_name')
+        .select('ticket_number, prize_level, prize_name, image_url, is_last_one')
         .eq('product_id', product.id)
         .order('ticket_number', { ascending: true });
 
@@ -110,12 +117,12 @@ export default function ProductDetailPage() {
       
       // Sort results to put Last One at the end
       const sortedData = (data || []).sort((a, b) => {
-        const isALastOne = a.prize_level.includes('Last One') || a.prize_level.includes('LAST ONE') || a.ticket_number === 0;
-        const isBLastOne = b.prize_level.includes('Last One') || b.prize_level.includes('LAST ONE') || b.ticket_number === 0;
+        const isALastOne = a.is_last_one || a.prize_level.includes('Last One') || a.prize_level.includes('LAST ONE') || a.ticket_number === 0;
+        const isBLastOne = b.is_last_one || b.prize_level.includes('Last One') || b.prize_level.includes('LAST ONE') || b.ticket_number === 0;
         
         if (isALastOne && !isBLastOne) return 1;
         if (!isALastOne && isBLastOne) return -1;
-        return a.ticket_number - b.ticket_number;
+        return (a.ticket_number || 0) - (b.ticket_number || 0);
       });
 
       setDrawResults(sortedData);
@@ -771,60 +778,24 @@ export default function ProductDetailPage() {
       </div>
 
       {/* Draw Results Modal */}
-      <Modal
-        isOpen={showResultModal}
-        onClose={() => setShowResultModal(false)}
-        title="抽獎結果一覽"
-        className="max-w-4xl"
-      >
-        <div className="min-h-[300px] max-h-[70vh] overflow-y-auto custom-scrollbar">
-          {isLoadingResults ? (
-            <div className="flex flex-col items-center justify-center h-[300px] gap-3">
-              <Loader2 className="w-8 h-8 text-primary animate-spin" />
-              <p className="text-sm font-bold text-neutral-500">正在載入抽獎結果...</p>
-            </div>
-          ) : drawResults.length > 0 ? (
-            <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2 sm:gap-3 p-1">
-              {drawResults.map((result) => {
-                const isLastOne = result.ticket_number === 0 || result.prize_level.includes('Last One') || result.prize_level.includes('LAST ONE');
-                return (
-                  <div
-                    key={result.ticket_number}
-                    className="aspect-square rounded-[8px] border-2 border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex flex-col items-center justify-center gap-1 shadow-sm px-0.5"
-                  >
-                    {!isLastOne && (
-                      <span className="text-[10px] sm:text-xs font-bold text-neutral-400 font-amount">
-                        {result.ticket_number.toString().padStart(2, '0')}
-                      </span>
-                    )}
-                    <span className={cn(
-                      "font-black text-center",
-                      ['A', 'B', 'C', 'Last One', 'LAST ONE'].some(t => result.prize_level.includes(t)) 
-                        ? "text-accent-red" 
-                        : "text-neutral-900 dark:text-neutral-200",
-                      isLastOne ? "text-[10px] sm:text-xs whitespace-nowrap" : "text-xs sm:text-sm"
-                    )}>
-                      {result.prize_level}賞
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-[300px] text-neutral-500">
-              <p>暫無抽獎記錄</p>
-            </div>
-          )}
-        </div>
-        <div className="mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800">
-           <Button 
-            onClick={() => setShowResultModal(false)}
-            className="w-full py-4 bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 hover:bg-neutral-200 dark:hover:bg-neutral-700 font-bold"
-          >
-            關閉
-          </Button>
-        </div>
-      </Modal>
+      {showResultModal && (
+        <PrizeResultModal
+          isOpen={showResultModal}
+          onClose={() => setShowResultModal(false)}
+          isLoading={isLoadingResults}
+          results={drawResults.map(r => ({
+            grade: r.prize_level,
+            name: r.prize_name,
+            isOpened: true,
+            image_url: r.image_url || '',
+            is_last_one: r.is_last_one || r.prize_level.includes('Last One') || r.prize_level.includes('LAST ONE'),
+            ticket_number: r.ticket_number || 0
+          }))}
+          skipRevealAnimation={true}
+          onGoToWarehouse={() => router.push('/profile?tab=warehouse')}
+          onPlayAgain={() => setShowResultModal(false)}
+        />
+      )}
 
       {/* Purchase Confirmation Modal */}
       {product && (

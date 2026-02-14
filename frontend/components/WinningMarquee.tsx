@@ -24,7 +24,7 @@ interface JoinedDrawRecord {
 export default function WinningMarquee() {
   const [records, setRecords] = useState<WinningRecord[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
 
   useEffect(() => {
     const fetchRecords = async () => {
