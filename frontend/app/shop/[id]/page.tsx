@@ -536,7 +536,7 @@ export default function ProductDetailPage() {
                   if (!lastOnePrize) return null;
                   
                   return (
-                    <div className="bg-gradient-to-br from-neutral-900 to-neutral-800 rounded-xl sm:rounded-2xl p-4 sm:p-5 text-white shadow-xl relative overflow-hidden group cursor-pointer"
+                    <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/30 dark:to-yellow-800/30 rounded-xl sm:rounded-2xl p-4 sm:p-5 text-neutral-900 dark:text-neutral-100 shadow-xl relative overflow-hidden group cursor-pointer border border-yellow-200/60 dark:border-yellow-700/40"
                          onClick={() => setViewingPrize({
                            name: lastOnePrize.name,
                            image_url: lastOnePrize.image_url || undefined,
@@ -546,10 +546,10 @@ export default function ProductDetailPage() {
                          })}
                     >
                       {/* Background Effect */}
-                      <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
+                      <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-400/20 dark:bg-yellow-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none transition-opacity opacity-50 group-hover:opacity-100" />
                       
                       <div className="flex items-center gap-4 relative z-10">
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/10 rounded-xl flex-shrink-0 relative overflow-hidden border border-white/10">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/60 dark:bg-white/10 rounded-xl flex-shrink-0 relative overflow-hidden border border-yellow-200/60 dark:border-white/10">
                           <Image 
                             src={lastOnePrize.image_url || '/images/item.png'} 
                             alt={lastOnePrize.name}
@@ -561,15 +561,15 @@ export default function ProductDetailPage() {
                         
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1.5">
-                             <span className="px-2 py-0.5 bg-white text-neutral-900 text-[10px] font-black rounded uppercase tracking-wider shadow-lg shadow-white/20">
+                             <span className="px-2 py-0.5 bg-yellow-400 text-neutral-900 text-[10px] font-black rounded uppercase tracking-wider shadow-lg shadow-yellow-400/30">
                                LAST ONE
                              </span>
-                             <span className="text-[10px] sm:text-xs text-neutral-400 font-bold uppercase tracking-wider">最後賞</span>
+                             <span className="text-[10px] sm:text-xs text-yellow-700 dark:text-yellow-400 font-bold uppercase tracking-wider">最後賞</span>
                           </div>
-                          <h3 className="text-base sm:text-lg font-black text-white leading-tight mb-1 truncate">
+                          <h3 className="text-base sm:text-lg font-black text-neutral-900 dark:text-neutral-50 leading-tight mb-1 truncate">
                             {lastOnePrize.name}
                           </h3>
-                          <p className="text-[10px] sm:text-xs text-neutral-400 font-bold">
+                          <p className="text-[10px] sm:text-xs text-yellow-800/80 dark:text-yellow-300/80 font-bold">
                             購買最後一張籤即可獲得此獎項
                           </p>
                         </div>
