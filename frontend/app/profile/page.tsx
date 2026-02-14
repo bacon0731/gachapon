@@ -2290,7 +2290,7 @@ function ProfileContent() {
 
             {/* Main Menu List */}
             <div className="mx-0 bg-white dark:bg-neutral-900 rounded-2xl shadow-card border border-neutral-100 dark:border-neutral-800 overflow-hidden divide-y divide-neutral-50 dark:divide-neutral-800">
-              {navItems.filter(item => item.id !== 'topup-history').map((item) => (
+              {navItems.filter(item => item.id !== 'topup-history' && item.id !== 'settings').map((item) => (
                 <button key={item.id} onClick={() => handleTabChange(item.id as TabType)} className="w-full flex items-center justify-between p-3 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors group">
                   <div className="flex items-center gap-2.5">
                     <div className={cn("w-8 h-8 rounded-xl bg-neutral-50 dark:bg-neutral-800 flex items-center justify-center group-hover:scale-110 transition-transform", item.color)}>

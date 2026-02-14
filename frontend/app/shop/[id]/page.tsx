@@ -19,6 +19,7 @@ import Image from 'next/image';
 import { PurchaseConfirmationModal } from '@/components/shop/PurchaseConfirmationModal';
 import GachaMachine, { Prize } from '@/components/GachaMachine';
 import { PrizeResultModal } from '@/components/shop/PrizeResultModal';
+import { GachaProductDetail } from '@/components/shop/GachaProductDetail';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -343,6 +344,18 @@ export default function ProductDetailPage() {
           <Button size="lg">返回商店</Button>
         </Link>
       </div>
+    );
+  }
+
+  // Gacha Specific Layout
+  if (product.type === 'gacha') {
+    return (
+      <GachaProductDetail 
+        product={product} 
+        prizes={prizes}
+        isFollowed={isFollowed}
+        onFollowToggle={handleFollowToggle}
+      />
     );
   }
 

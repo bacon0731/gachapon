@@ -8,6 +8,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { ToastProvider } from '@/components/ui/Toast';
 import { AlertProvider } from '@/components/ui/AlertDialog';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import PathnameKeyed from '@/components/PathnameKeyed';
 
 export const metadata: Metadata = {
   title: '一番賞線上抽獎',
@@ -27,7 +28,9 @@ export default function RootLayout({
             <AlertProvider>
               <ToastProvider>
                 <Navbar />
-                <main className="flex-grow">{children}</main>
+                <main className="flex-grow">
+                  <PathnameKeyed>{children}</PathnameKeyed>
+                </main>
                 <div className="hidden md:block">
                   <Footer />
                 </div>
