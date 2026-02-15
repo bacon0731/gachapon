@@ -403,6 +403,7 @@ export default function GachaMachine({ prizes, isOpen, onGoToWarehouse, onContin
         onClose={onGoToWarehouse}
         onGoToWarehouse={onGoToWarehouse}
         onPlayAgain={onContinue}
+        onBackToProduct={onGoToWarehouse}
       />
     </div>
   );

@@ -28,6 +28,7 @@ interface PrizeResultModalProps {
   onClose: () => void;
   onGoToWarehouse?: () => void;
   onPlayAgain?: () => void;
+  onBackToProduct?: () => void;
   isLoading?: boolean;
   skipRevealAnimation?: boolean;
 }
@@ -40,6 +41,7 @@ export const PrizeResultModal: React.FC<PrizeResultModalProps> = ({
   results,
   onGoToWarehouse,
   onPlayAgain,
+  onBackToProduct,
   onClose,
   isLoading = false,
   skipRevealAnimation = false,
@@ -156,11 +158,9 @@ export const PrizeResultModal: React.FC<PrizeResultModalProps> = ({
             ) : (
               /* Result View */
               <>
-                {/* Header / Title - Removed as it is now in the modal header */}
-                
                 {/* Grid Content */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-4 bg-white dark:bg-neutral-900">
-                  <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 gap-2 content-start pb-4">
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-4 pb-20 bg-white dark:bg-neutral-900">
+                  <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 gap-2 content-start">
                     {displayPrizes.map((prize, idx) => {
                       const isSpecial = isHighTier(prize.grade);
                       const isLastOne = prize.is_last_one;
@@ -201,6 +201,34 @@ export const PrizeResultModal: React.FC<PrizeResultModalProps> = ({
                       );
                     })}
                   </div>
+                </div>
+
+                {/* Bottom Action Bar */}
+                <div className="h-16 px-4 border-t border-neutral-100 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 flex items-center justify-end gap-3 shrink-0">
+                  {onGoToWarehouse && (
+                    <Button
+                      onClick={onGoToWarehouse}
+                      className="h-[40px] px-4 rounded-xl text-sm font-black bg-neutral-200 hover:bg-neutral-300 text-neutral-700 shadow-sm whitespace-nowrap"
+                    >
+                      前往倉庫
+                    </Button>
+                  )}
+                  {onBackToProduct && (
+                    <Button
+                      onClick={onBackToProduct}
+                      className="h-[40px] px-4 rounded-xl text-sm font-black bg-neutral-200 hover:bg-neutral-300 text-neutral-700 shadow-sm whitespace-nowrap"
+                    >
+                      回商品頁
+                    </Button>
+                  )}
+                  {onPlayAgain && (
+                    <Button
+                      onClick={onPlayAgain}
+                      className="h-[40px] px-4 rounded-xl text-sm font-black bg-accent-red hover:bg-accent-red/90 text-white shadow-md whitespace-nowrap"
+                    >
+                      再抽一次
+                    </Button>
+                  )}
                 </div>
               </>
             )}

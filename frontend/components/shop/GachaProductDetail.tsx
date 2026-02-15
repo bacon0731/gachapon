@@ -3,62 +3,48 @@ import { Database } from '@/types/database.types';
 import { GachaMachineVisual } from './GachaMachineVisual';
 import { GachaCollectionList } from './GachaCollectionList';
 import { GachaResultModal } from './GachaResultModal';
-import { PurchaseConfirmationModal } from './PurchaseConfirmationModal';
-import { Button } from '@/components/ui';
-import { ImageButton } from '@/components/ui/ImageButton';
 import { Prize } from '@/components/GachaMachine';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/Toast';
 import { useRouter } from 'next/navigation';
+import { PurchaseConfirmationModal } from '@/components/shop/PurchaseConfirmationModal';
 
 interface GachaProductDetailProps {
   product: Database['public']['Tables']['products']['Row'];
   prizes: Database['public']['Tables']['product_prizes']['Row'][];
-  isFollowed: boolean;
-  onFollowToggle: () => void;
 }
 
-export function GachaProductDetail({ product, prizes, isFollowed, onFollowToggle }: GachaProductDetailProps) {
+export function GachaProductDetail({ product, prizes }: GachaProductDetailProps) {
   const router = useRouter();
   const { user } = useAuth();
   const { showToast } = useToast();
   const [supabase] = useState(() => createClient());
 
   // States
-  const [machineState, setMachineState] = useState<'idle' | 'shaking' | 'spinning' | 'result'>('idle');
-  const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
+  const [machineState, setMachineState] = useState<'idle' | 'shaking' | 'spinning' | 'dropping' | 'waiting' | 'result'>('idle');
   const [isProcessing, setIsProcessing] = useState(false);
   const [wonPrizes, setWonPrizes] = useState<Prize[]>([]);
   const [showResultModal, setShowResultModal] = useState(false);
+  const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
+  const [hasPendingResult, setHasPendingResult] = useState(false);
 
-  // Actions
-  const handleShake = () => {
+  const handlePush = () => {
     if (machineState !== 'idle') return;
     setMachineState('shaking');
-    setTimeout(() => setMachineState('idle'), 1500); // Shake for 1.5s
-  };
-
-  const handleTrial = () => {
-    if (machineState !== 'idle') return;
-    
-    // Pick a random prize for demo
-    const randomPrize = prizes[Math.floor(Math.random() * prizes.length)];
-    const demoPrize: Prize = {
-      id: 'demo',
-      name: randomPrize.name,
-      rarity: randomPrize.level,
-      image_url: randomPrize.image_url || undefined,
-      grade: randomPrize.level
-    };
-
-    setWonPrizes([demoPrize]);
-    runGachaAnimation();
+    setTimeout(() => {
+      setMachineState('idle');
+    }, 200);
   };
 
   const handlePurchaseClick = () => {
+    if (machineState !== 'idle' || isProcessing) return;
     if (!user) {
       router.push('/login');
+      return;
+    }
+    if (!product || product.remaining === 0) {
+      showToast('已完抽', 'info');
       return;
     }
     setIsPurchaseModalOpen(true);
@@ -68,6 +54,7 @@ export function GachaProductDetail({ product, prizes, isFollowed, onFollowToggle
     if (!product || !user) return;
     
     setIsProcessing(true);
+    setIsPurchaseModalOpen(false);
     try {
       const { data, error } = await supabase.rpc('play_gacha', {
         p_product_id: product.id,
@@ -77,7 +64,6 @@ export function GachaProductDetail({ product, prizes, isFollowed, onFollowToggle
       if (error) throw error;
 
       interface PlayGachaResult {
-        id: string;
         name: string;
         grade: string;
         image_url: string;
@@ -86,8 +72,8 @@ export function GachaProductDetail({ product, prizes, isFollowed, onFollowToggle
       }
 
       const rawResults = data as unknown as PlayGachaResult[];
-      const results = rawResults.map(item => ({
-        id: item.id,
+      const results = rawResults.map((item, index) => ({
+        id: item.ticket_number !== undefined ? String(item.ticket_number) : `${product.id}-${index}`,
         name: item.name,
         rarity: item.grade,
         image_url: item.image_url,
@@ -97,9 +83,6 @@ export function GachaProductDetail({ product, prizes, isFollowed, onFollowToggle
       }));
 
       setWonPrizes(results);
-      setIsPurchaseModalOpen(false);
-      
-      // Run animation
       runGachaAnimation();
 
     } catch (error: unknown) {
@@ -113,17 +96,58 @@ export function GachaProductDetail({ product, prizes, isFollowed, onFollowToggle
 
   const runGachaAnimation = () => {
     setMachineState('spinning');
-    // Spin for 2s then show result
     setTimeout(() => {
-      setMachineState('result');
-      setShowResultModal(true);
-    }, 2000);
+      setMachineState('dropping');
+      setTimeout(() => {
+        setMachineState('waiting');
+        setHasPendingResult(true);
+      }, 800);
+    }, 4000);
+  };
+
+  const runTrialAnimation = () => {
+    setMachineState('shaking');
+    setTimeout(() => {
+      setMachineState('dropping');
+      setTimeout(() => {
+        setMachineState('waiting');
+        setHasPendingResult(true);
+      }, 800);
+    }, 3000);
   };
 
   const handleResultClose = () => {
     setShowResultModal(false);
     setMachineState('idle');
     setWonPrizes([]);
+    setHasPendingResult(false);
+  };
+
+  const handleTrial = () => {
+    if (machineState !== 'idle') return;
+    
+    if (prizes.length > 0) {
+      const index = Math.floor(Math.random() * prizes.length);
+      const sample = prizes[index];
+      setWonPrizes([
+        {
+          id: String(sample.id),
+          name: sample.name,
+          rarity: sample.level,
+          image_url: sample.image_url || undefined,
+          grade: sample.level,
+          is_last_one: false,
+        }
+      ]);
+    }
+
+    runTrialAnimation();
+  };
+
+  const handleHoleClick = () => {
+    if (!hasPendingResult || wonPrizes.length === 0) return;
+    setShowResultModal(true);
+    setMachineState('result');
   };
 
   const handleGoToWarehouse = () => {
@@ -131,47 +155,21 @@ export function GachaProductDetail({ product, prizes, isFollowed, onFollowToggle
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 pb-32 md:pb-12 pt-14 md:pt-0">
-      <div className="max-w-4xl mx-auto px-4 py-6 space-y-12">
+    <div
+      className="min-h-screen pb-32 md:pb-12 pt-14 md:pt-0 bg-gradient-to-b from-neutral-50 to-neutral-100 dark:from-neutral-900 dark:to-neutral-950"
+    >
+      <div className="max-w-4xl mx-auto space-y-8">
         
         {/* Upper Part: Machine Area */}
-        <div className="flex flex-col items-center">
-          {/* Wrap machine and place controls as overlay on the console panel */}
-          <div className="relative w-full max-w-[500px] mx-auto">
-            <GachaMachineVisual state={machineState} />
-            {/* Overlay controls - positioned to match console buttons in main.png */}
-            <div className="absolute inset-0 z-20">
-              {/* Left: Shake */}
-              <ImageButton 
-                src="/images/button.png"
-                alt="搖一下"
-                text="搖一下"
-                onClick={handleShake}
-                disabled={machineState !== 'idle'}
-                className="absolute left-[12%] top-[67%] w-[18%] aspect-square pointer-events-auto"
-                textClassName="text-sm font-black text-shadow-sm"
-              />
-              {/* Center: Purchase */}
-              <ImageButton 
-                src="/images/buybutton.png"
-                alt="立即轉蛋"
-                text={product.remaining === 0 ? '已完抽' : '立即轉蛋'}
-                onClick={handlePurchaseClick}
-                disabled={machineState !== 'idle' || product.remaining === 0}
-                className="absolute left-[36%] top-[60%] w-[28%] aspect-[2.4/1] pointer-events-auto"
-                textClassName="text-xl font-black text-shadow-md"
-              />
-              {/* Right: Trial */}
-              <ImageButton 
-                src="/images/button.png"
-                alt="試轉一下"
-                text="試轉一下"
-                onClick={handleTrial}
-                disabled={machineState !== 'idle'}
-                className="absolute right-[12%] top-[67%] w-[18%] aspect-square pointer-events-auto"
-                textClassName="text-sm font-black text-shadow-sm"
-              />
-            </div>
+        <div className="w-full">
+          <div className="relative w-full" style={{ aspectRatio: '750/1036' }}>
+            <GachaMachineVisual 
+              state={machineState} 
+              onPush={handlePush} 
+              onPurchase={handlePurchaseClick} 
+              onTrial={handleTrial}
+              onHoleClick={handleHoleClick}
+            />
           </div>
         </div>
 
@@ -180,7 +178,13 @@ export function GachaProductDetail({ product, prizes, isFollowed, onFollowToggle
 
       </div>
 
-      {/* Modals */}
+      <GachaResultModal
+        isOpen={showResultModal}
+        onClose={handleResultClose}
+        onGoToWarehouse={handleGoToWarehouse}
+        results={wonPrizes}
+      />
+
       <PurchaseConfirmationModal
         isOpen={isPurchaseModalOpen}
         onClose={() => !isProcessing && setIsPurchaseModalOpen(false)}
@@ -189,13 +193,6 @@ export function GachaProductDetail({ product, prizes, isFollowed, onFollowToggle
         userPoints={user?.tokens || 0}
         isProcessing={isProcessing}
         onTopUp={() => router.push('/wallet')}
-      />
-
-      <GachaResultModal
-        isOpen={showResultModal}
-        onClose={handleResultClose}
-        onGoToWarehouse={handleGoToWarehouse}
-        results={wonPrizes}
       />
     </div>
   );

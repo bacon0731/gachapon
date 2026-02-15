@@ -66,6 +66,7 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
     ticket_number: number;
   }[]>([]);
   const [isFetchingFullResults, setIsFetchingFullResults] = useState(false);
+  const [hasTriggeredAutoResults, setHasTriggeredAutoResults] = useState(false);
 
   const handleShowFullResults = async () => {
     if (!product) return;
@@ -173,6 +174,16 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
       isSold: soldTickets.includes(i + 1)
     }));
   }, [totalTicketsCount, soldTickets]);
+
+  useEffect(() => {
+    if (!product) return;
+    const remaining = totalTicketsCount - soldTickets.length;
+    const isEnded = product.status === 'ended' || remaining <= 0;
+    if (isEnded && !hasTriggeredAutoResults && !showResultModal && !isFetchingFullResults) {
+      setHasTriggeredAutoResults(true);
+      handleShowFullResults();
+    }
+  }, [product, totalTicketsCount, soldTickets.length, hasTriggeredAutoResults, showResultModal, isFetchingFullResults]);
 
   const toggleTicket = (num: number) => {
     if (soldTickets.includes(num)) return;
@@ -317,8 +328,29 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
   };
 
   const handleOpenAll = () => {
-    // Only open tickets that are NOT Last One (Last One is already opened state)
     setDrawnResults(prev => prev.map(r => r.is_last_one ? r : { ...r, isOpened: true }));
+  };
+
+  const handleContinueDraw = () => {
+    setDrawnResults([]);
+    setFullResults([]);
+    setShowPrizeDetails(false);
+    setShowLastOneCelebration(false);
+    setShowResultModal(false);
+  };
+
+  const handleBackToProduct = () => {
+    if (onClose) {
+      onClose();
+      return;
+    }
+    if (params?.id) {
+      router.push(`/shop/${params.id}`);
+    } else if (product?.id) {
+      router.push(`/shop/${product.id}`);
+    } else {
+      router.push('/shop');
+    }
   };
 
   // If we are showing results, render the result flow (New: Inline, Old: Modal)
@@ -414,7 +446,7 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
         
       {/* Bottom Action Bar */}
       <div className="absolute bottom-0 left-0 right-0 bg-white dark:bg-neutral-900 border-t border-neutral-100 dark:border-neutral-800 z-50 pb-safe">
-        <div className="h-16 px-4 md:px-6 flex items-center justify-center w-full max-w-md mx-auto">
+        <div className="h-16 px-4 md:px-6 flex items-center justify-center w-full">
           {!allOpened ? (
             <Button 
               onClick={handleOpenAll} 
@@ -423,25 +455,29 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
               全部開啟
             </Button>
           ) : (
-            <div className="flex gap-3 w-full">
+            <div className="flex gap-3 w-full justify-center">
               <Button 
                 onClick={() => router.push('/profile?tab=warehouse')} 
-                className="flex-1 h-[44px] md:h-[52px] rounded-xl text-base md:text-lg font-black bg-neutral-200 hover:bg-neutral-300 text-neutral-700 shadow-sm"
+                className="flex-1 md:flex-none md:w-[180px] h-[44px] md:h-[52px] rounded-xl text-base md:text-lg font-black bg-neutral-200 hover:bg-neutral-300 text-neutral-700 shadow-sm whitespace-nowrap"
               >
                 前往倉庫
               </Button>
               <Button 
                 onClick={() => setShowPrizeDetails(!showPrizeDetails)} 
-                className="flex-1 h-[44px] md:h-[52px] rounded-xl text-base md:text-lg font-black bg-neutral-200 hover:bg-neutral-300 text-neutral-700 shadow-sm"
+                className="flex-1 md:flex-none md:w-[180px] h-[44px] md:h-[52px] rounded-xl text-base md:text-lg font-black bg-neutral-200 hover:bg-neutral-300 text-neutral-700 shadow-sm whitespace-nowrap"
               >
                 {showPrizeDetails ? "顯示籤號" : "顯示獎項"}
               </Button>
               <Button 
                 onClick={() => {
-                  handleShowFullResults();
+                  if (hasLastOne) {
+                    handleShowFullResults();
+                  } else {
+                    handleContinueDraw();
+                  }
                 }} 
                 className={cn(
-                  "flex-1 h-[44px] md:h-[52px] rounded-xl text-base md:text-lg font-black shadow-xl transition-colors",
+                  "flex-1 md:flex-none md:w-[180px] h-[44px] md:h-[52px] rounded-xl text-base md:text-lg font-black shadow-xl transition-colors whitespace-nowrap",
                   hasLastOne 
                     ? "bg-neutral-900 hover:bg-neutral-800 text-white shadow-neutral-900/20" 
                     : "bg-accent-red hover:bg-accent-red/90 text-white shadow-accent-red/20"
@@ -459,8 +495,7 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
           <PrizeResultModal 
             results={(fullResults.length > 0 ? fullResults : drawnResults)}
             onClose={() => setShowResultModal(false)}
-            onPlayAgain={() => window.location.reload()}
-            onGoToWarehouse={() => router.push('/profile?tab=warehouse')}
+            onBackToProduct={handleBackToProduct}
             isLoading={isFetchingFullResults}
             skipRevealAnimation={hasLastOne || fullResults.some(r => r.is_last_one)}
           />
@@ -477,20 +512,6 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
         ? "w-full max-w-[640px] max-h-[80vh] h-full rounded-2xl overflow-hidden shadow-2xl mx-auto" 
         : "h-screen overflow-hidden pt-0" // Fixed height for page view to support internal scrolling, added padding for fixed header
     )}>
-      {/* Background Image */}
-      {!isModal && (
-        <div className="absolute inset-0 z-0 overflow-hidden">
-          <Image 
-            src="/images/gacha_bg.png" 
-            alt="" 
-            fill
-            className="object-cover filter brightness-[0.85] blur-[3px] scale-105"
-            unoptimized
-          />
-          <div className="absolute inset-0 bg-neutral-50/80 dark:bg-neutral-900/80" />
-        </div>
-      )}
-
       {/* Header for Modal */}
       <div className="flex items-center justify-between p-4 border-b border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 fixed top-0 left-0 right-0 z-10 shrink-0 md:sticky md:top-0">
         <h3 className="text-lg font-black text-neutral-900 dark:text-white">選擇籤號</h3>

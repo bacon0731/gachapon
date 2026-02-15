@@ -168,13 +168,13 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
                   className="flex items-center w-full h-full z-10 p-3 pl-4 gap-3"
                 >
                   {/* Image Container */}
-                  <div className="h-full aspect-square relative rounded-xl overflow-hidden bg-white shadow-sm border border-neutral-100 shrink-0 p-1">
+                  <div className="h-full aspect-square relative rounded-xl overflow-hidden shrink-0">
                     {imageUrl ? (
                       <Image 
                         src={imageUrl} 
                         alt={prizeName}
                         fill
-                        className="object-contain p-1"
+                        className="object-cover"
                         unoptimized
                       />
                     ) : (

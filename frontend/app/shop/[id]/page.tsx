@@ -19,6 +19,7 @@ import Image from 'next/image';
 import { PurchaseConfirmationModal } from '@/components/shop/PurchaseConfirmationModal';
 import GachaMachine, { Prize } from '@/components/GachaMachine';
 import { PrizeResultModal } from '@/components/shop/PrizeResultModal';
+import { TicketSelectionFlow } from '@/components/shop/TicketSelectionFlow';
 import { GachaProductDetail } from '@/components/shop/GachaProductDetail';
 
 export default function ProductDetailPage() {
@@ -41,6 +42,8 @@ export default function ProductDetailPage() {
   const [isGachaOpen, setIsGachaOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [wonPrizes, setWonPrizes] = useState<Prize[]>([]);
+  const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   // Result Modal State
   const [showResultModal, setShowResultModal] = useState(false);
@@ -52,6 +55,18 @@ export default function ProductDetailPage() {
     is_last_one?: boolean;
   }[]>([]);
   const [isLoadingResults, setIsLoadingResults] = useState(false);
+
+  useEffect(() => {
+    const updateIsMobile = () => {
+      if (typeof window === 'undefined') return;
+      setIsMobile(window.innerWidth < 768);
+    };
+    updateIsMobile();
+    window.addEventListener('resize', updateIsMobile);
+    return () => {
+      window.removeEventListener('resize', updateIsMobile);
+    };
+  }, []);
 
   useEffect(() => {
     if (!user || !product) return;
@@ -166,9 +181,16 @@ export default function ProductDetailPage() {
   };
 
   const handleDrawClick = () => {
-    // Check product type for Ichiban flow
     if (product?.type === 'ichiban') {
-      router.push(`/shop/${params.id}/select`);
+      if (!user) {
+        router.push('/login');
+        return;
+      }
+      if (isMobile) {
+        router.push(`/shop/${params.id}/select`);
+      } else {
+        setIsTicketModalOpen(true);
+      }
       return;
     }
 
@@ -193,7 +215,6 @@ export default function ProductDetailPage() {
       if (error) throw error;
 
       interface PlayGachaResult {
-        id: string;
         name: string;
         grade: string;
         image_url: string;
@@ -203,8 +224,8 @@ export default function ProductDetailPage() {
 
       // Transform result to Prize format for GachaMachine
       const rawResults = data as unknown as PlayGachaResult[];
-      const results = rawResults.map(item => ({
-        id: item.id,
+      const results = rawResults.map((item, index) => ({
+        id: item.ticket_number !== undefined ? String(item.ticket_number) : `${product.id}-${index}`,
         name: item.name,
         rarity: item.grade, // Map grade to rarity
         image_url: item.image_url,
@@ -377,18 +398,6 @@ export default function ProductDetailPage() {
     );
   }
 
-  // Gacha Specific Layout
-  if (product.type === 'gacha') {
-    return (
-      <GachaProductDetail 
-        product={product} 
-        prizes={prizes}
-        isFollowed={isFollowed}
-        onFollowToggle={handleFollowToggle}
-      />
-    );
-  }
-
   // Calculate total remaining items from real prizes
   // Filter out Last One prize from the count as it's a bonus, not a ticket
   const validPrizes = prizes.filter(p => 
@@ -406,6 +415,10 @@ export default function ProductDetailPage() {
   const totalItems = prizes.length > 0
     ? validPrizes.reduce((acc, prize) => acc + prize.total, 0)
     : product.total_count;
+
+  if (product.type === 'gacha') {
+    return <GachaProductDetail product={product} prizes={prizes} />;
+  }
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 pb-32 md:pb-12 pt-14 md:pt-0">
@@ -867,6 +880,21 @@ export default function ProductDetailPage() {
         onGoToWarehouse={handleGachaComplete}
         onContinue={handleGachaContinue}
       />
+
+      {isTicketModalOpen && (
+        <div className="fixed inset-0 z-[2100] flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setIsTicketModalOpen(false)}
+          />
+          <div className="relative z-[2101] w-full max-w-[640px] max-h-[90vh] px-4">
+            <TicketSelectionFlow
+              isModal
+              onClose={() => setIsTicketModalOpen(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
