@@ -48,22 +48,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .single();
 
       if (error) {
-        // If error is "Row not found" (PGRST116), we can fallback to session data
-        // But we need to know the error code. 
-        // Supabase JS v2 usually returns error object with code.
         if (error.code === 'PGRST116') {
-             console.warn('Profile not found in public.users, falling back to session data');
-             return {
-                id: userId,
-                name: email.split('@')[0],
-                full_name: null,
-                avatar_url: null,
-                points: 0,
-                email: email,
-                role: 'user',
-             } as Profile;
+          // If profile不存在，很可能是資料被清空，強制登出回登入頁
+          await supabase.auth.signOut();
+          return null;
         }
-        
+
         console.error('Error fetching profile:', error);
         return null;
       }
