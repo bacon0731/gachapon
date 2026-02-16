@@ -23,6 +23,7 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
 
   // States
   const [machineState, setMachineState] = useState<'idle' | 'shaking' | 'spinning' | 'dropping' | 'waiting' | 'result'>('idle');
+  const [shakeRepeats, setShakeRepeats] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [wonPrizes, setWonPrizes] = useState<Prize[]>([]);
   const [showResultModal, setShowResultModal] = useState(false);
@@ -31,6 +32,7 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
 
   const handlePush = () => {
     if (machineState !== 'idle') return;
+    setShakeRepeats(1);
     setMachineState('shaking');
     setTimeout(() => {
       setMachineState('idle');
@@ -95,17 +97,22 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
   };
 
   const runGachaAnimation = () => {
-    setMachineState('spinning');
+    setShakeRepeats(3);
+    setMachineState('shaking');
     setTimeout(() => {
-      setMachineState('dropping');
+      setMachineState('spinning');
       setTimeout(() => {
-        setMachineState('waiting');
-        setHasPendingResult(true);
-      }, 800);
-    }, 4000);
+        setMachineState('dropping');
+        setTimeout(() => {
+          setMachineState('waiting');
+          setHasPendingResult(true);
+        }, 800);
+      }, 4000);
+    }, 2000);
   };
 
   const runTrialAnimation = () => {
+    setShakeRepeats(3);
     setMachineState('shaking');
     setTimeout(() => {
       setMachineState('dropping');
@@ -164,7 +171,8 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
         <div className="w-full">
           <div className="relative w-full" style={{ aspectRatio: '750/1036' }}>
             <GachaMachineVisual 
-              state={machineState} 
+              state={machineState}
+              shakeRepeats={shakeRepeats}
               onPush={handlePush} 
               onPurchase={handlePurchaseClick} 
               onTrial={handleTrial}

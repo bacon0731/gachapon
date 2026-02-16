@@ -5,6 +5,7 @@ import { ImageButton } from '@/components/ui/ImageButton';
 
 interface GachaMachineVisualProps {
   state: 'idle' | 'shaking' | 'spinning' | 'dropping' | 'waiting' | 'result';
+  shakeRepeats?: number;
   onPush?: () => void;
   onPurchase?: () => void;
   onTrial?: () => void;
@@ -25,7 +26,7 @@ interface Egg {
   angularVelocity: number;
 }
 
-export function GachaMachineVisual({ state, onPush, onPurchase, onTrial, onHoleClick }: GachaMachineVisualProps) {
+export function GachaMachineVisual({ state, shakeRepeats = 1, onPush, onPurchase, onTrial, onHoleClick }: GachaMachineVisualProps) {
   const createInitialEggs = (): Egg[] => {
     const count = 15;
     const radius = 0.1;
@@ -141,11 +142,30 @@ export function GachaMachineVisual({ state, onPush, onPurchase, onTrial, onHoleC
   };
 
   useEffect(() => {
+    const timeouts: number[] = [];
+
     if (isShaking && !prevIsShaking.current) {
-      applyShakeImpulse();
+      const repeats = Math.max(1, Math.floor(shakeRepeats));
+      const baseInterval = 1000;
+      const jitter = 0;
+      for (let i = 0; i < repeats; i += 1) {
+        const offset = (Math.random() - 0.5) * jitter;
+        const delay = Math.max(0, i * baseInterval + offset);
+        const id = window.setTimeout(() => {
+          if (stateRef.current.isShaking) {
+            applyShakeImpulse();
+          }
+        }, delay);
+        timeouts.push(id);
+      }
     }
+
     prevIsShaking.current = isShaking;
-  }, [isShaking]);
+
+    return () => {
+      timeouts.forEach((id) => window.clearTimeout(id));
+    };
+  }, [isShaking, shakeRepeats]);
 
   useEffect(() => {
     let frameId: number;
