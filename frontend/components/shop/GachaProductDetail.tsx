@@ -149,19 +149,15 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
   };
 
   return (
-    <div
-      className="min-h-screen pb-32 md:pb-12 pt-14 md:pt-0 bg-gradient-to-b from-neutral-50 to-neutral-100 dark:from-neutral-900 dark:to-neutral-950"
-    >
-      <div className="max-w-4xl mx-auto space-y-8">
-        
-        {/* Upper Part: Machine Area */}
+    <div className="min-h-screen pt-14 md:pt-0 bg-black">
+      <div className="w-full max-w-[750px] mx-auto">
         <div className="w-full">
           <div className="relative w-full" style={{ aspectRatio: '750/1036' }}>
-            <GachaMachineVisual 
+            <GachaMachineVisual
               state={machineState}
               shakeRepeats={shakeRepeats}
-              onPush={handlePush} 
-              onPurchase={handlePurchaseClick} 
+              onPush={handlePush}
+              onPurchase={handlePurchaseClick}
               onTrial={handleTrial}
               onHoleClick={handleHoleClick}
               onLoaded={() => setIsMachineLoaded(true)}
@@ -177,9 +173,9 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
           </div>
         </div>
 
-        {/* Lower Part: Collection List */}
-        <GachaCollectionList productId={product.id} prizes={prizes} />
-
+        <div className="w-full">
+          <GachaCollectionList productId={product.id} prizes={prizes} />
+        </div>
       </div>
 
       <GachaResultModal

@@ -53,17 +53,39 @@ export function GachaCollectionList({ productId, prizes }: GachaCollectionListPr
   // I will include all prizes.
 
   return (
-    <div className="bg-white dark:bg-neutral-900 rounded-3xl p-6 shadow-card border border-neutral-100 dark:border-neutral-800 relative overflow-hidden">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-black text-neutral-900 dark:text-neutral-50 tracking-tight">
-          全套收集 ({user ? obtainedPrizeIds.size : 0}/{prizes.length})
-        </h2>
-        {!user && (
-           <span className="text-sm font-bold text-neutral-400">登入查看收集進度</span>
-        )}
+    <div
+      className="relative w-full"
+      style={{ aspectRatio: '750/750', transform: 'translateY(-7%)' }}
+    >
+      <div className="absolute inset-0 overflow-hidden">
+        <Image
+          src="/images/gacha/cab.png"
+          alt="全套收集背景"
+          fill
+          className="object-cover"
+          unoptimized
+        />
       </div>
 
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4 relative">
+      <div className="relative z-10 h-full px-6 pt-10 pb-6">
+        <div
+          className="absolute left-1/2 -translate-x-1/2 text-center"
+          style={{ top: '-3.5%' }}
+        >
+          <h2 className="text-base font-black text-white tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
+            全套收集 ({user ? obtainedPrizeIds.size : 0}/{prizes.length})
+          </h2>
+          {!user && (
+            <div className="mt-1 text-[11px] font-bold text-white/80 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
+              登入查看收集進度
+            </div>
+          )}
+        </div>
+
+        <div
+          className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-y-4 gap-x-[9%] relative h-[calc(100%-3rem)]"
+          style={{ transform: 'translateY(-3%)' }}
+        >
         {prizes.map((prize) => {
           const isObtained = obtainedPrizeIds.has(prize.id);
           const isLocked = !user || (!isObtained && user);
@@ -72,11 +94,11 @@ export function GachaCollectionList({ productId, prizes }: GachaCollectionListPr
             <div 
               key={prize.id} 
               className={cn(
-                "aspect-square rounded-2xl bg-neutral-50 dark:bg-neutral-800 p-2 flex flex-col items-center justify-center gap-2 transition-all duration-300 relative group",
-                !isObtained && "opacity-60 grayscale"
+                "aspect-square rounded-2xl flex flex-col items-center justify-center gap-2 transition-all duration-300 relative group",
+                !isObtained && "grayscale"
               )}
             >
-              <div className="relative w-full h-full">
+              <div className="relative w-[92%] h-[92%] mx-auto my-auto">
                 <Image
                   src={prize.image_url || '/images/item.png'}
                   alt={prize.name}
@@ -105,15 +127,16 @@ export function GachaCollectionList({ productId, prizes }: GachaCollectionListPr
         })}
         
         {/* Not Logged In Overlay */}
-        {!user && (
-          <div className="absolute inset-0 z-20 backdrop-blur-[2px] bg-white/60 dark:bg-neutral-950/60 flex items-center justify-center rounded-2xl">
-            <Link href={`/login?redirect=/shop/${productId}`}>
-              <Button size="lg" className="shadow-xl">
-                登入查看收集狀況
-              </Button>
-            </Link>
-          </div>
-        )}
+          {!user && (
+            <div className="absolute inset-0 z-20 backdrop-blur-[2px] bg-white/60 dark:bg-neutral-950/60 flex items-center justify-center">
+              <Link href={`/login?redirect=/shop/${productId}`}>
+                <Button size="lg" className="shadow-xl">
+                  登入查看收集狀況
+                </Button>
+              </Link>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
