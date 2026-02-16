@@ -51,6 +51,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error.code === 'PGRST116') {
           // If profile不存在，很可能是資料被清空，強制登出回登入頁
           await supabase.auth.signOut();
+          setSupabaseUser(null);
+          setUser(null);
+          router.refresh();
+          router.push('/login');
           return null;
         }
 
@@ -83,6 +87,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const initAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: userResult,
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !userResult?.user) {
+        await supabase.auth.signOut();
+        setSupabaseUser(null);
+        setUser(null);
+        setIsLoading(false);
+        router.refresh();
+        router.push('/login');
+        return;
+      }
       
       if (session?.user) {
         setSupabaseUser(session.user);
