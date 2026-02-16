@@ -88,6 +88,11 @@ export default function MarketplacePage() {
 
   const [supabase] = useState(() => createClient());
 
+  type ListingsQueryResult = {
+    data: RawMarketplaceListing[] | null;
+    error: unknown;
+  };
+
   const fetchListings = React.useCallback(async () => {
     const LOAD_TIMEOUT_MS = 8000;
     const withTimeout = async <T,>(p: Promise<T>) => {
@@ -123,11 +128,18 @@ export default function MarketplacePage() {
         query = query.order('price', { ascending: false });
       }
 
-      const { data, error } = await withTimeout(query as unknown as Promise<unknown>);
+      const { data, error } = await withTimeout<ListingsQueryResult>(
+        query as unknown as Promise<ListingsQueryResult>
+      );
 
       if (error) throw error;
 
-      const formattedData = (data as unknown as RawMarketplaceListing[]).map((item) => ({
+      if (!data) {
+        setListings([]);
+        return;
+      }
+
+      const formattedData = data.map((item) => ({
         id: item.id,
         price: item.price,
         seller_id: item.seller_id,
