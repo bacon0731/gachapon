@@ -19,7 +19,7 @@ export const ImageButton = React.forwardRef<HTMLButtonElement, ImageButtonProps>
       <motion.button
         ref={ref}
         whileHover={{ scale: 1.05, filter: 'brightness(1.05)' }}
-        whileTap={{ scale: 0.98 }}
+        whileTap={{ scale: 0.96 }}
         onPointerDown={(e: React.PointerEvent<HTMLButtonElement>) => { 
           setPressed(true); 
           if (props.onPointerDown) props.onPointerDown(e); 
