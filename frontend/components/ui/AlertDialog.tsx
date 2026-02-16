@@ -54,7 +54,7 @@ export function AlertProvider({ children }: { children: ReactNode }) {
       {children}
       <AnimatePresence>
         {isOpen && alert && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[3000] flex items-center justify-center p-4">
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}

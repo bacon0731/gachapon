@@ -20,6 +20,7 @@ import Image from 'next/image';
 interface TicketSelectionFlowProps {
   isModal?: boolean;
   onClose?: () => void;
+  onRefreshProduct?: () => void;
 }
 
 interface PlayIchibanResult {
@@ -30,7 +31,7 @@ interface PlayIchibanResult {
   ticket_number: number;
 }
 
-export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectionFlowProps) {
+export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct }: TicketSelectionFlowProps) {
   const params = useParams();
   const router = useRouter();
   const [supabase] = useState(() => createClient());
@@ -47,6 +48,7 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
   const [showResultModal, setShowResultModal] = useState(false);
   const [showPrizeDetails, setShowPrizeDetails] = useState(false);
   const [showLastOneCelebration, setShowLastOneCelebration] = useState(false);
+  const [showAPrizePopup, setShowAPrizePopup] = useState(false);
   const [drawnResults, setDrawnResults] = useState<{
     grade: string;
     name: string;
@@ -67,6 +69,14 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
   }[]>([]);
   const [isFetchingFullResults, setIsFetchingFullResults] = useState(false);
   const [hasTriggeredAutoResults, setHasTriggeredAutoResults] = useState(false);
+  const [totalTicketsCount, setTotalTicketsCount] = useState<number>(80);
+  const [remainingTickets, setRemainingTickets] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!showAPrizePopup) return;
+    const timer = setTimeout(() => setShowAPrizePopup(false), 3000);
+    return () => clearTimeout(timer);
+  }, [showAPrizePopup]);
 
   const handleShowFullResults = async () => {
     if (!product) return;
@@ -144,6 +154,39 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
         if (productError) throw productError;
         setProduct(productData);
 
+        // 同步一番賞商品的總籤數與剩餘抽數，與商品頁顯示來源一致
+        const { data: prizeRows } = await supabase
+          .from('product_prizes')
+          .select('level, total, remaining')
+          .eq('product_id', productId);
+
+        if (prizeRows && prizeRows.length > 0) {
+          const validPrizes = prizeRows.filter(p =>
+            p.level !== 'Last One' &&
+            p.level !== 'LAST ONE' &&
+            !p.level?.includes?.('最後賞')
+          );
+
+          const totalFromPrizes = validPrizes.reduce(
+            (sum, p) => sum + (p.total || 0),
+            0
+          );
+          const remainingFromPrizes = validPrizes.reduce(
+            (sum, p) => sum + (p.remaining || 0),
+            0
+          );
+
+          if (totalFromPrizes > 0) {
+            setTotalTicketsCount(totalFromPrizes);
+          } else {
+            setTotalTicketsCount(productData.total_count || 80);
+          }
+          setRemainingTickets(remainingFromPrizes);
+        } else {
+          setTotalTicketsCount(productData.total_count || 80);
+          setRemainingTickets(null);
+        }
+
         const { data: historyData, error: historyError } = await supabase
           .from('draw_records')
           .select('ticket_number')
@@ -166,31 +209,70 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
     fetchData();
   }, [params.id, supabase]);
 
-  const totalTicketsCount = product?.total_count || 80;
-  
+  const baseRemaining = typeof remainingTickets === 'number'
+    ? remainingTickets
+    : totalTicketsCount - soldTickets.length;
+
+  const selectionCap = Math.min(10, Math.max(baseRemaining, 0));
+  const uiMaxSelectable = baseRemaining <= 10 ? selectionCap : undefined;
+
   const tickets: Ticket[] = useMemo(() => {
+    const soldSet = new Set(soldTickets);
+
+    if (typeof remainingTickets === 'number') {
+      const targetSold = Math.max(
+        0,
+        Math.min(totalTicketsCount, totalTicketsCount - remainingTickets)
+      );
+
+      if (soldSet.size < targetSold) {
+        for (let n = 1; n <= totalTicketsCount && soldSet.size < targetSold; n++) {
+          if (!soldSet.has(n)) {
+            soldSet.add(n);
+          }
+        }
+      }
+    }
+
     return Array.from({ length: totalTicketsCount }, (_, i) => ({
       number: i + 1,
-      isSold: soldTickets.includes(i + 1)
+      isSold: soldSet.has(i + 1)
     }));
-  }, [totalTicketsCount, soldTickets]);
+  }, [totalTicketsCount, soldTickets, remainingTickets]);
 
   useEffect(() => {
     if (!product) return;
-    const remaining = totalTicketsCount - soldTickets.length;
+    const remaining = typeof remainingTickets === 'number'
+      ? remainingTickets
+      : totalTicketsCount - soldTickets.length;
     const isEnded = product.status === 'ended' || remaining <= 0;
     if (isEnded && !hasTriggeredAutoResults && !showResultModal && !isFetchingFullResults) {
       setHasTriggeredAutoResults(true);
       handleShowFullResults();
     }
-  }, [product, totalTicketsCount, soldTickets.length, hasTriggeredAutoResults, showResultModal, isFetchingFullResults]);
+  }, [product, totalTicketsCount, soldTickets.length, remainingTickets, hasTriggeredAutoResults, showResultModal, isFetchingFullResults]);
 
   const toggleTicket = (num: number) => {
     if (soldTickets.includes(num)) return;
-    setSelectedTickets(prev => 
-      prev.includes(num) ? prev.filter(n => n !== num).sort((a, b) => a - b) : 
-      prev.length >= 10 ? prev : [...prev, num].sort((a, b) => a - b)
-    );
+    setSelectedTickets(prev => {
+      if (prev.includes(num)) {
+        return prev.filter(n => n !== num).sort((a, b) => a - b);
+      }
+
+      if (selectionCap <= 0) {
+        toast.error('已無剩餘籤號可以選擇');
+        return prev;
+      }
+
+      if (prev.length >= selectionCap) {
+        const next = [...prev];
+        next.shift();
+        next.push(num);
+        return next.sort((a, b) => a - b);
+      }
+
+      return [...prev, num].sort((a, b) => a - b);
+    });
   };
 
   const [showRandomMenu, setShowRandomMenu] = useState(false);
@@ -202,7 +284,11 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
     
     if (allAvailable.length === 0) return;
     
-    const actualCount = Math.min(count, 10, allAvailable.length);
+    const maxByRemaining = typeof remainingTickets === 'number'
+      ? Math.min(remainingTickets, allAvailable.length)
+      : allAvailable.length;
+    
+    const actualCount = Math.min(count, 10, maxByRemaining);
     
     if (actualCount <= 0) return;
 
@@ -222,20 +308,35 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
         toast.error('已無剩餘籤號');
         return;
     }
-    
-    setSelectedTickets(allAvailable);
+    const maxByRemaining = typeof remainingTickets === 'number'
+      ? Math.min(remainingTickets, allAvailable.length)
+      : allAvailable.length;
+
+    if (maxByRemaining <= 0) {
+      toast.error('已無剩餘籤號');
+      return;
+    }
+
+    if (maxByRemaining < allAvailable.length) {
+      toast.info(`實際僅剩 ${maxByRemaining} 張票券，已為您全選`);
+    }
+
+    const selected = allAvailable.slice(0, maxByRemaining);
+    setSelectedTickets(selected);
+    setShowAPrizePopup(false);
     setShowConfirm(true);
   };
 
   const handlePurchase = async () => {
     if (!user) { router.push('/login'); return; }
     if (!product) return;
-    
+    setShowAPrizePopup(false);
     setIsProcessing(true);
     try {
+      const ticketsToPlay = [...selectedTickets];
       const { data, error } = await supabase.rpc('play_ichiban', {
         p_product_id: product.id,
-        p_ticket_numbers: selectedTickets
+        p_ticket_numbers: ticketsToPlay
       });
       
       if (error) throw error;
@@ -248,8 +349,13 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
         is_last_one: r.is_last_one,
         ticket_number: r.ticket_number
       }));
-      
       setDrawnResults(results);
+      setSoldTickets(prev => {
+        const merged = new Set(prev);
+        ticketsToPlay.forEach(n => merged.add(n));
+        return Array.from(merged).sort((a, b) => a - b);
+      });
+      setSelectedTickets([]);
       if (refreshProfile) refreshProfile();
       
       // Check for Last One and trigger celebration
@@ -328,20 +434,34 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
   };
 
   const handleOpenAll = () => {
-    setDrawnResults(prev => prev.map(r => r.is_last_one ? r : { ...r, isOpened: true }));
+    setDrawnResults(prev => {
+      const hasNewAPrize = prev.some(r => {
+        if (r.is_last_one) return false;
+        if (r.isOpened) return false;
+        const g = (r.grade || '').toString().toUpperCase();
+        return g === 'A' || g === 'A賞' || g.includes('A賞');
+      });
+      if (hasNewAPrize) {
+        setShowAPrizePopup(true);
+      }
+      return prev.map(r => r.is_last_one ? r : { ...r, isOpened: true });
+    });
   };
 
   const handleContinueDraw = () => {
     setDrawnResults([]);
     setFullResults([]);
+    setSelectedTickets([]);
     setShowPrizeDetails(false);
     setShowLastOneCelebration(false);
     setShowResultModal(false);
+    setShowAPrizePopup(false);
   };
 
   const handleBackToProduct = () => {
     if (onClose) {
       onClose();
+      onRefreshProduct?.();
       return;
     }
     if (params?.id) {
@@ -372,10 +492,29 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
 
     return (
       <div className="fixed inset-0 z-[2000] bg-neutral-900 flex flex-col items-center justify-center p-3 pb-safe overflow-hidden pt-1 md:pt-24">
-        {/* Last One Celebration Modal */}
         <AnimatePresence>
           {showLastOneCelebration && (
             <LastOneCelebrationModal onClose={() => setShowLastOneCelebration(false)} />
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {showAPrizePopup && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="fixed inset-0 z-[2500] flex items-center justify-center px-4"
+            >
+              <div className="bg-black/80 text-white rounded-3xl px-8 py-5 text-center shadow-xl border border-yellow-400/60 flex flex-col items-center justify-center gap-1">
+                <div className="text-xl font-black tracking-widest">
+                  出「A賞」
+                </div>
+                <div className="text-lg font-black">
+                  那就真的很玄了喔！
+                </div>
+              </div>
+            </motion.div>
           )}
         </AnimatePresence>
 
@@ -431,7 +570,16 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
                       showPrizeDetail={showPrizeDetails}
                       className={cn(isLastOne && "z-10")}
                       onOpen={() => {
-                        if (isLastOne) return; // Last One is already opened
+                        if (isLastOne) return;
+                        const target = drawnResults[idx];
+                        if (!target) return;
+                        if (!target.isOpened) {
+                          const g = (target.grade || '').toString().toUpperCase();
+                          const isAPrize = g === 'A' || g === 'A賞' || g.includes('A賞');
+                          if (isAPrize) {
+                            setShowAPrizePopup(true);
+                          }
+                        }
                         const newResults = [...drawnResults];
                         newResults[idx].isOpened = true;
                         setDrawnResults(newResults);
@@ -534,6 +682,7 @@ export function TicketSelectionFlow({ isModal = false, onClose }: TicketSelectio
           tickets={tickets} 
           selectedTickets={selectedTickets} 
           onToggle={toggleTicket}
+          maxSelectable={uiMaxSelectable}
           className={cn("p-4 overflow-y-auto flex-1 custom-scrollbar", isModal ? "pb-24" : "pb-32")}
         />
       </div>

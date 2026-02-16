@@ -24,7 +24,7 @@ const TOPUP_PLANS = [
   { id: 'p3', amount: 1000, points: 1000, bonus: 80, isHot: true },
   { id: 'p4', amount: 3000, points: 3000, bonus: 300, isHot: false },
   { id: 'p5', amount: 5000, points: 5000, bonus: 600, isHot: false },
-  { id: 'p6', amount: 10000, points: 10000, bonus: 1500, isHot: false },
+  { id: 'p6', amount: 100000, points: 100000, bonus: 15000, isHot: false },
 ];
 
 const PAYMENT_METHODS = [

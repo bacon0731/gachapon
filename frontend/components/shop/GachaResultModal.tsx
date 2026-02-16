@@ -108,6 +108,7 @@ export function GachaResultModal({ isOpen, onClose, results }: GachaResultModalP
               {activePrize && (
                 <>
                   <motion.div
+                    key={activePrize.id ?? activeIndex}
                     className="absolute left-[32.4%] top-[32.5%] h-[30.9%] w-[33.3%]"
                     drag={hasMultiple ? "x" : false}
                     dragConstraints={{ left: 0, right: 0 }}
@@ -120,6 +121,10 @@ export function GachaResultModal({ isOpen, onClose, results }: GachaResultModalP
                         showNext();
                       }
                     }}
+                    initial={{ opacity: 0, scale: 0.9, x: 20 }}
+                    animate={{ opacity: 1, scale: 1, x: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, x: -20 }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 20 }}
                   >
                     <div className="absolute left-0 top-0 h-full w-full bg-[#d4d4d4]" />
                     <Image
@@ -140,14 +145,14 @@ export function GachaResultModal({ isOpen, onClose, results }: GachaResultModalP
                       <button
                         type="button"
                         onClick={showPrev}
-                        className="absolute left-[18%] top-[48%] -translate-y-1/2 h-[10%] w-[8%] flex items-center justify-center text-[32px] font-black text-white drop-shadow-[0_0_8px_rgba(0,0,0,0.6)] z-10"
+                        className="absolute left-[14%] top-[48%] -translate-y-1/2 h-[60px] w-[60px] flex items-center justify-center text-[40px] font-black text-white drop-shadow-[0_0_10px_rgba(0,0,0,0.7)] z-10 rounded-full bg-black/20 active:scale-95 transition-transform"
                       >
                         ‹
                       </button>
                       <button
                         type="button"
                         onClick={showNext}
-                        className="absolute right-[18%] top-[48%] -translate-y-1/2 h-[10%] w-[8%] flex items-center justify-center text-[32px] font-black text-white drop-shadow-[0_0_8px_rgba(0,0,0,0.6)] z-10"
+                        className="absolute right-[14%] top-[48%] -translate-y-1/2 h-[60px] w-[60px] flex items-center justify-center text-[40px] font-black text-white drop-shadow-[0_0_10px_rgba(0,0,0,0.7)] z-10 rounded-full bg-black/20 active:scale-95 transition-transform"
                       >
                         ›
                       </button>

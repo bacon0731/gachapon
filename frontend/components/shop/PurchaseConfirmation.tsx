@@ -11,7 +11,6 @@ interface PurchaseConfirmationProps {
   totalPrice: number;
   userPoints: number;
   onConfirm: () => void;
-  onCancel?: () => void;
   onTopUp?: () => void;
   isProcessing?: boolean;
   isLoggedIn?: boolean;
@@ -75,7 +74,8 @@ export function PurchaseConfirmation({
         {/* Selected Tickets */}
         <div className="px-3 md:px-6 pb-2 md:pb-4">
           <div className="text-[13px] md:text-[15px] font-black text-neutral-400 mb-1 uppercase tracking-widest">已選擇票券:</div>
-          <div className="grid grid-cols-10 gap-1 md:gap-2 w-full">
+          <div className="w-full max-h-[150px] md:max-h-[260px] overflow-y-auto custom-scrollbar pr-1 md:pr-2">
+            <div className="grid grid-cols-10 gap-1 md:gap-2 w-full">
             {selectedTickets.map(num => (
               <div 
                 key={num} 
@@ -84,6 +84,7 @@ export function PurchaseConfirmation({
                 {num.toString().padStart(2, '0')}
               </div>
             ))}
+            </div>
           </div>
         </div>
 

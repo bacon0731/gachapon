@@ -67,6 +67,7 @@ export function PurchaseConfirmationModal({
     }
     
     if (isInsufficient) {
+      onClose();
       showAlert({
         title: '餘額不足',
         message: '您的代幣餘額不足，是否前往儲值？',
@@ -74,9 +75,10 @@ export function PurchaseConfirmationModal({
         confirmText: '前往儲值',
         onConfirm: () => onTopUp?.()
       });
-    } else {
-      onConfirm(quantity);
+      return;
     }
+
+    onConfirm(quantity);
   };
 
   return (

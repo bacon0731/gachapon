@@ -1824,19 +1824,23 @@ function ProfileContent() {
                           <span className="text-base font-black text-accent-red font-amount tracking-tighter">{item.cost.toLocaleString()}</span>
                         </div>
                       </div>
-                      <div className="flex flex-wrap gap-1">
-                        {item.tickets.map(t => (
-                          <span key={t} className="px-2 py-0.5 bg-neutral-50 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 rounded text-[10px] font-black font-amount border border-neutral-100 dark:border-neutral-700">{t}</span>
-                        ))}
+                      <div className="w-full max-h-[100px] overflow-y-auto custom-scrollbar pr-1">
+                        <div className="flex flex-wrap gap-1">
+                          {item.tickets.map(t => (
+                            <span key={t} className="px-2 py-0.5 bg-neutral-50 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 rounded text-[10px] font-black font-amount border border-neutral-100 dark:border-neutral-700">{t}</span>
+                          ))}
+                        </div>
                       </div>
                       <div className="pt-3 border-t border-neutral-50 dark:border-neutral-800">
-                        <div className="grid grid-cols-1 gap-2">
-                          {item.items.map((result, idx) => (
-                            <div key={idx} className="flex items-center gap-2">
-                              <span className="px-1.5 py-0.5 bg-accent-red/10 text-accent-red text-[10px] font-black rounded uppercase">{result.grade}</span>
-                              <span className="text-[11px] font-bold text-neutral-600 dark:text-neutral-400 truncate">{result.name}</span>
-                            </div>
-                          ))}
+                        <div className="w-full max-h-[100px] overflow-y-auto custom-scrollbar pr-1">
+                          <div className="grid grid-cols-1 gap-2">
+                            {item.items.map((result, idx) => (
+                              <div key={idx} className="flex items-center gap-2">
+                                <span className="px-1.5 py-0.5 bg-accent-red/10 text-accent-red text-[10px] font-black rounded uppercase">{result.grade}</span>
+                                <span className="text-[11px] font-bold text-neutral-600 dark:text-neutral-400 truncate">{result.name}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1862,7 +1866,17 @@ function ProfileContent() {
                             <tr onClick={() => setExpandedDrawId(isExpanded ? null : item.id)} className="hover:bg-neutral-50/50 transition-all cursor-pointer group">
                               <td className="px-4 py-3"><div className={cn("w-8 h-8 rounded-xl flex items-center justify-center bg-neutral-100 text-neutral-400 transition-all group-hover:bg-white group-hover:shadow-soft", isExpanded && "rotate-180 bg-primary text-white")}><ChevronDown className="w-4 h-4 stroke-[3]" /></div></td>
                               <td className="px-4 py-3"><div className="text-sm font-black text-neutral-900 dark:text-white leading-tight tracking-tight">{item.product}</div><div className="text-[13px] text-neutral-400 font-black uppercase tracking-widest mt-1">{item.date}</div></td>
-                              <td className="px-4 py-3"><div className="flex flex-wrap gap-1.5">{item.tickets.map(t => (<span key={t} className="px-2 py-1 bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 rounded-lg text-xs font-black font-amount border border-neutral-100 dark:border-neutral-700">{t}</span>))}</div></td>
+                              <td className="px-4 py-3">
+                                <div className="max-h-[100px] overflow-y-auto custom-scrollbar pr-1">
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {item.tickets.map(t => (
+                                      <span key={t} className="px-2 py-1 bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 rounded-lg text-xs font-black font-amount border border-neutral-100 dark:border-neutral-700">
+                                        {t}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              </td>
                               <td className="px-4 py-3 text-right"><div className="flex items-center justify-end gap-2"><div className="w-4 h-4 rounded-full bg-accent-yellow flex items-center justify-center shadow-sm"><span className="text-[11px] text-white font-black leading-none">G</span></div><span className="text-xl font-black text-accent-red font-amount tracking-tighter leading-none">{item.cost.toLocaleString()}</span></div></td>
                             </tr>
                             <AnimatePresence>
@@ -1872,18 +1886,20 @@ function ProfileContent() {
                                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden bg-neutral-50/30 dark:bg-neutral-800/30">
                                       <div className="py-6 px-8 lg:px-24 border-y border-neutral-100/50 dark:border-neutral-800/50">
                                         <div className="text-[13px] font-black text-neutral-400 uppercase tracking-widest mb-4">獲得獎項明細</div>
-                                        <div className="grid grid-cols-1 gap-4">
-                                          {item.items.map((result, idx) => (
-                                            <div key={idx} className="flex items-center justify-between gap-4 bg-white dark:bg-neutral-900 p-3 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-soft">
-                                              <div className="flex items-center gap-4 overflow-hidden">
-                                                <span className="px-2 py-0.5 bg-accent-red/10 text-accent-red text-[13px] font-black rounded-md border border-accent-red/10 uppercase shrink-0">{result.grade}</span>
-                                                <span className="text-sm font-black text-neutral-700 dark:text-neutral-300 truncate">{result.name}</span>
+                                        <div className="max-h-[100px] overflow-y-auto custom-scrollbar pr-1">
+                                          <div className="grid grid-cols-1 gap-4">
+                                            {item.items.map((result, idx) => (
+                                              <div key={idx} className="flex items-center justify-between gap-4 bg-white dark:bg-neutral-900 p-3 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-soft">
+                                                <div className="flex items-center gap-4 overflow-hidden">
+                                                  <span className="px-2 py-0.5 bg-accent-red/10 text-accent-red text-[13px] font-black rounded-md border border-accent-red/10 uppercase shrink-0">{result.grade}</span>
+                                                  <span className="text-sm font-black text-neutral-700 dark:text-neutral-300 truncate">{result.name}</span>
+                                                </div>
+                                                <span className="px-2 py-1 bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 rounded-[8px] text-xs font-black font-amount border border-neutral-100 dark:border-neutral-700 shrink-0">
+                                                  {result.ticket_number}
+                                                </span>
                                               </div>
-                                              <span className="px-2 py-1 bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 rounded-[8px] text-xs font-black font-amount border border-neutral-100 dark:border-neutral-700 shrink-0">
-                                                {result.ticket_number}
-                                              </span>
-                                            </div>
-                                          ))}
+                                            ))}
+                                          </div>
                                         </div>
                                       </div>
                                     </motion.div>

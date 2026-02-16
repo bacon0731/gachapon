@@ -270,52 +270,50 @@ export default function ProductDetailPage() {
     // Optional: Refresh product data
   };
 
+  const fetchData = async () => {
+    try {
+      const productId = parseInt(params.id as string);
+      if (isNaN(productId)) return;
+
+      const { data: productData, error: productError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', productId)
+        .neq('status', 'pending')
+        .single();
+      
+      if (productError) throw productError;
+      setProduct(productData);
+
+      const { data: prizesData, error: prizesError } = await supabase
+        .from('product_prizes')
+        .select('*')
+        .eq('product_id', productId)
+        .order('level', { ascending: true });
+      
+      if (prizesError) throw prizesError;
+      setPrizes(prizesData || []);
+
+      const { data: recData } = await supabase
+        .from('products')
+        .select('*')
+        .neq('id', productId)
+        .eq('status', 'active')
+        .limit(4);
+      
+      if (recData) setRecommendations(recData);
+
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const productId = parseInt(params.id as string);
-        if (isNaN(productId)) return;
-
-        // Fetch Product
-        const { data: productData, error: productError } = await supabase
-          .from('products')
-          .select('*')
-          .eq('id', productId)
-          .neq('status', 'pending')
-          .single();
-        
-        if (productError) throw productError;
-        setProduct(productData);
-
-        // Fetch Prizes
-        const { data: prizesData, error: prizesError } = await supabase
-          .from('product_prizes')
-          .select('*')
-          .eq('product_id', productId)
-          .order('level', { ascending: true });
-        
-        if (prizesError) throw prizesError;
-        setPrizes(prizesData || []);
-
-        // Fetch Recommendations
-        const { data: recData } = await supabase
-          .from('products')
-          .select('*')
-          .neq('id', productId)
-          .eq('status', 'active')
-          .limit(4);
-        
-        if (recData) setRecommendations(recData);
-
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchData();
-  }, [params.id, supabase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.id]);
 
   // Realtime subscription for inventory updates
   useEffect(() => {
@@ -875,8 +873,6 @@ export default function ProductDetailPage() {
             ticket_number: r.ticket_number || 0
           }))}
           skipRevealAnimation={true}
-          onGoToWarehouse={() => router.push('/profile?tab=warehouse')}
-          onPlayAgain={() => setShowResultModal(false)}
         />
       )}
 
@@ -911,6 +907,7 @@ export default function ProductDetailPage() {
             <TicketSelectionFlow
               isModal
               onClose={() => setIsTicketModalOpen(false)}
+              onRefreshProduct={fetchData}
             />
           </div>
         </div>
