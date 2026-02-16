@@ -118,6 +118,7 @@ export function GachaMachineVisual({ state, shakeRepeats = 1, onPush, onPurchase
 
   const stateRef = useRef({ isSpinning, isShaking });
   const prevIsShaking = useRef(false);
+  const lastShakeTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
     eggsRef.current = eggs;
@@ -128,6 +129,7 @@ export function GachaMachineVisual({ state, shakeRepeats = 1, onPush, onPurchase
   }, [isSpinning, isShaking]);
 
   const applyShakeImpulse = () => {
+    lastShakeTimeRef.current = performance.now() / 1000;
     const next = eggsRef.current.map((egg) => {
       const angle = Math.random() * Math.PI * 2;
       const strength = 4;
@@ -194,6 +196,16 @@ export function GachaMachineVisual({ state, shakeRepeats = 1, onPush, onPurchase
 
         const { isSpinning: spinning } = stateRef.current;
         const nowSec = time / 1000;
+
+        const lastShakeTime = lastShakeTimeRef.current;
+        const shouldFreezeAfterShake =
+          !spinning && lastShakeTime !== null && nowSec - lastShakeTime > 2;
+
+        if (shouldFreezeAfterShake) {
+          prevSpinning = spinning;
+          frameId = requestAnimationFrame(step);
+          return;
+        }
 
         if (spinning && !prevSpinning) {
           spinStartTime = nowSec;
