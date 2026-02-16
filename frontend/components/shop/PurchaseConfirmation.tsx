@@ -11,6 +11,7 @@ interface PurchaseConfirmationProps {
   totalPrice: number;
   userPoints: number;
   onConfirm: () => void;
+  onCancel?: () => void;
   onTopUp?: () => void;
   isProcessing?: boolean;
   isLoggedIn?: boolean;
