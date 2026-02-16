@@ -5,6 +5,26 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 
+const formatPrizeName = (name: string) => {
+  if (!name) return '';
+  const chunkSize = 15;
+  const maxChars = chunkSize * 2;
+  const trimmed = name.trim();
+  const limited = trimmed.length > maxChars ? trimmed.slice(0, maxChars) : trimmed;
+  const lines: string[] = [];
+
+  for (let i = 0; i < limited.length && lines.length < 2; i += chunkSize) {
+    lines.push(limited.slice(i, i + chunkSize));
+  }
+
+  if (trimmed.length > maxChars && lines.length === 2) {
+    const last = lines[1];
+    lines[1] = (last.slice(0, Math.max(last.length - 1, 0)) + '…').slice(0, chunkSize);
+  }
+
+  return lines.join('\n');
+};
+
 interface IchibanTicketProps {
   grade: string;
   prizeName: string;
@@ -31,11 +51,14 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
   showPrizeDetail = false,
 }) => {
   const [internalIsOpened, setInternalIsOpened] = useState(false);
+  const [dragProgress, setDragProgress] = useState(0);
   const isOpened = externalIsOpened !== undefined ? externalIsOpened : internalIsOpened;
+  const formattedPrizeName = React.useMemo(() => formatPrizeName(prizeName), [prizeName]);
 
   const handleOpen = () => {
     if (!isOpened) {
       setInternalIsOpened(true);
+      setDragProgress(1);
       onOpen?.();
     }
   };
@@ -81,8 +104,8 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
         </div>
         
         <div className="w-full h-auto min-h-[2.5rem] flex items-start justify-center text-center">
-          <div className="text-sm font-black text-white drop-shadow-md leading-tight line-clamp-2">
-            {prizeName}
+          <div className="text-[0.7rem] sm:text-sm font-black text-white drop-shadow-md leading-tight whitespace-pre-line">
+            {formattedPrizeName}
           </div>
         </div>
       </motion.div>
@@ -197,8 +220,8 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
                         </div>
                       )}
                     </div>
-                    <div className="text-base font-black text-neutral-900 leading-tight line-clamp-2 pr-2">
-                      {prizeName}
+                    <div className="text-[0.7rem] sm:text-sm font-black text-neutral-900 leading-tight whitespace-pre-line pr-2">
+                      {formattedPrizeName}
                     </div>
                   </div>
                 </motion.div>
@@ -214,9 +237,17 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
               drag="x"
               dragConstraints={{ left: 0, right: 300 }}
               dragElastic={0.1}
+              onDrag={(_, info) => {
+                const distance = Math.max(info.offset.x, 0);
+                const progress = Math.min(distance / 120, 1);
+                setDragProgress(progress);
+              }}
               onDragEnd={(_, info) => {
-                if (info.offset.x > 100 || info.velocity.x > 500) {
+                const distance = Math.max(info.offset.x, 0);
+                if (distance > 8) {
                   handleOpen();
+                } else {
+                  setDragProgress(0);
                 }
               }}
               onClick={handleOpen}
@@ -254,6 +285,14 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
                       unoptimized
                     />
                   </div>
+                </div>
+
+                {/* Swipe progress indicator */}
+                <div className="absolute bottom-3 left-6 right-6 h-1 rounded-full bg-black/10/0 pointer-events-none overflow-hidden">
+                  <div
+                    className="h-full bg-white/80"
+                    style={{ width: `${dragProgress * 100}%`, transition: 'width 0.15s ease-out' }}
+                  />
                 </div>
 
                 {/* Finger Swipe Guide - Not Clipped */}

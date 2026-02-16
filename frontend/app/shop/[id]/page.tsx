@@ -537,12 +537,19 @@ export default function ProductDetailPage() {
                 <h2 className="text-sm sm:text-lg font-black text-neutral-900 dark:text-neutral-50 tracking-tight uppercase tracking-wider">店家配率表</h2>
               </div>
               
-              <div className="overflow-x-auto custom-scrollbar">
-                <table className="w-full text-left">
+              <div className="overflow-x-auto relative custom-scrollbar">
+                <table className="w-full min-w-[480px] text-left">
                   <thead className="bg-neutral-50/50 dark:bg-neutral-800/50 text-[13px] sm:text-sm font-black text-neutral-400 dark:text-neutral-500 border-b border-neutral-50 dark:border-neutral-800">
                     <tr>
                       <th className="px-2 sm:px-6 py-2 sm:py-3 uppercase tracking-widest">獎項名稱</th>
-                      <th className="px-2 sm:px-6 py-2 sm:py-3 text-right uppercase tracking-widest">剩餘 / 總數</th>
+                      <th
+                        className={cn(
+                          "px-2 sm:px-6 py-2 sm:py-3 text-right uppercase tracking-widest w-[96px] sm:w-[128px] whitespace-nowrap",
+                          "sticky right-0 z-20 bg-neutral-50/90 dark:bg-neutral-900/90 backdrop-blur-sm"
+                        )}
+                      >
+                        剩餘 / 總數
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-50 dark:divide-neutral-800">
@@ -566,10 +573,18 @@ export default function ProductDetailPage() {
                             <span className="text-[13px] text-primary font-black uppercase tracking-widest bg-primary/5 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-lg border border-primary/10 whitespace-nowrap">
                               {prize.level}賞
                             </span>
-                            <div className="font-black text-neutral-900 dark:text-neutral-50 text-[13px] sm:text-sm leading-tight tracking-tight whitespace-nowrap">{prize.name}</div>
+                            <div className="font-black text-neutral-900 dark:text-neutral-50 text-[13px] sm:text-sm leading-tight tracking-tight whitespace-nowrap">
+                              {prize.name}
+                            </div>
                           </div>
                         </td>
-                        <td className="px-2 sm:px-6 py-2 sm:py-3.5 text-right">
+                        <td
+                          className={cn(
+                            "px-2 sm:px-6 py-2 sm:py-3.5 text-right w-[96px] sm:w-[128px] whitespace-nowrap align-middle",
+                            "sticky right-0 z-10 bg-white dark:bg-neutral-900",
+                            "group-hover:bg-neutral-50/80 dark:group-hover:bg-neutral-800/80"
+                          )}
+                        >
                           <span className="font-black text-sm sm:text-base tracking-tighter text-neutral-900 dark:text-neutral-50">
                             {prize.remaining.toLocaleString()}<span className="text-neutral-200 dark:text-neutral-700 mx-1">/</span>{prize.total.toLocaleString()}
                           </span>
@@ -577,17 +592,16 @@ export default function ProductDetailPage() {
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot className="border-t-2 border-neutral-50 dark:border-neutral-800">
-                    <tr className="bg-accent-red/5 dark:bg-accent-red/10">
-                      <td className="px-2 sm:px-6 py-2 sm:py-4 font-black text-accent-red text-sm sm:text-base tracking-widest uppercase">合計</td>
-                      <td className="px-2 sm:px-6 py-2 sm:py-4 text-right">
-                        <span className="text-lg sm:text-2xl font-black text-accent-red tracking-tighter">
-                          {totalRemaining.toLocaleString()}<span className="text-accent-red/30 mx-1">/</span>{totalItems.toLocaleString()}
-                        </span>
-                      </td>
-                    </tr>
-                  </tfoot>
                 </table>
+              </div>
+
+              <div className="flex items-center justify-between px-2 sm:px-6 py-2 sm:py-4 bg-accent-red/5 dark:bg-accent-red/10 border-t-2 border-neutral-50 dark:border-neutral-800">
+                <span className="font-black text-accent-red text-sm sm:text-base tracking-widest uppercase">
+                  合計
+                </span>
+                <span className="text-lg sm:text-2xl font-black text-accent-red tracking-tighter whitespace-nowrap">
+                  {totalRemaining.toLocaleString()}<span className="text-accent-red/30 mx-1">/</span>{totalItems.toLocaleString()}
+                </span>
               </div>
             </div>
 
