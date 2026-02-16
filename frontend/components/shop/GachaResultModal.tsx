@@ -63,7 +63,7 @@ export function GachaResultModal({ isOpen, onClose, results }: GachaResultModalP
                 </div>
               </div>
 
-              <div className="absolute h-[81%] w-[67.7%] left-[15.1%] top-[19%]">
+              <div className="absolute inset-0">
                 <Image
                   src="/images/gacha/popup/bg.png"
                   alt="恭喜獲得"
@@ -73,7 +73,7 @@ export function GachaResultModal({ isOpen, onClose, results }: GachaResultModalP
                 />
               </div>
 
-              <p className="absolute -translate-x-1/2 left-1/2 top-[8%] text-[32px] sm:text-[36px] font-black text-[#fcf2dc] text-center whitespace-nowrap">
+              <p className="absolute -translate-x-1/2 left-1/2 top-[3%] text-[28px] font-black text-[#fcf2dc] text-center whitespace-nowrap">
                 恭喜！您獲得了
               </p>
 
@@ -90,7 +90,7 @@ export function GachaResultModal({ isOpen, onClose, results }: GachaResultModalP
                     />
                   </div>
 
-                  <p className="absolute -translate-x-1/2 left-1/2 top-[74.5%] text-center text-[16px] font-black text-[#894801] leading-snug">
+                  <p className="absolute -translate-x-1/2 left-1/2 top-[69.5%] text-center text-[16px] font-black text-[#894801] leading-snug">
                     {firstPrize.name}
                   </p>
                 </>
