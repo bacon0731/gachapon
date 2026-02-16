@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/Toast';
 import { useRouter } from 'next/navigation';
 import { PurchaseConfirmationModal } from '@/components/shop/PurchaseConfirmationModal';
+import { Loader2 } from 'lucide-react';
 
 interface GachaProductDetailProps {
   product: Database['public']['Tables']['products']['Row'];
@@ -29,6 +30,7 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
   const [showResultModal, setShowResultModal] = useState(false);
   const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
   const [hasPendingResult, setHasPendingResult] = useState(false);
+  const [isMachineLoaded, setIsMachineLoaded] = useState(false);
 
   const handlePush = () => {
     if (machineState !== 'idle') return;
@@ -96,21 +98,6 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
     }
   };
 
-  const runGachaAnimation = () => {
-    setShakeRepeats(3);
-    setMachineState('shaking');
-    setTimeout(() => {
-      setMachineState('spinning');
-      setTimeout(() => {
-        setMachineState('dropping');
-        setTimeout(() => {
-          setMachineState('waiting');
-          setHasPendingResult(true);
-        }, 800);
-      }, 4000);
-    }, 2000);
-  };
-
   const runTrialAnimation = () => {
     setShakeRepeats(3);
     setMachineState('shaking');
@@ -121,6 +108,10 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
         setHasPendingResult(true);
       }, 800);
     }, 3000);
+  };
+
+  const runGachaAnimation = () => {
+    runTrialAnimation();
   };
 
   const handleResultClose = () => {
@@ -157,10 +148,6 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
     setMachineState('result');
   };
 
-  const handleGoToWarehouse = () => {
-    router.push(`/profile?tab=warehouse&product_id=${product.id}`);
-  };
-
   return (
     <div
       className="min-h-screen pb-32 md:pb-12 pt-14 md:pt-0 bg-gradient-to-b from-neutral-50 to-neutral-100 dark:from-neutral-900 dark:to-neutral-950"
@@ -177,7 +164,16 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
               onPurchase={handlePurchaseClick} 
               onTrial={handleTrial}
               onHoleClick={handleHoleClick}
+              onLoaded={() => setIsMachineLoaded(true)}
             />
+            {!isMachineLoaded && (
+              <div className="absolute inset-0 flex items-center justify-center bg-neutral-950/80">
+                <div className="flex flex-col items-center gap-3 text-white">
+                  <Loader2 className="w-8 h-8 animate-spin" />
+                  <span className="text-xs font-black tracking-widest">載入機台中...</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -189,7 +185,6 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
       <GachaResultModal
         isOpen={showResultModal}
         onClose={handleResultClose}
-        onGoToWarehouse={handleGoToWarehouse}
         results={wonPrizes}
       />
 

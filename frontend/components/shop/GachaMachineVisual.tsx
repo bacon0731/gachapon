@@ -10,6 +10,7 @@ interface GachaMachineVisualProps {
   onPurchase?: () => void;
   onTrial?: () => void;
   onHoleClick?: () => void;
+  onLoaded?: () => void;
 }
 
 const EGG_IMAGES = ['/images/gacha/begg.png', '/images/gacha/gegg.png', '/images/gacha/pegg.png'];
@@ -26,7 +27,15 @@ interface Egg {
   angularVelocity: number;
 }
 
-export function GachaMachineVisual({ state, shakeRepeats = 1, onPush, onPurchase, onTrial, onHoleClick }: GachaMachineVisualProps) {
+export function GachaMachineVisual({
+  state,
+  shakeRepeats = 1,
+  onPush,
+  onPurchase,
+  onTrial,
+  onHoleClick,
+  onLoaded,
+}: GachaMachineVisualProps) {
   const createInitialEggs = (): Egg[] => {
     const count = 15;
     const radius = 0.1;
@@ -119,6 +128,7 @@ export function GachaMachineVisual({ state, shakeRepeats = 1, onPush, onPurchase
   const stateRef = useRef({ isSpinning, isShaking });
   const prevIsShaking = useRef(false);
   const lastShakeTimeRef = useRef<number | null>(null);
+  const hasNotifiedLoadedRef = useRef(false);
 
   useEffect(() => {
     eggsRef.current = eggs;
@@ -328,7 +338,19 @@ export function GachaMachineVisual({ state, shakeRepeats = 1, onPush, onPurchase
   return (
     <div className="relative w-full h-full">
       <div className="absolute inset-0">
-        <Image src="/images/gacha/main.png" alt="gacha machine" fill className="object-fill" unoptimized />
+        <Image
+          src="/images/gacha/main.png"
+          alt="gacha machine"
+          fill
+          className="object-fill"
+          unoptimized
+          onLoadingComplete={() => {
+            if (!hasNotifiedLoadedRef.current) {
+              hasNotifiedLoadedRef.current = true;
+              if (onLoaded) onLoaded();
+            }
+          }}
+        />
       </div>
 
       <div

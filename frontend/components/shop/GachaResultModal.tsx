@@ -1,26 +1,23 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '@/components/ui';
 import Image from 'next/image';
 import { Prize } from '@/components/GachaMachine'; // Reuse type
 
 interface GachaResultModalProps {
   isOpen: boolean;
-  onClose: () => void; // Usually "Play Again" or just close
-  onGoToWarehouse: () => void;
+  onClose: () => void;
   results: Prize[];
 }
 
-export function GachaResultModal({ isOpen, onClose, onGoToWarehouse, results }: GachaResultModalProps) {
+export function GachaResultModal({ isOpen, onClose, results }: GachaResultModalProps) {
   if (!isOpen) return null;
 
-  // For now, assume single draw or multiple. We'll show a list.
-  
+  const firstPrize = results[0];
+
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          {/* Backdrop */}
+        <div className="fixed inset-0 z-[100] flex items-center justify-center">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -29,76 +26,146 @@ export function GachaResultModal({ isOpen, onClose, onGoToWarehouse, results }: 
             onClick={onClose}
           />
 
-          {/* Modal Content */}
           <motion.div
-            initial={{ scale: 0.8, opacity: 0, y: 50 }}
+            initial={{ scale: 0.95, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.8, opacity: 0, y: 50 }}
-            className="relative w-full max-w-md bg-white dark:bg-neutral-900 rounded-3xl p-6 shadow-2xl overflow-hidden"
+            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+            className="relative w-full flex items-center justify-center"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Success Burst Background */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-64 bg-gradient-to-b from-yellow-400/20 to-transparent pointer-events-none" />
-
-            <div className="relative z-10 text-center space-y-6">
-              <div className="space-y-2">
-                <h2 className="text-3xl font-black text-neutral-900 dark:text-white tracking-tight">
-                  恭喜獲得！
-                </h2>
-                <p className="text-neutral-500 font-bold">已放入您的置物櫃</p>
+            <div className="relative w-screen aspect-[750/810] overflow-hidden">
+              <div className="absolute flex items-center justify-center h-[62.8%] w-[83.5%] left-[7.2%] top-[28.3%]">
+                <div className="flex-none rotate-[53.95deg]">
+                  <div className="relative h-full w-[21.8%]">
+                    <div className="absolute inset-[-21.66%_-108.11%_-20.9%_-105.67%]">
+                      <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 428.86 962.59">
+                        <g filter="url(#filter0_f_1_26)">
+                          <path d="M214.43 0L428.86 241L321.642 962.59H107.215L0 241L214.43 0Z" fill="#FFFAB8" />
+                        </g>
+                        <defs>
+                          <filter
+                            id="filter0_f_1_26"
+                            x="-75"
+                            y="-75"
+                            width="578.861"
+                            height="1112.59"
+                            filterUnits="userSpaceOnUse"
+                            colorInterpolationFilters="sRGB"
+                          >
+                            <feFlood floodOpacity="0" result="BackgroundImageFix" />
+                            <feBlend in="SourceGraphic" in2="BackgroundImageFix" mode="normal" result="shape" />
+                            <feGaussianBlur stdDeviation="75" result="effect1_foregroundBlur_1_26" />
+                          </filter>
+                        </defs>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              {/* Prizes Grid */}
-              <div className="grid grid-cols-1 gap-4 max-h-[50vh] overflow-y-auto py-2">
-                {results.map((prize, idx) => (
-                  <motion.div
-                    key={idx}
-                    initial={{ x: -20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: idx * 0.1 }}
-                    className="flex items-center gap-4 bg-neutral-50 dark:bg-neutral-800 p-3 rounded-2xl border border-neutral-100 dark:border-neutral-700"
-                  >
-                    <div className="relative w-16 h-16 bg-white dark:bg-neutral-700 rounded-xl overflow-hidden flex-shrink-0">
-                      <Image
-                        src={prize.image_url || '/images/item.png'}
-                        alt={prize.name}
-                        fill
-                        className="object-contain"
-                        unoptimized
-                      />
-                    </div>
-                    <div className="text-left flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="px-2 py-0.5 bg-accent-red text-white text-[10px] font-black rounded uppercase">
-                          {prize.rarity}賞
-                        </span>
-                      </div>
-                      <div className="font-bold text-neutral-900 dark:text-white truncate">
-                        {prize.name}
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
+              <div className="absolute h-[81%] w-[67.7%] left-[15.1%] top-[19%]">
+                <Image
+                  src="/images/gacha/popup/bg.png"
+                  alt="恭喜獲得"
+                  fill
+                  className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                  unoptimized
+                />
               </div>
 
-              {/* Actions */}
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                <Button 
-                  onClick={onGoToWarehouse}
-                  variant="secondary"
-                  size="lg"
-                  className="w-full"
-                >
-                  查看置物櫃
-                </Button>
-                <Button 
+              <p className="absolute -translate-x-1/2 left-1/2 top-[8%] text-[32px] sm:text-[36px] font-black text-[#fcf2dc] text-center whitespace-nowrap">
+                恭喜！您獲得了
+              </p>
+
+              {firstPrize && (
+                <>
+                  <div className="absolute left-[32.4%] top-[32.5%] h-[30.9%] w-[33.3%]">
+                    <div className="absolute left-0 top-0 h-full w-full bg-[#d4d4d4]" />
+                    <Image
+                      src={firstPrize.image_url || '/images/item.png'}
+                      alt={firstPrize.name}
+                      fill
+                      className="object-contain"
+                      unoptimized
+                    />
+                  </div>
+
+                  <p className="absolute -translate-x-1/2 left-1/2 top-[74.5%] text-center text-[16px] font-black text-[#894801] leading-snug">
+                    {firstPrize.name}
+                  </p>
+                </>
+              )}
+
+              <div className="absolute flex items-center justify-center h-[8.6%] w-[6.5%] left-[19.1%] top-[11.2%]">
+                <div className="flex-none -rotate-[4.79deg]">
+                  <div className="relative h-full w-full">
+                    <Image
+                      src="/images/gacha/popup/item.png"
+                      alt=""
+                      fill
+                      className="absolute inset-0 max-w-none object-cover pointer-events-none"
+                      unoptimized
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="absolute flex items-center justify-center h-[7.8%] w-[7.0%] left-[71.3%] top-[14.3%]">
+                <div className="flex-none rotate-[21.39deg]">
+                  <div className="relative h-full w-full">
+                    <Image
+                      src="/images/gacha/popup/item.png"
+                      alt=""
+                      fill
+                      className="absolute inset-0 max-w-none object-cover pointer-events-none"
+                      unoptimized
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="absolute left-[18.1%] top-[22.1%] h-[1.8%] w-[1.9%]">
+                <div className="absolute inset-[-71.43%]">
+                  <svg className="block size-full" fill="none" viewBox="0 0 34 34" preserveAspectRatio="none">
+                    <g filter="url(#filter0_f_1_24)">
+                      <circle cx="17" cy="17" r="7" fill="#FFF8D2" />
+                    </g>
+                    <defs>
+                      <filter
+                        id="filter0_f_1_24"
+                        x="0"
+                        y="0"
+                        width="34"
+                        height="34"
+                        filterUnits="userSpaceOnUse"
+                        colorInterpolationFilters="sRGB"
+                      >
+                        <feFlood floodOpacity="0" result="BackgroundImageFix" />
+                        <feBlend in="SourceGraphic" in2="BackgroundImageFix" mode="normal" result="shape" />
+                        <feGaussianBlur stdDeviation="5" result="effect1_foregroundBlur_1_24" />
+                      </filter>
+                    </defs>
+                  </svg>
+                </div>
+              </div>
+
+              <div className="absolute left-[28.2%] top-[88.8%] h-[9.9%] w-[41.8%]">
+                <div className="absolute left-0 top-0 h-full w-full">
+                  <Image
+                    src="/images/gacha/popup/btn.png"
+                    alt="確認"
+                    fill
+                    className="absolute inset-0 max-w-none object-cover pointer-events-none"
+                    unoptimized
+                  />
+                </div>
+                <button
+                  type="button"
                   onClick={onClose}
-                  variant="primary" // Assuming primary is the default/main action style
-                  size="lg"
-                  className="w-full bg-accent-red hover:bg-accent-red/90 text-white shadow-lg shadow-accent-red/20"
+                  className="absolute inset-0 flex items-center justify-center text-[24px] font-black text-[#894801] leading-none text-center"
                 >
-                  再抽一次
-                </Button>
+                  確認
+                </button>
               </div>
             </div>
           </motion.div>
