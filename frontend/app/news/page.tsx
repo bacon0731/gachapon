@@ -21,17 +21,23 @@ export default function NewsPage() {
         new Promise<T>((_, reject) => setTimeout(() => reject(new Error('timeout')), LOAD_TIMEOUT_MS))
       ]);
     };
+
+    type NewsQueryResult = {
+      data: Database['public']['Tables']['news']['Row'][] | null;
+      error: unknown;
+    };
+
     const fetchNews = async () => {
       try {
         setLoadError(null);
-        const { data, error } = await withTimeout(
-          (supabase
-          .from('news')
-          .select('*')
-          .eq('is_published', true)
-          .order('published_at', { ascending: false })) as unknown as Promise<unknown>
+        const { data, error } = await withTimeout<NewsQueryResult>(
+          supabase
+            .from('news')
+            .select('*')
+            .eq('is_published', true)
+            .order('published_at', { ascending: false }) as unknown as Promise<NewsQueryResult>
         );
-        
+
         if (error) throw error;
         setNews(data || []);
       } catch (error) {
