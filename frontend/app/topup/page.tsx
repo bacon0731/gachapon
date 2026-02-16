@@ -6,6 +6,7 @@ import React, { useState, useRef } from 'react';
 import { Button, Input } from '@/components/ui';
 import { useToast } from '@/components/ui/Toast';
 import { createClient } from '@/lib/supabase/client';
+import type { PostgrestError } from '@supabase/supabase-js';
 import { 
   CreditCard, 
   Smartphone, 
@@ -88,17 +89,16 @@ export default function TopupPage() {
         throw new Error('找不到有效登入狀態，請重新登入後再試');
       }
 
-      // Call the RPC to process topup immediately for testing
       const { data, error } = await supabase.rpc('process_topup', {
         p_amount: selectedPlan.amount,
         p_bonus: selectedPlan.bonus
       });
 
       if (error) {
-        // Provide clearer error for missing RPC or RLS issues
-        const code = (error as any)?.code || '';
-        const msg = (error as any)?.message || '';
-        const lower = (msg || '').toLowerCase();
+        const supaError = error as PostgrestError;
+        const code = supaError.code || '';
+        const msg = supaError.message || '';
+        const lower = msg.toLowerCase();
         if (code === '42501' || lower.includes('permission denied')) {
           throw new Error('權限不足：請重新登入後再試');
         }
@@ -112,7 +112,8 @@ export default function TopupPage() {
         throw new Error(msg || '儲值處理失敗');
       }
       
-      if (!data || (data as any).success === false) {
+      const result = data as { success?: boolean } | null;
+      if (!result || result.success === false) {
         throw new Error('儲值處理失敗，請稍後再試');
       }
 
@@ -128,7 +129,13 @@ export default function TopupPage() {
       
     } catch (error: unknown) {
       console.error('Topup Error:', error ?? '(no error)');
-      const message = (error as any)?.message || '儲值失敗，請稍後再試';
+      let message = '儲值失敗，請稍後再試';
+      if (error && typeof error === 'object' && 'message' in error) {
+        const withMessage = error as { message?: unknown };
+        if (typeof withMessage.message === 'string' && withMessage.message) {
+          message = withMessage.message;
+        }
+      }
       showToast(message, 'error');
       // Only reset processing state on error, success redirects
       setIsProcessing(false);
