@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { Prize } from '@/components/GachaMachine'; // Reuse type
@@ -10,9 +10,37 @@ interface GachaResultModalProps {
 }
 
 export function GachaResultModal({ isOpen, onClose, results }: GachaResultModalProps) {
-  if (!isOpen) return null;
+  const [activeIndex, setActiveIndex] = useState(0);
+  const hasMultiple = results.length > 1;
+  const activePrize = results[activeIndex] || results[0];
 
-  const firstPrize = results[0];
+  useEffect(() => {
+    if (!isOpen) {
+      setActiveIndex(0);
+      return;
+    }
+    if (!results[activeIndex]) {
+      setActiveIndex(0);
+    }
+  }, [isOpen, results, activeIndex]);
+
+  const showPrev = () => {
+    if (!hasMultiple) return;
+    setActiveIndex((prev) => {
+      const nextIndex = prev - 1;
+      if (nextIndex < 0) return results.length - 1;
+      return nextIndex;
+    });
+  };
+
+  const showNext = () => {
+    if (!hasMultiple) return;
+    setActiveIndex((prev) => {
+      const nextIndex = prev + 1;
+      if (nextIndex >= results.length) return 0;
+      return nextIndex;
+    });
+  };
 
   return (
     <AnimatePresence>
@@ -77,22 +105,54 @@ export function GachaResultModal({ isOpen, onClose, results }: GachaResultModalP
                 恭喜！您獲得了
               </p>
 
-              {firstPrize && (
+              {activePrize && (
                 <>
-                  <div className="absolute left-[32.4%] top-[32.5%] h-[30.9%] w-[33.3%]">
+                  <motion.div
+                    className="absolute left-[32.4%] top-[32.5%] h-[30.9%] w-[33.3%]"
+                    drag={hasMultiple ? "x" : false}
+                    dragConstraints={{ left: 0, right: 0 }}
+                    dragElastic={0.2}
+                    onDragEnd={(_, info) => {
+                      const offsetX = info.offset.x;
+                      if (offsetX > 40) {
+                        showPrev();
+                      } else if (offsetX < -40) {
+                        showNext();
+                      }
+                    }}
+                  >
                     <div className="absolute left-0 top-0 h-full w-full bg-[#d4d4d4]" />
                     <Image
-                      src={firstPrize.image_url || '/images/item.png'}
-                      alt={firstPrize.name}
+                      src={activePrize.image_url || '/images/item.png'}
+                      alt={activePrize.name}
                       fill
                       className="object-contain"
                       unoptimized
                     />
-                  </div>
+                  </motion.div>
 
-                  <p className="absolute -translate-x-1/2 left-1/2 top-[69.5%] text-center text-[16px] font-black text-[#894801] leading-snug">
-                    {firstPrize.name}
+                  <p className="absolute -translate-x-1/2 left-1/2 top-[69.5%] text-center text-[16px] font-black text-[#894801] leading-snug px-4">
+                    {activePrize.name}
                   </p>
+
+                  {hasMultiple && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={showPrev}
+                        className="absolute left-[18%] top-[48%] -translate-y-1/2 h-[10%] w-[8%] flex items-center justify-center text-[32px] font-black text-white drop-shadow-[0_0_8px_rgba(0,0,0,0.6)] z-10"
+                      >
+                        ‹
+                      </button>
+                      <button
+                        type="button"
+                        onClick={showNext}
+                        className="absolute right-[18%] top-[48%] -translate-y-1/2 h-[10%] w-[8%] flex items-center justify-center text-[32px] font-black text-white drop-shadow-[0_0_8px_rgba(0,0,0,0.6)] z-10"
+                      >
+                        ›
+                      </button>
+                    </>
+                  )}
                 </>
               )}
 
