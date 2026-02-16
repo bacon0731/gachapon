@@ -83,10 +83,10 @@ export function GachaCollectionList({ productId, prizes }: GachaCollectionListPr
         </div>
 
         <div
-          className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-y-4 gap-x-[9%] relative h-[calc(100%-3rem)]"
-          style={{ transform: 'translateY(-3%)' }}
+          className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-y-2 gap-x-[9%] relative h-[calc(100%-3rem)]"
+          style={{ transform: 'translateY(-9%)' }}
         >
-        {prizes.map((prize) => {
+        {prizes.map((prize, index) => {
           const isObtained = obtainedPrizeIds.has(prize.id);
           const isLocked = !user || (!isObtained && user);
 
@@ -97,6 +97,13 @@ export function GachaCollectionList({ productId, prizes }: GachaCollectionListPr
                 "aspect-square rounded-2xl flex flex-col items-center justify-center gap-2 transition-all duration-300 relative group",
                 !isObtained && "grayscale"
               )}
+              style={
+                index < 3
+                  ? { transform: 'translateY(6%)' }
+                  : index >= 3 && index < 6
+                    ? { transform: 'translateY(-8%)' }
+                    : undefined
+              }
             >
               <div className="relative w-[92%] h-[92%] mx-auto my-auto">
                 <Image
@@ -107,14 +114,11 @@ export function GachaCollectionList({ productId, prizes }: GachaCollectionListPr
                   unoptimized
                 />
               </div>
-              <div className="absolute bottom-2 left-2 right-2 text-center">
+              <div className="absolute bottom-0 left-2 right-2 flex justify-center" style={{ transform: 'translateY(6px)' }}>
                  <span className={cn(
-                   "text-[10px] font-black px-1.5 py-0.5 rounded shadow-sm backdrop-blur-sm",
-                   isObtained 
-                     ? "bg-white/90 text-neutral-900" 
-                     : "bg-neutral-200/50 text-neutral-500"
+                   "text-[10px] font-black px-1.5 py-0.5 rounded shadow-sm backdrop-blur-sm whitespace-nowrap inline-block bg-white/75 text-neutral-800"
                  )}>
-                   {prize.level}賞
+                   {prize.name}
                  </span>
               </div>
               
