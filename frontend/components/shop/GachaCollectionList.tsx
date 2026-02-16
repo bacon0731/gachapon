@@ -114,12 +114,17 @@ export function GachaCollectionList({ productId, prizes }: GachaCollectionListPr
                   unoptimized
                 />
               </div>
-              <div className="absolute bottom-0 left-2 right-2 flex justify-center" style={{ transform: 'translateY(6px)' }}>
-                 <span className={cn(
-                   "text-[10px] font-black px-1.5 py-0.5 rounded shadow-sm backdrop-blur-sm whitespace-nowrap inline-block bg-white/75 text-neutral-800"
-                 )}>
-                   {prize.name}
-                 </span>
+              <div className="absolute bottom-0 -left-1 -right-1 flex justify-center" style={{ transform: 'translateY(6px)' }}>
+                <span
+                  className={cn(
+                    "text-[10px] font-black px-2 rounded shadow-sm backdrop-blur-sm bg-white/75 text-neutral-800",
+                    "inline-flex items-center justify-center text-center leading-tight",
+                    "h-[32px] max-h-[32px] overflow-hidden",
+                    "w-[110%]"
+                  )}
+                >
+                  {prize.name}
+                </span>
               </div>
               
               {/* Tooltip on hover */}
