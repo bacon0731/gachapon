@@ -10,10 +10,11 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   leftIcon?: React.ReactNode
   rightIcon?: React.ReactNode
   fullWidth?: boolean
+  onRightIconClick?: () => void
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, helperText, leftIcon, rightIcon, fullWidth = true, className, id, ...props }, ref) => {
+  ({ label, error, helperText, leftIcon, rightIcon, fullWidth = true, className, id, onRightIconClick, ...props }, ref) => {
     const rid = useId()
     const inputId = id || `input-${rid}`
 
@@ -51,9 +52,13 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             {...props}
           />
           {rightIcon && (
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400 pointer-events-none">
+            <button
+              type="button"
+              onClick={onRightIconClick}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 focus:outline-none"
+            >
               {rightIcon}
-            </div>
+            </button>
           )}
         </div>
         {error && (

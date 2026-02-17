@@ -17,13 +17,25 @@ DECLARE
   v_nonce INTEGER;
   v_hash TEXT;
   v_random NUMERIC;
+  v_product_seed TEXT;
+  v_total_tickets INTEGER;
+  v_major_count INTEGER;
+  v_dec NUMERIC;
+  v_step_tmp NUMERIC := 100;
+  v_step INTEGER := 1;
+  v_max_count INTEGER := 100;
+  v_positions INTEGER[] := ARRAY[]::INTEGER[];
+  v_positions_count INTEGER := 0;
+  v_mod NUMERIC;
+  v_prize_number INTEGER;
 BEGIN
   v_user_id := auth.uid();
   IF v_user_id IS NULL THEN
     RAISE EXCEPTION 'Not authenticated';
   END IF;
 
-  SELECT price INTO v_product_price FROM products WHERE id = p_product_id;
+  SELECT price, seed, total_count INTO v_product_price, v_product_seed, v_total_tickets
+  FROM products WHERE id = p_product_id;
   IF v_product_price IS NULL THEN
     RAISE EXCEPTION 'Product not found';
   END IF;
@@ -33,17 +45,42 @@ BEGIN
      RAISE EXCEPTION 'No tickets selected';
   END IF;
 
+  SELECT COALESCE(SUM(total), 0) INTO v_major_count
+  FROM product_prizes
+  WHERE product_id = p_product_id
+    AND (level = 'SP' OR level = 'A' OR level = 'B' OR level = 'C');
+
+  IF v_product_seed IS NOT NULL AND v_total_tickets IS NOT NULL AND v_major_count > 0 THEN
+    v_dec := (('x' || v_product_seed)::bit(256))::numeric;
+    WHILE v_step <= v_max_count AND v_positions_count < v_major_count LOOP
+      v_mod := mod(v_dec / (v_step_tmp ^ v_step), v_total_tickets);
+      v_prize_number := (v_mod::integer) + 1;
+      IF v_prize_number <> ALL (v_positions) THEN
+        v_positions := array_append(v_positions, v_prize_number);
+        v_positions_count := v_positions_count + 1;
+      END IF;
+      v_step := v_step + 1;
+    END LOOP;
+  END IF;
+
   FOREACH v_ticket_no IN ARRAY p_ticket_numbers LOOP
     -- Check if ticket is already taken
     IF EXISTS (SELECT 1 FROM draw_records WHERE product_id = p_product_id AND ticket_number = v_ticket_no) THEN
         RAISE EXCEPTION 'Ticket % is already sold', v_ticket_no;
     END IF;
 
-    -- Pick a random prize (EXCLUDING Last One)
-    SELECT * INTO v_prize FROM product_prizes 
-    WHERE product_id = p_product_id AND remaining > 0 AND level != 'Last One' AND level != 'LAST ONE'
-    ORDER BY random() * probability DESC
-    LIMIT 1;
+    IF v_positions_count > 0 AND v_ticket_no = ANY (v_positions) THEN
+      SELECT * INTO v_prize FROM product_prizes 
+      WHERE product_id = p_product_id AND remaining > 0 
+        AND (level = 'SP' OR level = 'A' OR level = 'B' OR level = 'C')
+      ORDER BY random() * probability DESC
+      LIMIT 1;
+    ELSE
+      SELECT * INTO v_prize FROM product_prizes 
+      WHERE product_id = p_product_id AND remaining > 0 AND level != 'Last One' AND level != 'LAST ONE'
+      ORDER BY random() * probability DESC
+      LIMIT 1;
+    END IF;
 
     IF v_prize IS NULL THEN
       RAISE EXCEPTION 'No prizes left';

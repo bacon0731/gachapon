@@ -174,18 +174,26 @@ export const PrizeResultModal: React.FC<PrizeResultModalProps> = ({
                             isLastOne && "border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 ring-2 ring-yellow-400 ring-offset-2 dark:ring-offset-neutral-900 shadow-sm"
                           )}
                         >
-                          <span className={cn(
-                            "font-amount font-black leading-none tracking-wider text-base",
-                            "text-neutral-400 dark:text-neutral-600"
-                          )}>
-                            {isLastOne ? "LAST" : String(prize.ticket_number).padStart(2, '0')}
+                          <span
+                            className={cn(
+                              "font-amount font-black leading-none tracking-wider text-base",
+                              "font-[Chiron_GoRound_TC]",
+                              isLastOne
+                                ? "text-yellow-600 dark:text-yellow-500"
+                                : "text-neutral-400 dark:text-neutral-600"
+                            )}
+                          >
+                            {isLastOne ? "最後賞" : String(prize.ticket_number).padStart(2, "0")}
                           </span>
-                          <span className={cn(
-                            "text-base font-black font-amount leading-none text-center mt-1",
-                            isSpecial ? "text-accent-red" : "text-neutral-400 dark:text-neutral-600",
-                            isLastOne && "text-yellow-600 dark:text-yellow-500"
-                          )}>
-                            {prize.grade.replace('賞', '')}賞
+                          <span
+                            className={cn(
+                              "text-base font-black font-amount leading-none text-center mt-1",
+                              "font-[\"Chiron_GoRound_TC\"]",
+                              isSpecial ? "text-accent-red" : "text-neutral-400 dark:text-neutral-600",
+                              isLastOne && "text-yellow-600 dark:text-yellow-500"
+                            )}
+                          >
+                            {isLastOne ? "" : `${prize.grade.replace("賞", "")}賞`}
                           </span>
                         </motion.div>
                       );

@@ -21,6 +21,16 @@ import { PrizeResultModal } from '@/components/shop/PrizeResultModal';
 import { TicketSelectionFlow } from '@/components/shop/TicketSelectionFlow';
 import { GachaProductDetail } from '@/components/shop/GachaProductDetail';
 
+const normalizePrizeLevel = (level: string | null | undefined) => {
+  if (!level) return '';
+  const trimmed = level.trim();
+  if (trimmed === 'Last One') return 'Last One';
+  if (trimmed.endsWith('賞')) return trimmed.slice(0, -1);
+  return trimmed;
+};
+
+const HIGH_TIER_LEVELS = ['SP', 'A', 'B', 'C', 'Last One'];
+
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -420,6 +430,35 @@ export default function ProductDetailPage() {
     ? validPrizes.reduce((acc, prize) => acc + prize.total, 0)
     : product.total_count;
 
+  const majorPrizeLevelsRaw = (product.major_prizes as string[] | null) ?? [];
+  const normalizedMajorLevels = majorPrizeLevelsRaw.map((level) => normalizePrizeLevel(level));
+
+  const highTierFromPrizes =
+    prizes
+      .map((p) => normalizePrizeLevel(p.level))
+      .filter((level) => HIGH_TIER_LEVELS.includes(level)) ?? [];
+
+  const levelsForMajorCount = Array.from(
+    new Set([
+      ...normalizedMajorLevels.filter((level) => HIGH_TIER_LEVELS.includes(level)),
+      ...highTierFromPrizes,
+    ]),
+  );
+
+  const majorPrizeCount =
+    prizes
+      .filter((p) => levelsForMajorCount.includes(normalizePrizeLevel(p.level)))
+      .reduce((sum, p) => sum + (p.total || 0), 0) || undefined;
+
+  const fairnessSeed = product.seed || product.txid_hash || '';
+
+  const fairnessHref =
+    fairnessSeed && majorPrizeCount && totalItems
+      ? `/fairness/${product.id}?txid=${encodeURIComponent(
+          fairnessSeed,
+        )}&prizeCount=${majorPrizeCount}&totalTickets=${totalItems}`
+      : `/fairness/${product.id}`;
+
   if (product.type === 'gacha') {
     return <GachaProductDetail product={product} prizes={prizes} />;
   }
@@ -628,10 +667,9 @@ export default function ProductDetailPage() {
                         
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1.5">
-                             <span className="px-2 py-0.5 bg-yellow-400 text-neutral-900 text-[10px] font-black rounded uppercase tracking-wider shadow-lg shadow-yellow-400/30">
-                               LAST ONE
+                             <span className="px-2 py-0.5 bg-yellow-400 text-neutral-900 text-[10px] font-black rounded tracking-wider shadow-lg shadow-yellow-400/30 font-[Chiron_GoRound_TC]">
+                               最後賞
                              </span>
-                             <span className="text-[10px] sm:text-xs text-yellow-700 dark:text-yellow-400 font-bold uppercase tracking-wider">最後賞</span>
                           </div>
                           <h3 className="text-base sm:text-lg font-black text-neutral-900 dark:text-neutral-50 leading-tight mb-1 truncate">
                             {lastOnePrize.name}
@@ -738,7 +776,7 @@ export default function ProductDetailPage() {
                     大賞位置驗證：
                   </div>
                   <Link
-                    href={`/fairness/${product.id}`}
+                    href={fairnessHref}
                     className="inline-flex items-center justify-center px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-primary text-white text-[13px] sm:text-sm font-black shadow-sm hover:bg-primary/90 transition-colors"
                   >
                     前往大賞位置驗證頁面

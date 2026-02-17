@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
@@ -21,6 +21,7 @@ const HIGH_TIER_LEVELS = ['SP', 'A', 'B', 'C', 'Last One'];
 
 export default function FairnessVerifyPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const [supabase] = useState(() => createClient());
   const [product, setProduct] = useState<ProductRow | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -70,25 +71,41 @@ export default function FairnessVerifyPage() {
           const inferredMajorCount = majorLevels.length || undefined;
           const inferredTotalTickets = data.total_count || undefined;
 
-          setMajorPrizeCount(inferredMajorCount);
-          setTotalTickets(inferredTotalTickets);
+          const paramPrizeCount = searchParams?.get('prizeCount');
+          const paramTotalTickets = searchParams?.get('totalTickets');
+          const paramTxid = searchParams?.get('txid');
 
-          setTxidInput(data.txid_hash || data.seed || '');
-          setPrizeCountInput(inferredMajorCount ? String(inferredMajorCount) : '');
-          setTagCountInput(inferredTotalTickets ? String(inferredTotalTickets) : '');
+          const finalMajorCount =
+            paramPrizeCount && !Number.isNaN(Number(paramPrizeCount))
+              ? Number(paramPrizeCount)
+              : inferredMajorCount;
+          const finalTotalTickets =
+            paramTotalTickets && !Number.isNaN(Number(paramTotalTickets))
+              ? Number(paramTotalTickets)
+              : inferredTotalTickets;
+          const finalTxid = paramTxid || data.seed || data.txid_hash || '';
+
+          setMajorPrizeCount(finalMajorCount);
+          setTotalTickets(finalTotalTickets);
+
+          setTxidInput(finalTxid);
+          setPrizeCountInput(finalMajorCount ? String(finalMajorCount) : '');
+          setTagCountInput(finalTotalTickets ? String(finalTotalTickets) : '');
         } else {
           const totalFromPrizes =
             prizeRows?.reduce((sum, p) => sum + (p.total || 0), 0) ?? 0;
 
-          const inferredLevelsFromPrizes =
+          const highTierFromPrizes =
             prizeRows
               ?.map((p) => normalizePrizeLevel(p.level))
               .filter((level) => HIGH_TIER_LEVELS.includes(level)) ?? [];
 
-          const levelsForMajorCount =
-            normalizedMajorLevels.length > 0
-              ? normalizedMajorLevels
-              : Array.from(new Set(inferredLevelsFromPrizes));
+          const levelsForMajorCount = Array.from(
+            new Set([
+              ...normalizedMajorLevels.filter((level) => HIGH_TIER_LEVELS.includes(level)),
+              ...highTierFromPrizes,
+            ]),
+          );
 
           const majorCount =
             prizeRows
@@ -98,12 +115,26 @@ export default function FairnessVerifyPage() {
           const inferredMajorCount = majorCount || undefined;
           const inferredTotalTickets = data.total_count || totalFromPrizes || undefined;
 
-          setMajorPrizeCount(inferredMajorCount);
-          setTotalTickets(inferredTotalTickets);
+          const paramPrizeCount = searchParams?.get('prizeCount');
+          const paramTotalTickets = searchParams?.get('totalTickets');
+          const paramTxid = searchParams?.get('txid');
 
-          setTxidInput(data.txid_hash || data.seed || '');
-          setPrizeCountInput(inferredMajorCount ? String(inferredMajorCount) : '');
-          setTagCountInput(inferredTotalTickets ? String(inferredTotalTickets) : '');
+          const finalMajorCount =
+            paramPrizeCount && !Number.isNaN(Number(paramPrizeCount))
+              ? Number(paramPrizeCount)
+              : inferredMajorCount;
+          const finalTotalTickets =
+            paramTotalTickets && !Number.isNaN(Number(paramTotalTickets))
+              ? Number(paramTotalTickets)
+              : inferredTotalTickets;
+          const finalTxid = paramTxid || data.seed || data.txid_hash || '';
+
+          setMajorPrizeCount(finalMajorCount);
+          setTotalTickets(finalTotalTickets);
+
+          setTxidInput(finalTxid);
+          setPrizeCountInput(finalMajorCount ? String(finalMajorCount) : '');
+          setTagCountInput(finalTotalTickets ? String(finalTotalTickets) : '');
         }
       } catch (err) {
         console.error('載入商品失敗', err);
@@ -114,7 +145,7 @@ export default function FairnessVerifyPage() {
     };
 
     fetchProduct();
-  }, [params, supabase]);
+  }, [params, supabase, searchParams]);
 
   const seed = product?.seed || '';
 
@@ -158,25 +189,27 @@ export default function FairnessVerifyPage() {
         typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
       const txidInt = BigInt('0x' + hex);
 
-      const result: number[] = [];
+      const indexes: number[] = [];
       const stepBase = 100n;
       let step = 1;
       const maxCount = 100;
       let lastStep = 0;
 
-      while (step <= maxCount && result.length < prizeCount) {
+      while (step <= maxCount && indexes.length < prizeCount) {
         const powResult = stepBase ** BigInt(step);
         const div = txidInt / powResult;
         const mod = div % BigInt(tagCount);
-        const prizeNumber = Number(mod) + 1;
+        const index = Number(mod);
 
-        if (!result.includes(prizeNumber)) {
-          result.push(prizeNumber);
+        if (!indexes.includes(index)) {
+          indexes.push(index);
         }
 
         lastStep = step;
         step += 1;
       }
+
+      const result = indexes.map((v) => v + 1).sort((a, b) => a - b);
 
       const endTime =
         typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
@@ -196,7 +229,7 @@ export default function FairnessVerifyPage() {
   };
 
   const phpTxid =
-    txidInput.trim() || product?.txid_hash || seed || '在此填入平台提供的 TXID Hash';
+    txidInput.trim() || seed || product?.txid_hash || '在此填入平台提供的隨機種子';
   const phpPrizeCount =
     parsedPrizeCount !== null
       ? parsedPrizeCount
@@ -211,7 +244,7 @@ export default function FairnessVerifyPage() {
         : 0;
 
   const phpCode = `<?php
-// 請填入本平台提供的 TXID Hash 並填入在單引號內
+// 請填入本平台提供的隨機種子（TXID）並填入在單引號內
 $txid = '${phpTxid}';
 
 // 總共幾個大賞
@@ -248,6 +281,7 @@ try {
         $step++;
     }
 
+    sort($prize_tmp);
     echo implode(', ', $prize_tmp);
 } catch (\\Exception $e) {
     echo $e->getMessage();

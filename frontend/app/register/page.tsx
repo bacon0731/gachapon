@@ -1,9 +1,9 @@
 'use client';
 
-import React, { Suspense, useEffect } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Mail, Lock, User } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
 import { Button, Input } from '@/components/ui';
 import { useToast } from '@/components/ui/Toast';
 import { signup } from '../login/actions';
@@ -16,6 +16,7 @@ function RegisterContent() {
   const router = useRouter();
   const message = searchParams.get('message');
   const error = searchParams.get('error');
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (error) {
@@ -107,11 +108,13 @@ function RegisterContent() {
               <Input
                 label="設定密碼"
                 name="password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 required
                 minLength={6}
                 leftIcon={<Lock className="w-4 h-4" />}
+                rightIcon={showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                onRightIconClick={() => setShowPassword(prev => !prev)}
                 className="bg-neutral-50/50 dark:bg-neutral-800/50 border-transparent focus:bg-white dark:focus:bg-neutral-800 transition-all"
               />
 

@@ -511,7 +511,7 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
     const showResultsButton = hasLastOne || isFinished;
 
     return (
-      <div className="fixed inset-0 z-[2000] bg-neutral-900 flex flex-col items-center justify-center p-3 pb-safe overflow-hidden pt-1 md:pt-24">
+      <div className="fixed inset-0 z-[2000] bg-neutral-900 flex flex-col items-center justify-center p-3 pb-safe overflow-hidden pt-1 md:pt-12">
         <AnimatePresence>
           {showLastOneCelebration && (
             <LastOneCelebrationModal onClose={() => setShowLastOneCelebration(false)} />

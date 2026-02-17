@@ -220,6 +220,8 @@ interface GroupedDrawHistoryItem {
     ticket_number: number;
     created_at: string;
     status: string;
+    prize_level?: string | null;
+    prize_name?: string | null;
     product_prizes: {
       level: string;
       name: string;
@@ -355,6 +357,8 @@ function ProfileContent() {
               ticket_number,
               created_at,
               status,
+              prize_level,
+              prize_name,
               product_prizes ( level, name, image_url, recycle_value, total ),
               products ( name, price )
             `)
@@ -369,6 +373,9 @@ function ProfileContent() {
             const price = item.products?.price || 0;
             const quantity = item.product_prizes?.total || 0;
 
+            const grade = item.product_prizes?.level || item.prize_level || '?';
+            const name = item.product_prizes?.name || item.prize_name || '未知獎品';
+
             if (price > 0) {
               if (quantity >= 1 && quantity <= 4) {
                 recycleValue = Math.floor(price / 2);
@@ -379,9 +386,9 @@ function ProfileContent() {
 
             return {
               id: item.id.toString(),
-              name: item.product_prizes?.name || '未知獎品',
+              name,
               series: item.products?.name || '未知系列',
-              grade: item.product_prizes?.level || '?',
+              grade,
               status: item.status as WarehouseItem['status'],
               image: item.product_prizes?.image_url || 'https://placehold.co/400',
               date: new Date(item.created_at).toLocaleString('zh-TW'),
@@ -397,6 +404,8 @@ function ProfileContent() {
               id,
               created_at,
               status,
+              prize_level,
+              prize_name,
               product_prizes ( level, name, image_url, recycle_value ),
               products ( name )
             `)
@@ -406,15 +415,20 @@ function ProfileContent() {
             
           if (error) throw error;
 
-          const items = (data as unknown as DbDrawRecord[]).map((item) => ({
-            id: item.id.toString(),
-            name: item.product_prizes?.name || '未知獎品',
-            series: item.products?.name || '未知系列',
-            grade: item.product_prizes?.level || '?',
-            image: item.product_prizes?.image_url || 'https://placehold.co/400',
-            dismantled_at: new Date(item.created_at).toLocaleDateString('zh-TW'), // Actually this is transaction time, but close enough or I should track update time
-            recycleValue: item.product_prizes?.recycle_value || 0
-          }));
+          const items = (data as unknown as DbDrawRecord[]).map((item) => {
+            const grade = item.product_prizes?.level || item.prize_level || '?';
+            const name = item.product_prizes?.name || item.prize_name || '未知獎品';
+
+            return {
+              id: item.id.toString(),
+              name,
+              series: item.products?.name || '未知系列',
+              grade,
+              image: item.product_prizes?.image_url || 'https://placehold.co/400',
+              dismantled_at: new Date(item.created_at).toLocaleDateString('zh-TW'),
+              recycleValue: item.product_prizes?.recycle_value || 0
+            };
+          });
           setDismantledItems(items);
         }
       } 
@@ -501,6 +515,8 @@ function ProfileContent() {
             id,
             ticket_number,
             created_at,
+            prize_level,
+            prize_name,
             product_prizes ( level, name ),
             products ( name, price )
           `)
@@ -517,20 +533,23 @@ function ProfileContent() {
           const currentTimestamp = item.created_at;
           const lastGroup = groupedHistory.length > 0 ? groupedHistory[groupedHistory.length - 1] : null;
           
+          const grade = item.product_prizes?.level || item.prize_level || '?';
+          const name = item.product_prizes?.name || item.prize_name || '未知';
+
           if (lastGroup && lastGroup._rawDate === currentTimestamp && lastGroup.product === item.products?.name) {
-             lastGroup.tickets.push(item.ticket_number?.toString());
-             lastGroup.cost += (item.products?.price || 0);
-             lastGroup.items.push({ grade: item.product_prizes?.level || '?', name: item.product_prizes?.name || '?', ticket_number: item.ticket_number?.toString() });
+            lastGroup.tickets.push(item.ticket_number?.toString());
+            lastGroup.cost += (item.products?.price || 0);
+            lastGroup.items.push({ grade, name, ticket_number: item.ticket_number?.toString() });
           } else {
-             groupedHistory.push({
-               _rawDate: currentTimestamp,
-               id: item.id,
-               product: item.products?.name || '未知',
-               date: new Date(item.created_at).toLocaleString('zh-TW'),
-               tickets: [item.ticket_number?.toString()],
-               cost: item.products?.price || 0,
-               items: [{ grade: item.product_prizes?.level || '?', name: item.product_prizes?.name || '?', ticket_number: item.ticket_number?.toString() }]
-             });
+            groupedHistory.push({
+              _rawDate: currentTimestamp,
+              id: item.id,
+              product: item.products?.name || '未知',
+              date: new Date(item.created_at).toLocaleString('zh-TW'),
+              tickets: [item.ticket_number?.toString()],
+              cost: item.products?.price || 0,
+              items: [{ grade, name, ticket_number: item.ticket_number?.toString() }]
+            });
           }
         });
 
