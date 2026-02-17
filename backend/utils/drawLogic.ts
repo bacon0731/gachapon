@@ -74,13 +74,23 @@ export function generateTXID(seed: string, nonce: number): TXID {
 }
 
 /**
- * 計算 TXID 的哈希值
+ * 計算 TXID 的哈希值（單次抽獎用）
  * @param txid TXID 物件
  * @returns SHA256 哈希值（十六進制字串）
  */
 export function calculateTXIDHash(txid: TXID): string {
   const txidString = `${txid.seed}:${txid.nonce}`
   return crypto.createHash('sha256').update(txidString).digest('hex')
+}
+
+/**
+ * 計算商品級別的 Seed 哈希值（玩家驗證用）
+ * Hash = SHA256(seed)
+ * @param seed 隨機數種子
+ * @returns SHA256 哈希值（十六進制字串）
+ */
+export function calculateSeedHash(seed: string): string {
+  return crypto.createHash('sha256').update(seed).digest('hex')
 }
 
 // ==================== 隨機數生成 ====================

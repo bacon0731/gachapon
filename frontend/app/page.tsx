@@ -63,6 +63,15 @@ export default function Home() {
   }, [fetchData]);
 
   useEffect(() => {
+    if (!isLoading) return;
+    const timeoutId = setTimeout(() => {
+      setIsLoading(false);
+      setLoadError((prev) => prev || '載入逾時或失敗，請稍後重試');
+    }, 10000);
+    return () => clearTimeout(timeoutId);
+  }, [isLoading]);
+
+  useEffect(() => {
     const channel = supabase
       .channel('realtime-products-home')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {

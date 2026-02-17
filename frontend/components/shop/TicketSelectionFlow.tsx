@@ -242,15 +242,28 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
 
   useEffect(() => {
     if (!product) return;
-    const remaining = typeof remainingTickets === 'number'
-      ? remainingTickets
-      : totalTicketsCount - soldTickets.length;
+    const remaining = Math.max(totalTicketsCount - soldTickets.length, 0);
     const isEnded = product.status === 'ended' || remaining <= 0;
-    if (isEnded && !hasTriggeredAutoResults && !showResultModal && !isFetchingFullResults) {
+    const hasLocalResults = drawnResults.length > 0;
+    if (
+      isEnded &&
+      !hasLocalResults &&
+      !hasTriggeredAutoResults &&
+      !showResultModal &&
+      !isFetchingFullResults
+    ) {
       setHasTriggeredAutoResults(true);
       handleShowFullResults();
     }
-  }, [product, totalTicketsCount, soldTickets.length, remainingTickets, hasTriggeredAutoResults, showResultModal, isFetchingFullResults]);
+  }, [
+    product,
+    totalTicketsCount,
+    soldTickets.length,
+    drawnResults.length,
+    hasTriggeredAutoResults,
+    showResultModal,
+    isFetchingFullResults,
+  ]);
 
   const toggleTicket = (num: number) => {
     if (soldTickets.includes(num)) return;
@@ -418,7 +431,9 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
           console.warn('Last One fallback check failed', e);
         }
       }
-      
+
+      onRefreshProduct?.();
+
       setShowConfirm(false); // Close confirmation modal
       
     } catch (err: unknown) {
@@ -459,11 +474,13 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
   };
 
   const handleBackToProduct = () => {
+    onRefreshProduct?.();
+
     if (onClose) {
       onClose();
-      onRefreshProduct?.();
       return;
     }
+
     if (params?.id) {
       router.push(`/shop/${params.id}`);
     } else if (product?.id) {
@@ -489,6 +506,9 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
     const hasLastOne = drawnResults.some(r => r.is_last_one);
     const normalTickets = drawnResults.filter(r => !r.is_last_one);
     const allNormalOpened = normalTickets.length === 0 || normalTickets.every(r => r.isOpened);
+    const ticketsRemaining = Math.max(totalTicketsCount - soldTickets.length, 0);
+    const isFinished = ticketsRemaining <= 0 || product.status === 'ended';
+    const showResultsButton = hasLastOne || isFinished;
 
     return (
       <div className="fixed inset-0 z-[2000] bg-neutral-900 flex flex-col items-center justify-center p-3 pb-safe overflow-hidden pt-1 md:pt-24">
@@ -538,7 +558,7 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
-              className="flex-1 overflow-y-auto p-3 md:p-4 custom-scrollbar pb-28 md:pb-32 mt-2 md:mt-12 lg:mt-24"
+              className="flex-1 overflow-y-auto p-3 md:p-4 custom-scrollbar pb-28 md:pb-32 mt-2"
             >
                <div className={cn(
                 "grid gap-3 md:gap-x-12 md:gap-y-14 w-full",
@@ -598,7 +618,7 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
           {!allOpened ? (
             <Button 
               onClick={handleOpenAll} 
-              className="w-full h-[44px] md:h-[52px] rounded-xl text-base md:text-lg font-black bg-[#3B82F6] hover:bg-[#2563EB] text-white shadow-xl shadow-blue-500/20"
+              className="w-full md:w-[320px] h-[44px] md:h-[52px] rounded-xl text-base md:text-lg font-black bg-[#3B82F6] hover:bg-[#2563EB] text-white shadow-xl shadow-blue-500/20"
             >
               全部開啟
             </Button>
@@ -618,7 +638,7 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
               </Button>
               <Button 
                 onClick={() => {
-                  if (hasLastOne) {
+                  if (showResultsButton) {
                     handleShowFullResults();
                   } else {
                     handleContinueDraw();
@@ -626,12 +646,12 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
                 }} 
                 className={cn(
                   "flex-1 md:flex-none md:w-[180px] h-[44px] md:h-[52px] rounded-xl text-base md:text-lg font-black shadow-xl transition-colors whitespace-nowrap",
-                  hasLastOne 
+                  showResultsButton 
                     ? "bg-neutral-900 hover:bg-neutral-800 text-white shadow-neutral-900/20" 
                     : "bg-accent-red hover:bg-accent-red/90 text-white shadow-accent-red/20"
                 )}
               >
-                {hasLastOne ? "查看結果" : "繼續抽獎"}
+                {showResultsButton ? "查詢結果" : "繼續抽獎"}
               </Button>
             </div>
           )}
@@ -664,7 +684,20 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
       <div className="flex items-center justify-between p-4 border-b border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 fixed top-0 left-0 right-0 z-10 shrink-0 md:sticky md:top-0">
         <h3 className="text-lg font-black text-neutral-900 dark:text-white">選擇籤號</h3>
         <button 
-          onClick={() => onClose ? onClose() : router.back()}
+          onClick={() => {
+            onRefreshProduct?.();
+
+            if (onClose) {
+              onClose();
+              return;
+            }
+
+            if (params?.id) {
+              router.push(`/shop/${params.id}`);
+            } else {
+              router.back();
+            }
+          }}
           className="w-6 h-6 flex items-center justify-center hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full transition-colors"
         >
           <X className="w-6 h-6 text-neutral-500" />

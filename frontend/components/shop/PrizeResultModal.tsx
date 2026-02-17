@@ -137,25 +137,11 @@ export const PrizeResultModal: React.FC<PrizeResultModalProps> = ({
               </button>
             </div>
             {/* Loading View */}
-            {isLoading ? (
+            {isLoading || !showContent ? (
                <div className="flex-1 flex flex-col items-center justify-center min-h-[400px]">
                  <Loader2 className="w-8 h-8 text-neutral-500 dark:text-neutral-400 animate-spin" />
                  <p className="mt-4 text-sm font-bold text-neutral-500 dark:text-neutral-400">正在載入抽獎結果...</p>
                </div>
-            ) : !showContent ? (
-              <div className="flex-1 flex flex-col items-center justify-center min-h-[400px] p-8 space-y-6">
-                 <div className="relative w-24 h-24 flex items-center justify-center">
-                  <div className="absolute inset-0 border-4 border-neutral-100 dark:border-neutral-800 rounded-full" />
-                  <div className="absolute inset-0 border-t-4 border-accent-yellow rounded-full animate-spin" />
-                  <div className="text-4xl animate-bounce">🎁</div>
-                </div>
-                <div className="text-center space-y-2">
-                  <h2 className="text-2xl font-black text-neutral-900 dark:text-white tracking-widest">
-                    獎項結算中...
-                  </h2>
-                  <p className="text-neutral-500 dark:text-neutral-400 font-bold">恭喜中獎！</p>
-                </div>
-              </div>
             ) : (
               /* Result View */
               <>
@@ -195,7 +181,7 @@ export const PrizeResultModal: React.FC<PrizeResultModalProps> = ({
                             {isLastOne ? "LAST" : String(prize.ticket_number).padStart(2, '0')}
                           </span>
                           <span className={cn(
-                            "text-xs font-black font-amount leading-none text-center mt-1",
+                            "text-base font-black font-amount leading-none text-center mt-1",
                             isSpecial ? "text-accent-red" : "text-neutral-400 dark:text-neutral-600",
                             isLastOne && "text-yellow-600 dark:text-yellow-500"
                           )}>

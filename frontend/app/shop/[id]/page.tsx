@@ -680,11 +680,29 @@ export default function ProductDetailPage() {
                   <div className="text-[13px] sm:text-sm font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest flex items-center gap-2">
                     <Trophy className="w-3.5 h-3.5" /> 隨機種子 (TXID)
                   </div>
-                  <div className={cn(
-                    "bg-neutral-50 dark:bg-neutral-800 border border-neutral-100 dark:border-neutral-700 rounded-2xl px-3 sm:px-5 py-3 sm:py-4 text-[13px] sm:text-sm font-black tracking-widest uppercase",
-                    (totalRemaining === 0 && product.seed) ? "text-neutral-600 dark:text-neutral-400 font-amount break-all" : "text-neutral-400 dark:text-neutral-500"
-                  )}>
-                    {(totalRemaining === 0 && product.seed) ? product.seed : '完抽後公布'}
+                  <div className="flex items-center gap-2">
+                    <code
+                      className={cn(
+                        "flex-1 bg-neutral-50 dark:bg-neutral-800 border border-neutral-100 dark:border-neutral-700 rounded-2xl px-3 sm:px-5 py-3 sm:py-4 text-[13px] sm:text-sm font-black font-mono break-all whitespace-pre-wrap min-h-[3.25rem]",
+                        (totalRemaining === 0 && product.seed) ? "text-neutral-600 dark:text-neutral-400" : "text-neutral-400 dark:text-neutral-500 tracking-widest"
+                      )}
+                    >
+                      {(totalRemaining === 0 && product.seed) ? product.seed : '完抽後公布'}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!(totalRemaining === 0 && product.seed)) return
+                        try {
+                          await navigator.clipboard.writeText(product.seed as string)
+                        } catch (error) {
+                          console.error('複製隨機種子失敗:', error)
+                        }
+                      }}
+                      className="p-3 sm:p-4 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-2xl text-neutral-400 dark:text-neutral-500 transition-colors shrink-0 group shadow-soft bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800"
+                    >
+                      <Copy className="w-3.5 h-3.5 group-active:scale-90 transition-transform" />
+                    </button>
                   </div>
                 </div>
                 
@@ -693,15 +711,40 @@ export default function ProductDetailPage() {
                     <FileCheck className="w-3.5 h-3.5" /> 哈希值 (TXID Hash)
                   </div>
                   <div className="flex items-center gap-2">
-                    <code className="flex-1 bg-neutral-50 dark:bg-neutral-800 border border-neutral-100 dark:border-neutral-700 rounded-2xl px-3 sm:px-5 py-3 sm:py-4 text-[13px] sm:text-sm font-amount text-neutral-600 dark:text-neutral-400 truncate font-bold leading-relaxed">
+                    <code className="flex-1 bg-neutral-50 dark:bg-neutral-800 border border-neutral-100 dark:border-neutral-700 rounded-2xl px-3 sm:px-5 py-3 sm:py-4 text-[13px] sm:text-sm font-mono text-neutral-600 dark:text-neutral-400 font-bold leading-relaxed break-all whitespace-pre-wrap min-h-[3.25rem]">
                       {product.txid_hash || 'Hash generating...'}
                     </code>
-                    <button className="p-3 sm:p-4 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-2xl text-neutral-400 dark:text-neutral-500 transition-colors shrink-0 group shadow-soft bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!product.txid_hash) return
+                        try {
+                          await navigator.clipboard.writeText(product.txid_hash)
+                        } catch (error) {
+                          console.error('複製哈希值失敗:', error)
+                        }
+                      }}
+                      className="p-3 sm:p-4 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-2xl text-neutral-400 dark:text-neutral-500 transition-colors shrink-0 group shadow-soft bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800"
+                    >
                       <Copy className="w-3.5 h-3.5 group-active:scale-90 transition-transform" />
                     </button>
                   </div>
                 </div>
               </div>
+
+              {totalRemaining === 0 && product.seed && product.txid_hash && (
+                <div className="pt-3 sm:pt-4 border-t border-neutral-100 dark:border-neutral-800 space-y-2">
+                  <div className="text-[13px] sm:text-sm font-black text-neutral-500 dark:text-neutral-400">
+                    大賞位置驗證：
+                  </div>
+                  <Link
+                    href={`/fairness/${product.id}`}
+                    className="inline-flex items-center justify-center px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-primary text-white text-[13px] sm:text-sm font-black shadow-sm hover:bg-primary/90 transition-colors"
+                  >
+                    前往大賞位置驗證頁面
+                  </Link>
+                </div>
+              )}
             </div>
 
             {/* Product Meta Info */}
@@ -842,18 +885,18 @@ export default function ProductDetailPage() {
             </div>
           </div>
           <Button 
-            onClick={product.remaining === 0 ? handleShowResults : handleDrawClick}
+            onClick={totalRemaining === 0 ? handleShowResults : handleDrawClick}
             size="lg"
             className={cn(
               "flex-1 h-[44px] text-base font-black rounded-xl shadow-xl transition-all active:scale-[0.95]",
-              product.remaining === 0 
+              totalRemaining === 0 
                 ? "bg-neutral-900 dark:bg-neutral-50 text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-200 shadow-neutral-900/20"
                 : "shadow-accent-red/20"
             )}
-            variant={product.remaining === 0 ? "secondary" : "danger"}
+            variant={totalRemaining === 0 ? "secondary" : "danger"}
             disabled={false}
           >
-            {product.remaining === 0 ? '已完抽 (查看結果)' : (product.type === 'ichiban' ? '立即抽獎' : '立即轉蛋')}
+            {totalRemaining === 0 ? '已完抽 (查看結果)' : (product.type === 'ichiban' ? '立即抽獎' : '立即轉蛋')}
           </Button>
         </div>
       </div>

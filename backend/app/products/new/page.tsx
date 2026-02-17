@@ -186,7 +186,7 @@ export default function NewProductPage() {
       const productData = {
         name: formData.name,
         category: formData.category,
-        category_id: formData.categoryId,
+        category_id: formData.categoryId || null,
         type: formData.type,
         price: parseInt(formData.price) || 0,
         remaining: remaining,
@@ -200,20 +200,56 @@ export default function NewProductPage() {
         rarity: formData.rarity,
         major_prizes: formData.majorPrizes.length > 0 ? formData.majorPrizes : ['A賞'],
         started_at: startedAt,
-        product_code: 'PENDING', // Will update after insert
+        product_code: 'PENDING',
         image_url: productImageUrl || '/images/item.png'
       }
 
+      let newProductId: number
+      let newProductCode: string
+
+      // 2.1 Insert Product（含 major_prizes），若陣列欄位格式錯誤則退回使用預設值重試
       const { data: newProduct, error: insertError } = await supabase
         .from('products')
         .insert(productData)
         .select()
         .single()
 
-      if (insertError) throw insertError
+      if (insertError) {
+        const msg = insertError.message || ''
+        console.error('Insert product failed, will check for array error:', msg)
 
-      const newProductId = newProduct.id
-      const newProductCode = String(newProductId).padStart(5, '0')
+        const isArrayFormatError =
+          msg.includes('array') ||
+          msg.includes('[]') ||
+          msg.includes('陣列') ||
+          msg.includes('ARRAY')
+
+        if (isArrayFormatError) {
+          const fallbackData = { ...productData }
+          // 讓資料庫使用 major_prizes 預設值
+          delete (fallbackData as any).major_prizes
+
+          const { data: retryProduct, error: retryError } = await supabase
+            .from('products')
+            .insert(fallbackData)
+            .select()
+            .single()
+
+          if (!retryProduct || retryError) {
+            const retryMsg = retryError?.message || ''
+            console.error('Retry insert product without major_prizes failed:', retryMsg || retryError)
+            throw (retryError || insertError)
+          }
+
+          newProductId = retryProduct.id
+          newProductCode = String(newProductId).padStart(5, '0')
+        } else {
+          throw insertError
+        }
+      } else {
+        newProductId = newProduct.id
+        newProductCode = String(newProductId).padStart(5, '0')
+      }
 
       // 3. Update Product Code
       await supabase
@@ -269,12 +305,36 @@ export default function NewProductPage() {
 
       if (prizesError) throw prizesError
       
+      if (typeof window !== 'undefined' && window.crypto) {
+        try {
+          const { calculateSeedHash } = await import('@/utils/drawLogicClient')
+          const randomBytes = Array.from(window.crypto.getRandomValues(new Uint8Array(32)))
+          const seed = randomBytes.map(b => b.toString(16).padStart(2, '0')).join('')
+          const hash = await calculateSeedHash(seed)
+          
+          const { error: hashError } = await supabase
+            .from('products')
+            .update({ txid_hash: hash, seed })
+            .eq('id', newProductId)
+          
+          if (hashError) {
+            console.error('Error updating product hash:', hashError)
+          }
+        } catch (err) {
+          console.error('Error generating TXID Hash for new product:', err)
+        }
+      }
+      
       addLog('新增商品', '商品管理', `新增商品「${formData.name}」`, 'success')
       router.push('/products')
 
-    } catch (error) {
+    } catch (error: any) {
+      const msg =
+        error?.message ||
+        error?.error_description ||
+        (typeof error === 'string' ? error : '')
       console.error('Error creating product:', error)
-      alert('新增商品失敗，請稍後再試')
+      alert(`新增商品失敗：${msg || '請稍後再試'}`)
     } finally {
       setIsSubmitting(false)
     }

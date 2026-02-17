@@ -961,17 +961,16 @@ export default function ProductsPage() {
                                   p.id === product.id ? { ...p, status: newStatus } : p
                                 ))
 
-                                // 當商品上架且開賣時，自動生成 TXID Hash
-                                if (newVisibility && product.status === 'active' && product.startedAt && !product.txidHash) {
+                                // 當商品上架時，自動生成 TXID Hash（若尚未生成）
+                                const isNowActive = newStatus === 'active'
+                                if (newVisibility && isNowActive && !product.txidHash) {
                                   if (typeof window !== 'undefined' && window.crypto) {
                                     try {
-                                      const { generateTXID, calculateTXIDHash } = await import('@/utils/drawLogicClient')
+                                      const { calculateSeedHash } = await import('@/utils/drawLogicClient')
                                       const seed = Array.from(window.crypto.getRandomValues(new Uint8Array(32)))
                                         .map(b => b.toString(16).padStart(2, '0'))
                                         .join('')
-                                      const nonce = 1
-                                      const txid = generateTXID(seed, nonce)
-                                      const hash = await calculateTXIDHash(txid)
+                                      const hash = await calculateSeedHash(seed)
                                       
                                       // 更新商品數據
                                       const { error: hashError } = await supabase

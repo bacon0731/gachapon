@@ -40,12 +40,14 @@ export default function SelectTicketPage() {
         )}
 
         {/* Ticket Flow Component */}
-        <div className={cn(
-          "transition-all duration-300",
-          isDesktop ? "relative z-20 w-full max-w-[640px]" : "w-full min-h-screen"
-        )}>
-          <TicketSelectionFlow 
-            isModal={isDesktop} 
+        <div
+          className={cn(
+            "transition-all duration-300",
+            isDesktop ? "relative z-20 w-full max-w-[640px]" : "w-full min-h-screen"
+          )}
+        >
+          <TicketSelectionFlow
+            isModal={isDesktop}
             onClose={() => router.back()}
           />
         </div>

@@ -133,15 +133,15 @@ export default function RatesPage() {
     const seed = Array.from(window.crypto.getRandomValues(new Uint8Array(32)))
       .map(b => b.toString(16).padStart(2, '0'))
       .join('')
-    const nonce = 1
-    const txid = generateTXID(seed, nonce)
-    const hash = await calculateTXIDHash(txid)
+
+    const { calculateSeedHash } = await import('@/utils/drawLogicClient')
+    const hash = await calculateSeedHash(seed)
 
     setVerificationData(prev => ({
       ...prev,
       [productId]: {
         seed,
-        nonce: nonce.toString(),
+        nonce: '1',
         expectedHash: hash,
         isVerifying: false,
         result: null

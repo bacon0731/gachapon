@@ -108,10 +108,9 @@ export default function VerifyDemoPage() {
           setSeed('')  // 重置已公布的 Seed（活動結束後才公布）
           setResults(null)  // 清除之前的驗證結果
           
-          // 使用真實 Seed 計算 TXID Hash（Nonce = 1）
-          const nonceNum = 1
-          const txid = generateTXID(mappedProduct.seed, nonceNum)
-          const hash = await calculateTXIDHash(txid)
+          // 使用真實 Seed 計算商品級哈希值（Hash = SHA256(Seed)）
+          const { calculateSeedHash } = await import('@/utils/drawLogicClient')
+          const hash = await calculateSeedHash(mappedProduct.seed)
           setPublishedHash(hash)
         } else if (mappedProduct.txidHash) {
           // 如果商品有 txidHash 但沒有 Seed（舊數據或活動進行中）
@@ -132,10 +131,9 @@ export default function VerifyDemoPage() {
           setSeed('')  // 重置已公布的 Seed
           setResults(null)  // 清除之前的驗證結果
           
-          // 計算 TXID Hash
-          const nonceNum = 1
-          const txid = generateTXID(newSeed, nonceNum)
-          const hash = await calculateTXIDHash(txid)
+          // 計算商品級哈希值
+          const { calculateSeedHash } = await import('@/utils/drawLogicClient')
+          const hash = await calculateSeedHash(newSeed)
           setPublishedHash(hash)
         }
       }

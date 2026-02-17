@@ -148,7 +148,7 @@ export default function EditProductPage() {
     }
   }, [formData.status])
 
-  // 當商品上架且開賣時，自動生成 TXID Hash
+  // 當商品上架且開賣時，自動生成 TXID Hash（基於 Seed）
   useEffect(() => {
     const checkAndGenerateTXIDHash = async () => {
       // 檢查條件：狀態為 active（進行中）且有開賣時間，但還沒有 TXID Hash
@@ -163,10 +163,8 @@ export default function EditProductPage() {
             .map(b => b.toString(16).padStart(2, '0'))
             .join('')
           
-          // 使用 Nonce = 1（活動開始時的第一個抽獎）
-          const nonce = 1
-          const txid = generateTXID(seed, nonce)
-          const hash = await calculateTXIDHash(txid)
+          const { calculateSeedHash } = await import('@/utils/drawLogicClient')
+          const hash = await calculateSeedHash(seed)
           
           // 同時保存 Seed 和 TXID Hash
           setFormData(prev => ({ ...prev, txidHash: hash, seed: seed }))

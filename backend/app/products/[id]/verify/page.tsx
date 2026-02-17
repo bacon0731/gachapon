@@ -152,16 +152,18 @@ export default function ProductVerifyPage() {
             seed: productData.seed,
             txidHash: productData.txid_hash,
             majorPrizes: productData.major_prizes,
-            prizes: (productData.prizes || []).map((p: any) => ({
-              id: p.id,
-              level: p.prize_level,
-              name: p.name,
-              quantity: p.quantity,
-              remaining: p.remaining_quantity,
-              probability: p.probability,
-              imageUrl: p.image_url,
-              total: p.quantity // Map quantity to total for compatibility
-            })).sort((a: any, b: any) => a.level.localeCompare(b.level))
+            prizes: (productData.prizes || [])
+              .map((p: any) => ({
+                id: p.id,
+                level: p.prize_level || '',
+                name: p.name,
+                quantity: p.quantity,
+                remaining: p.remaining_quantity,
+                probability: p.probability,
+                imageUrl: p.image_url,
+                total: p.quantity
+              }))
+              .sort((a: any, b: any) => (a.level || '').localeCompare(b.level || ''))
           }
           setProduct(formattedProduct)
         }
@@ -854,13 +856,14 @@ verifyDraws().then(results => {
             
             {/* 統計資訊 - 從實際抽獎記錄計算 */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mb-6">
-              {product.prizes.map(prize => {
+              {product.prizes.map((prize, index) => {
                 // 使用統一的統計函數，從實際抽獎記錄計算
                 const stats = getProductPrizeStats(product)
+                const prizeKey = prize.level || String(index)
                 const prizeStats = stats[prize.level] || { total: prize.total, drawn: 0, remaining: prize.total }
                 
                 return (
-                  <div key={prize.level} className="bg-gray-50 rounded-lg p-3">
+                  <div key={prizeKey} className="bg-gray-50 rounded-lg p-3">
                     <div className="text-sm font-medium text-gray-700 mb-1">{prize.level}</div>
                     <div className="text-sm text-gray-900">
                       <span className="text-lg font-bold">{prizeStats.remaining}/{prizeStats.total}</span>
