@@ -88,9 +88,9 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 pb-20 transition-colors">
-      <div className="max-w-7xl mx-auto px-2 pt-2 sm:pt-4">
+      <div className="max-w-7xl mx-auto px-2 pt-0 sm:pt-4">
         {/* Hero Section */}
-        <section className="mb-2 sm:mb-6">
+        <section className="mb-2 sm:mb-6 -mx-2 sm:mx-0">
           {isLoading ? (
             <BannerSkeleton />
           ) : (

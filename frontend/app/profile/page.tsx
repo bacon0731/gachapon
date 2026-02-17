@@ -115,6 +115,16 @@ interface FollowedProduct {
   status: 'selling' | 'soldout' | 'coming_soon';
 }
 
+const MAJOR_LEVELS = ['SP賞', 'S賞', 'A賞', 'B賞', 'C賞', 'LAST ONE', '最後賞'];
+
+const isMajorGrade = (grade: string | undefined | null) => {
+  if (!grade) return false;
+  const trimmed = grade.trim();
+  const upper = trimmed.toUpperCase();
+  if (upper === 'LAST ONE' || trimmed === '最後賞') return true;
+  return MAJOR_LEVELS.includes(trimmed) || MAJOR_LEVELS.includes(upper);
+};
+
 interface Coupon {
   id: string;
   title: string;
@@ -890,18 +900,19 @@ function ProfileContent() {
                       >
                         <span className="text-[13px] font-black">分解 ({selectedForDelivery.length})</span>
                       </button>
-                      {/* Sell Button - Only if 1 item is selected */}
-                      {selectedForDelivery.length === 1 && (
-                        <button 
-                          onClick={() => {
-                            const item = warehouseItems.find(i => i.id === selectedForDelivery[0]);
-                            if (item) handleSellClick(item);
-                          }}
-                          className="flex items-center justify-center bg-accent-yellow text-white px-4 py-2 rounded-xl lg:rounded-2xl shadow-lg shadow-accent-yellow/30 hover:scale-105 active:scale-95 transition-all whitespace-nowrap"
-                        >
-                          <span className="text-[13px] font-black">上架市集</span>
-                        </button>
-                      )}
+                      {(() => {
+                        if (selectedForDelivery.length !== 1) return null;
+                        const item = warehouseItems.find(i => i.id === selectedForDelivery[0]);
+                        if (!item || !isMajorGrade(item.grade)) return null;
+                        return (
+                          <button
+                            onClick={() => handleSellClick(item)}
+                            className="flex items-center justify-center bg-accent-yellow text-white px-4 py-2 rounded-xl lg:rounded-2xl shadow-lg shadow-accent-yellow/30 hover:scale-105 active:scale-95 transition-all whitespace-nowrap"
+                          >
+                            <span className="text-[13px] font-black">上架市集</span>
+                          </button>
+                        );
+                      })()}
                       <button 
                         onClick={() => setShowDeliveryModal(true)}
                         className="flex items-center justify-center bg-primary text-white px-4 py-2 rounded-xl lg:rounded-2xl shadow-lg shadow-primary/30 hover:scale-105 active:scale-95 transition-all whitespace-nowrap"
@@ -928,17 +939,19 @@ function ProfileContent() {
                          >
                            分解
                          </button>
-                         {selectedForDelivery.length === 1 && (
-                            <button 
-                              onClick={() => {
-                                const item = warehouseItems.find(i => i.id === selectedForDelivery[0]);
-                                if (item) handleSellClick(item);
-                              }}
-                              className="bg-accent-yellow text-white px-3 py-2 rounded-xl shadow-lg shadow-accent-yellow/20 text-xs font-black"
-                            >
-                              上架
-                            </button>
-                         )}
+                         {(() => {
+                           if (selectedForDelivery.length !== 1) return null;
+                           const item = warehouseItems.find(i => i.id === selectedForDelivery[0]);
+                           if (!item || !isMajorGrade(item.grade)) return null;
+                           return (
+                             <button
+                               onClick={() => handleSellClick(item)}
+                               className="bg-accent-yellow text-white px-3 py-2 rounded-xl shadow-lg shadow-accent-yellow/20 text-xs font-black"
+                             >
+                               上架
+                             </button>
+                           );
+                         })()}
                          <button 
                            onClick={() => setShowDeliveryModal(true)} 
                            className="bg-primary text-white px-3 py-2 rounded-xl shadow-lg shadow-primary/20 text-xs font-black"

@@ -53,7 +53,7 @@ export default function HeroBanner({ banners }: { banners: Banner[] }) {
 
   return (
     <div 
-      className="relative w-full aspect-[1200/298] bg-neutral-100 overflow-hidden rounded-3xl shadow-card group"
+      className="relative w-full aspect-[1200/298] bg-neutral-100 overflow-hidden rounded-none shadow-none sm:rounded-3xl sm:shadow-card group"
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
