@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Database } from '@/types/database.types';
 import { GachaMachineVisual } from './GachaMachineVisual';
 import { GachaCollectionList } from './GachaCollectionList';
@@ -21,6 +21,25 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
   const { user } = useAuth();
   const { showToast } = useToast();
   const [supabase] = useState(() => createClient());
+
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const baseWidth = 375;
+    const maxWidth = 560;
+
+    const updateScale = () => {
+      if (typeof window === 'undefined') return;
+      const width = Math.min(window.innerWidth, maxWidth);
+      setScale(width / baseWidth);
+    };
+
+    updateScale();
+    window.addEventListener('resize', updateScale);
+    return () => {
+      window.removeEventListener('resize', updateScale);
+    };
+  }, []);
 
   // States
   const [machineState, setMachineState] = useState<'idle' | 'shaking' | 'spinning' | 'dropping' | 'waiting' | 'result'>('idle');
@@ -149,32 +168,73 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
   };
 
   return (
-    <div className="min-h-screen pt-14 md:pt-0 bg-black">
-      <div className="w-full max-w-[750px] mx-auto">
-        <div className="w-full">
-          <div className="relative w-full" style={{ aspectRatio: '750/1036' }}>
-            <GachaMachineVisual
-              state={machineState}
-              shakeRepeats={shakeRepeats}
-              onPush={handlePush}
-              onPurchase={handlePurchaseClick}
-              onTrial={handleTrial}
-              onHoleClick={handleHoleClick}
-              onLoaded={() => setIsMachineLoaded(true)}
-            />
-            {!isMachineLoaded && (
-              <div className="absolute inset-0 flex items-center justify-center bg-neutral-950/80">
-                <div className="flex flex-col items-center gap-3 text-white">
-                  <Loader2 className="w-8 h-8 animate-spin" />
-                  <span className="text-xs font-black tracking-widest">載入機台中...</span>
-                </div>
-              </div>
-            )}
+    <div
+      className="min-h-screen pt-14 md:pt-0 overflow-x-hidden"
+      style={{
+        backgroundImage: "url('/images/gacha/bg.png')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundColor: '#000000',
+      }}
+    >
+      <div className="w-full flex justify-center">
+        <div
+          className="relative"
+          style={{
+            width: 375,
+            transform: `scale(${scale})`,
+            transformOrigin: 'top center',
+          }}
+        >
+          <div
+            className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center px-4 rounded-full"
+            style={{
+              top: 40,
+              height: 40,
+              backgroundColor: 'rgba(0,0,0,0.7)',
+              maxWidth: 320,
+              zIndex: 20,
+              pointerEvents: 'none',
+            }}
+          >
+            <span
+              className="font-black text-center truncate"
+              style={{
+                color: '#FFFFFF',
+                fontSize: 18,
+              }}
+            >
+              {product.name}
+            </span>
           </div>
-        </div>
+          <div className="w-full max-w-[750px] mx-auto">
+            <div className="w-full">
+              <div className="relative w-full" style={{ aspectRatio: '750/1036' }}>
+                <GachaMachineVisual
+                  state={machineState}
+                  shakeRepeats={shakeRepeats}
+                  onPush={handlePush}
+                  onPurchase={handlePurchaseClick}
+                  onTrial={handleTrial}
+                  onHoleClick={handleHoleClick}
+                  onLoaded={() => setIsMachineLoaded(true)}
+                />
+                {!isMachineLoaded && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-neutral-950/80">
+                    <div className="flex flex-col items-center gap-3 text-white">
+                      <Loader2 className="w-8 h-8 animate-spin" />
+                      <span className="text-xs font-black tracking-widest">載入機台中...</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
 
-        <div className="w-full">
-          <GachaCollectionList productId={product.id} prizes={prizes} />
+            <div className="w-full">
+              <GachaCollectionList productId={product.id} prizes={prizes} />
+            </div>
+          </div>
         </div>
       </div>
 

@@ -83,7 +83,7 @@ export function GachaCollectionList({ productId, prizes }: GachaCollectionListPr
         </div>
 
         <div
-          className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-y-2 gap-x-[9%] relative h-[calc(100%-3rem)]"
+          className="grid grid-cols-3 gap-y-2 gap-x-[9%] relative h-[calc(100%-3rem)]"
           style={{ transform: 'translateY(-9%)' }}
         >
         {prizes.map((prize, index) => {

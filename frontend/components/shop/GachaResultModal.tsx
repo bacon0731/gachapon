@@ -58,10 +58,10 @@ export function GachaResultModal({ isOpen, onClose, results }: GachaResultModalP
             initial={{ scale: 0.95, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 20 }}
-            className="relative w-full flex items-center justify-center"
+            className="relative w-full max-w-[480px] sm:max-w-[520px] px-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="relative w-screen aspect-[750/810] overflow-hidden">
+            <div className="relative w-full aspect-[750/810] overflow-hidden">
               <div className="absolute flex items-center justify-center h-[62.8%] w-[83.5%] left-[7.2%] top-[28.3%]">
                 <div className="flex-none rotate-[53.95deg]">
                   <div className="relative h-full w-[21.8%]">
