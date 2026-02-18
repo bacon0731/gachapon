@@ -290,9 +290,8 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
                         <Image
                           src={product.image_url}
                           alt={product.name}
-                          width={167}
-                          height={167}
-                          className="rounded-lg object-cover"
+                          fill
+                          className="rounded-lg object-fill"
                         />
                       </div>
                     )}

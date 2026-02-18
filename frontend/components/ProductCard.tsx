@@ -30,6 +30,7 @@ export default function ProductCard({
   image,
   price,
   remaining,
+  total,
   isHot = false,
   isNew = false,
   type,
@@ -99,21 +100,23 @@ export default function ProductCard({
               src={image || '/images/item.png'} 
               alt={name}
               fill
-              className="object-cover"
+              className="object-fill"
               unoptimized
             />
           </div>
           
           {/* Status Badges */}
-          <div className="absolute top-2 left-2 right-2 z-10 flex items-start justify-between pointer-events-none">
-            <div className="flex flex-col gap-1.5">
-              {isHot && <ProductBadge type="hot" />}
-              {isNew && !isHot && <ProductBadge type="new" />}
-            </div>
-            
-            <div>
-              {type && <ProductBadge type={type} />}
-            </div>
+          <div className="absolute top-0 left-0 z-10 flex flex-col pointer-events-none">
+            {isHot && <ProductBadge type="hot" className="rounded-2xl rounded-tr-none rounded-bl-none" />}
+            {isNew && !isHot && <ProductBadge type="new" className="rounded-2xl rounded-tr-none rounded-bl-none" />}
+          </div>
+          
+          <div className="absolute top-0 right-0 z-10 flex flex-col items-end pointer-events-none">
+            {typeof remaining === 'number' && typeof total === 'number' && total > 0 && (
+              <div className="h-6 px-2 inline-flex items-center rounded-2xl rounded-tl-none rounded-br-none bg-black/80 text-white text-[11px] font-black border border-white/10 shadow-sm leading-none">
+                {remaining}/{total}
+              </div>
+            )}
           </div>
 
           {/* Sold Out Stamp */}
@@ -132,12 +135,18 @@ export default function ProductCard({
         </div>
 
         {/* Content */}
-        <div className="flex flex-col flex-1 p-2">
-          {/* Category tag moved to image top-right as type badge */}
-          
-          <h3 className="text-base font-black text-neutral-900 dark:text-white line-clamp-2 mb-1 min-h-[3rem] leading-tight group-hover:text-primary transition-colors tracking-tight">
-            {name}
-          </h3>
+        <div className="flex flex-col flex-1 p-2 md:pt-2 md:-mt-0.5">
+          <div className="mb-1 min-h-[3rem]">
+            <h3 className="text-base font-black text-neutral-900 dark:text-white line-clamp-2 leading-tight group-hover:text-primary transition-colors tracking-tight">
+              {type && (
+                <ProductBadge
+                  type={type}
+                  className="inline-flex align-middle mr-2 relative -top-0.5"
+                />
+              )}
+              {name}
+            </h3>
+          </div>
           
           <div className="mt-auto pt-2 border-t border-neutral-50 dark:border-neutral-800">
             <div className="flex items-end justify-between gap-1">

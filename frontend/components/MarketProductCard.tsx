@@ -37,7 +37,7 @@ export default function MarketProductCard({
               src={image || '/images/item.png'} 
               alt={name}
               fill
-              className="object-cover"
+              className="object-fill"
               unoptimized
             />
           </div>
