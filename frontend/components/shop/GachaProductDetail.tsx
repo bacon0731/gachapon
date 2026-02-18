@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useRouter } from 'next/navigation';
 import { PurchaseConfirmationModal } from '@/components/shop/PurchaseConfirmationModal';
 import { Loader2 } from 'lucide-react';
+import Image from 'next/image';
 
 interface GachaProductDetailProps {
   product: Database['public']['Tables']['products']['Row'];
@@ -23,6 +24,7 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
   const [supabase] = useState(() => createClient());
 
   const [scale, setScale] = useState(1);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     const baseWidth = 375;
@@ -32,6 +34,7 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
       if (typeof window === 'undefined') return;
       const width = Math.min(window.innerWidth, maxWidth);
       setScale(width / baseWidth);
+      setIsMobile(window.innerWidth <= 767);
     };
 
     updateScale();
@@ -50,6 +53,7 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
   const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
   const [hasPendingResult, setHasPendingResult] = useState(false);
   const [isMachineLoaded, setIsMachineLoaded] = useState(false);
+  const [isEggBoxImageMode, setIsEggBoxImageMode] = useState(false);
 
   const handlePush = () => {
     if (machineState !== 'idle') return;
@@ -191,21 +195,43 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
             className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center px-4 rounded-full"
             style={{
               top: 40,
-              height: 40,
+              height: 24,
               backgroundColor: 'rgba(0,0,0,0.7)',
               maxWidth: 320,
               zIndex: 20,
               pointerEvents: 'none',
+              opacity: isEggBoxImageMode || isMobile ? 0 : 1,
+              transition: 'opacity 200ms ease-out',
             }}
           >
             <span
               className="font-black text-center truncate"
               style={{
-                color: '#FFFFFF',
-                fontSize: 18,
+                color: '#FFFF30',
+                fontSize: 16,
               }}
             >
               {product.name}
+            </span>
+          </div>
+          <div
+            className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center px-3 rounded-full text-center"
+            style={{
+              top: 221,
+              height: 20,
+              backgroundColor: 'rgba(0,0,0,0.6)',
+              zIndex: 20,
+              pointerEvents: 'none',
+            }}
+          >
+            <span
+              className="font-medium"
+              style={{
+                color: '#FFFFFF',
+                fontSize: 12,
+              }}
+            >
+              點擊蛋箱顯示商品圖片
             </span>
           </div>
           <div className="w-full max-w-[750px] mx-auto">
@@ -220,6 +246,49 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
                   onHoleClick={handleHoleClick}
                   onLoaded={() => setIsMachineLoaded(true)}
                 />
+                <div
+                  className="absolute left-1/2 -translate-x-1/2"
+                  style={{
+                    top: 42,
+                    width: 167,
+                    height: 167,
+                    zIndex: 20,
+                  }}
+                >
+                  <div className="relative w-full h-full">
+                    <div
+                      className="absolute inset-0 cursor-pointer"
+                      style={{
+                        opacity: isEggBoxImageMode ? 0 : 1,
+                        pointerEvents: isEggBoxImageMode ? 'none' : 'auto',
+                        transition: 'opacity 200ms ease-out',
+                      }}
+                      onClick={() => {
+                        if (!product.image_url) return;
+                        setIsEggBoxImageMode(true);
+                      }}
+                    />
+                    {product.image_url && (
+                      <div
+                        className="absolute inset-0 flex items-center justify-center cursor-pointer"
+                        style={{
+                          opacity: isEggBoxImageMode ? 1 : 0,
+                          pointerEvents: isEggBoxImageMode ? 'auto' : 'none',
+                          transition: 'opacity 200ms ease-out',
+                        }}
+                        onClick={() => setIsEggBoxImageMode(false)}
+                      >
+                        <Image
+                          src={product.image_url}
+                          alt={product.name}
+                          width={167}
+                          height={167}
+                          className="rounded-lg object-cover"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
                 {!isMachineLoaded && (
                   <div className="absolute inset-0 flex items-center justify-center bg-neutral-950/80">
                     <div className="flex flex-col items-center gap-3 text-white">
