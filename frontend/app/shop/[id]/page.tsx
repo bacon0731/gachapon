@@ -29,7 +29,7 @@ const normalizePrizeLevel = (level: string | null | undefined) => {
   return trimmed;
 };
 
-const HIGH_TIER_LEVELS = ['SP', 'A', 'B', 'C', 'Last One'];
+const HIGH_TIER_LEVELS = ['SP', 'A', 'B', 'C'];
 
 export default function ProductDetailPage() {
   const params = useParams();

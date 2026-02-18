@@ -149,6 +149,7 @@ export default function ProductsPage() {
     fetchCategories()
   }, [])
   const [selectedStatus, setSelectedStatus] = useState('all')
+  const [selectedType, setSelectedType] = useState<'all' | 'ichiban' | 'blindbox' | 'gacha' | 'custom'>('all')
   const [selectedLowStock, setSelectedLowStock] = useState(false)  // 是否只顯示低庫存
   const [selectedHot, setSelectedHot] = useState(false)  // 是否只顯示熱門商品
   const [sortField, setSortField] = useState<string>('productCode')
@@ -176,14 +177,21 @@ export default function ProductsPage() {
     operations: true
   })
   
-  // 廢套篩選
   const [selectedMajorStatus, setSelectedMajorStatus] = useState<'all' | 'normal' | 'depleted'>('all')
   
-  // 判斷商品是否為廢套（大獎已抽出）
+  const normalizePrizeLevel = (level: string | null | undefined) => {
+    if (!level) return ''
+    const trimmed = level.trim()
+    if (trimmed === 'Last One') return 'Last One'
+    if (trimmed.endsWith('賞')) return trimmed.slice(0, -1)
+    return trimmed
+  }
+  
+  const HIGH_TIER_LEVELS = ['SP', 'A', 'B', 'C']
+  
   const isMajorDepleted = (product: Product): boolean => {
-    const majorPrizes = product.majorPrizes || ['A賞']  // 默認 A賞 為大獎
     const majorRemaining = product.prizes
-      .filter(prize => majorPrizes.includes(prize.level))
+      .filter(prize => HIGH_TIER_LEVELS.includes(normalizePrizeLevel(prize.level)))
       .reduce((sum, prize) => sum + prize.remaining, 0)
     return majorRemaining === 0
   }
@@ -442,6 +450,7 @@ export default function ProductsPage() {
       product.prizes.some(prize => prize.name.toLowerCase().includes(searchQuery.toLowerCase()))
     const matchCategory = selectedCategory === 'all' || product.category === selectedCategory
     const matchStatus = selectedStatus === 'all' || product.status === selectedStatus
+    const matchType = selectedType === 'all' || (product.type || 'ichiban') === selectedType
     const matchMajorStatus = selectedMajorStatus === 'all' || 
       (selectedMajorStatus === 'depleted' && isMajorDepleted(product)) ||
       (selectedMajorStatus === 'normal' && !isMajorDepleted(product))
@@ -452,7 +461,7 @@ export default function ProductsPage() {
     })()
     // 熱門商品篩選
     const matchHot = !selectedHot || product.isHot
-    return matchSearch && matchCategory && matchStatus && matchMajorStatus && matchLowStock && matchHot
+    return matchSearch && matchCategory && matchStatus && matchType && matchMajorStatus && matchLowStock && matchHot
   })
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {
@@ -516,7 +525,7 @@ export default function ProductsPage() {
 
   useEffect(() => {
     setDisplayCount(20)
-  }, [searchQuery, selectedCategory, selectedStatus, selectedMajorStatus, selectedLowStock, selectedHot, sortField, sortDirection])
+  }, [searchQuery, selectedCategory, selectedStatus, selectedType, selectedMajorStatus, selectedLowStock, selectedHot, sortField, sortDirection])
 
   // 統計資料
   const totalProducts = products.length
@@ -675,6 +684,20 @@ export default function ProductsPage() {
                 ]
               },
               {
+                key: 'type',
+                label: '種類',
+                type: 'select',
+                value: selectedType,
+                onChange: (value: string) => setSelectedType(value as any),
+                options: [
+                  { value: 'all', label: '全部種類' },
+                  { value: 'ichiban', label: '一番賞' },
+                  { value: 'blindbox', label: '盲盒' },
+                  { value: 'gacha', label: '轉蛋' },
+                  { value: 'custom', label: '自製賞' }
+                ]
+              },
+              {
                 key: 'category',
                 label: '分類',
                 type: 'select',
@@ -717,6 +740,18 @@ export default function ProductsPage() {
                 color: 'primary' as const,
                 onRemove: () => setSelectedStatus('all')
               }] : []),
+              ...(selectedType !== 'all' ? [{
+                key: 'type',
+                label: '種類',
+                value: ({
+                  ichiban: '一番賞',
+                  blindbox: '盲盒',
+                  gacha: '轉蛋',
+                  custom: '自製賞'
+                } as const)[selectedType] || '一番賞',
+                color: 'primary' as const,
+                onRemove: () => setSelectedType('all')
+              }] : []),
               ...(selectedCategory !== 'all' ? [{
                 key: 'category',
                 label: '分類',
@@ -748,6 +783,7 @@ export default function ProductsPage() {
             ]}
             onClearAll={() => {
               setSelectedStatus('all')
+              setSelectedType('all')
               setSelectedCategory('all')
               setSelectedMajorStatus('all')
               setSelectedLowStock(false)

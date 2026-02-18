@@ -5,7 +5,7 @@ import { YearMonthPicker, DatePicker, Modal, Input, TagSelector } from '@/compon
 import { useLog } from '@/contexts/LogContext'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { normalizePrizeLevels } from '@/utils/normalizePrizes'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabaseClient'
@@ -31,17 +31,36 @@ export default function NewProductPage() {
     releaseMonth: '',
     distributor: '',
     rarity: 3,
-    majorPrizes: ['A賞'] as string[],  // 大獎等級列表，默認 A賞
     startedAt: '',  // 開賣時間（選填，格式：YYYY-MM-DD）
   })
   
-  const availableLevels = ['A賞', 'B賞', 'C賞', 'D賞', 'E賞', 'F賞', 'G賞', 'H賞', '最後賞']
-
   const isLastOneLevel = (level: string) => {
     if (!level) return false
     const l = level.toLowerCase()
     return l.includes('last one') || level.includes('最後賞')
   }
+
+  const ichibanLevels = [
+    { value: 'A賞', label: 'A賞' },
+    { value: 'B賞', label: 'B賞' },
+    { value: 'C賞', label: 'C賞' },
+    { value: 'D賞', label: 'D賞' },
+    { value: 'E賞', label: 'E賞' },
+    { value: 'F賞', label: 'F賞' },
+    { value: 'G賞', label: 'G賞' },
+    { value: 'H賞', label: 'H賞' },
+    { value: '最後賞', label: '最後賞' },
+  ]
+
+  const gachaLevels = [
+    { value: 'Normal / Common', label: '一般版 Normal / Common' },
+    { value: 'Rare', label: '稀有版 Rare' },
+    { value: 'Secret', label: '隱藏版 Secret' },
+    { value: 'Color Variant', label: '異色版 Color Variant' },
+    { value: 'Effect / Clear', label: '特效版 Effect / Clear' },
+    { value: 'Limited', label: '限定版 Limited' },
+    { value: 'Option Parts', label: '配件版 Option Parts' },
+  ]
 
   // 在客戶端設置日期，避免 Hydration Error
   useEffect(() => {
@@ -111,6 +130,29 @@ export default function NewProductPage() {
   const [selectedPrizeIndex, setSelectedPrizeIndex] = useState<number | null>(null)
   const [librarySearchQuery, setLibrarySearchQuery] = useState('')
   const [librarySelectedCategory, setLibrarySelectedCategory] = useState('all')
+  const prizeSectionRef = useRef<HTMLDivElement | null>(null)
+
+  const addPrize = () => {
+    const newPrize = {
+      id: `p${Date.now()}`,
+      name: '',
+      level: '',
+      image: '',
+      imageFile: null as File | null,
+      imagePreview: '',
+      total: 0,
+      remaining: 0,
+      probability: 0,
+    }
+    setPrizes(prev => [...prev, newPrize])
+    if (typeof window !== 'undefined') {
+      window.requestAnimationFrame(() => {
+        const scrollTarget =
+          document.documentElement?.scrollHeight || document.body?.scrollHeight || 0
+        window.scrollTo({ top: scrollTarget, behavior: 'smooth' })
+      })
+    }
+  }
 
   useEffect(() => {
     if (showSmallItemLibrary && libraryItems.length === 0) {
@@ -145,13 +187,6 @@ export default function NewProductPage() {
       alert('請填寫所有必填欄位並至少添加一個獎項')
       return
     }
-    
-    // 驗證大獎等級設定
-    if (formData.majorPrizes.length === 0) {
-      alert('請至少選擇一個大獎等級')
-      return
-    }
-
     setIsSubmitting(true)
     
     try {
@@ -198,7 +233,6 @@ export default function NewProductPage() {
         release_month: formData.releaseMonth,
         distributor: formData.distributor,
         rarity: formData.rarity,
-        major_prizes: formData.majorPrizes.length > 0 ? formData.majorPrizes : ['A賞'],
         started_at: startedAt,
         product_code: 'PENDING',
         image_url: productImageUrl || '/images/item.png'
@@ -564,49 +598,6 @@ export default function NewProductPage() {
             </label>
           </div>
 
-          {/* 大獎等級設定 */}
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-              大獎等級設定 <span className="text-red-500">*</span>
-            </label>
-            <p className="text-xs text-neutral-500 mb-2">選擇哪些等級屬於大獎（用於判斷是否為廢套）</p>
-            <div className="flex flex-wrap gap-1.5">
-              {availableLevels.map(level => (
-                <label
-                  key={level}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 cursor-pointer transition-all ${
-                    formData.majorPrizes.includes(level)
-                      ? 'bg-primary text-white border-primary'
-                      : 'bg-white text-neutral-700 border-neutral-200 hover:border-primary/50'
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={formData.majorPrizes.includes(level)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setFormData({
-                          ...formData,
-                          majorPrizes: [...formData.majorPrizes, level]
-                        })
-                      } else {
-                        setFormData({
-                          ...formData,
-                          majorPrizes: formData.majorPrizes.filter(l => l !== level)
-                        })
-                      }
-                    }}
-                    className="w-4 h-4 rounded border-2 border-current"
-                  />
-                  <span className="text-sm font-medium">{level}</span>
-                </label>
-              ))}
-            </div>
-            {formData.majorPrizes.length === 0 && (
-              <p className="text-xs text-red-500 mt-1">請至少選擇一個大獎等級</p>
-            )}
-          </div>
-
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-1.5">
               商品圖片
@@ -653,7 +644,7 @@ export default function NewProductPage() {
           </div>
 
           {/* 獎項管理 */}
-          <div className="border-t border-neutral-200 pt-8">
+          <div ref={prizeSectionRef} className="border-t border-neutral-200 pt-8">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-lg font-bold text-neutral-900">獎項管理</h3>
@@ -720,15 +711,17 @@ export default function NewProductPage() {
                           className="w-full px-3 py-2 bg-white border-2 border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 hover:border-neutral-300 shadow-sm appearance-none cursor-pointer"
                         >
                           <option value="">請選擇等級</option>
-                          <option value="A賞">A賞</option>
-                          <option value="B賞">B賞</option>
-                          <option value="C賞">C賞</option>
-                          <option value="D賞">D賞</option>
-                          <option value="E賞">E賞</option>
-                          <option value="F賞">F賞</option>
-                          <option value="G賞">G賞</option>
-                          <option value="H賞">H賞</option>
-                          <option value="最後賞">最後賞</option>
+                          {formData.type === 'gacha'
+                            ? gachaLevels.map(level => (
+                                <option key={level.value} value={level.value}>
+                                  {level.label}
+                                </option>
+                              ))
+                            : ichibanLevels.map(level => (
+                                <option key={level.value} value={level.value}>
+                                  {level.label}
+                                </option>
+                              ))}
                         </select>
                         <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
                           <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -863,20 +856,7 @@ export default function NewProductPage() {
               {prizes.length === 0 ? (
                 <button
                   type="button"
-                  onClick={() => {
-                    const newPrize = {
-                      id: `p${Date.now()}`,
-                      name: '',
-                      level: '',
-                      image: '',
-                      imageFile: null as File | null,
-                      imagePreview: '',
-                      total: 0,
-                      remaining: 0,
-                      probability: 0,  // 會根據 total 和 totalCount 自動計算
-                    }
-                    setPrizes([...prizes, newPrize])
-                  }}
+                  onClick={addPrize}
                   className="w-full text-center py-12 border-2 border-dashed border-neutral-200 rounded-lg bg-neutral-50 hover:border-primary hover:bg-primary/5 transition-all cursor-pointer"
                 >
                   <svg className="w-12 h-12 mx-auto mb-3 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -889,20 +869,7 @@ export default function NewProductPage() {
                 /* 有獎項時：顯示新增更多按鈕 */
                 <button
                   type="button"
-                  onClick={() => {
-                    const newPrize = {
-                      id: `p${Date.now()}`,
-                      name: '',
-                      level: '',
-                      image: '',
-                      imageFile: null as File | null,
-                      imagePreview: '',
-                      total: 0,
-                      remaining: 0,
-                      probability: 0,  // 會根據 total 和 totalCount 自動計算
-                    }
-                    setPrizes([...prizes, newPrize])
-                  }}
+                  onClick={addPrize}
                   className="w-full text-center py-4 border-2 border-dashed border-neutral-200 rounded-lg bg-neutral-50 hover:border-primary hover:bg-primary/5 transition-all cursor-pointer"
                 >
                   <div className="flex items-center justify-center gap-2 text-neutral-500 hover:text-primary">

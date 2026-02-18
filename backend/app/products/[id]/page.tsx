@@ -33,7 +33,6 @@ export default function EditProductPage() {
     releaseMonth: '',
     distributor: '',
     rarity: 3,
-    majorPrizes: ['A賞'] as string[],  // 大獎等級列表，默認 A賞
     startedAt: '',  // 開賣時間
     endedAt: '',  // 完抽時間
     txidHash: '',  // TXID Hash（自動生成，不可編輯）
@@ -41,12 +40,31 @@ export default function EditProductPage() {
     selectedTagIds: [] as string[],
   })
   
-  const availableLevels = ['A賞', 'B賞', 'C賞', 'D賞', 'E賞', 'F賞', 'G賞', 'H賞', '最後賞']
   const isLastOneLevel = (level: string) => {
     if (!level) return false
     const l = level.toLowerCase()
     return l.includes('last one') || level.includes('最後賞')
   }
+  const ichibanLevels = [
+    { value: 'A賞', label: 'A賞' },
+    { value: 'B賞', label: 'B賞' },
+    { value: 'C賞', label: 'C賞' },
+    { value: 'D賞', label: 'D賞' },
+    { value: 'E賞', label: 'E賞' },
+    { value: 'F賞', label: 'F賞' },
+    { value: 'G賞', label: 'G賞' },
+    { value: 'H賞', label: 'H賞' },
+    { value: '最後賞', label: '最後賞' },
+  ]
+  const gachaLevels = [
+    { value: 'Normal / Common', label: '一般版 Normal / Common' },
+    { value: 'Rare', label: '稀有版 Rare' },
+    { value: 'Secret', label: '隱藏版 Secret' },
+    { value: 'Color Variant', label: '異色版 Color Variant' },
+    { value: 'Effect / Clear', label: '特效版 Effect / Clear' },
+    { value: 'Limited', label: '限定版 Limited' },
+    { value: 'Option Parts', label: '配件版 Option Parts' },
+  ]
   const [prizes, setPrizes] = useState<Array<{
     id: string
     name: string
@@ -242,7 +260,6 @@ export default function EditProductPage() {
             releaseMonth: defaultMonth,
             distributor: product.distributor || '',
             rarity: product.rarity || 3,
-            majorPrizes: product.major_prizes || ['A賞'],
             startedAt: product.started_at ? product.started_at.split('T')[0] : '', // 假設是 ISO 格式
             endedAt: product.ended_at ? product.ended_at.replace('T', ' ').split('.')[0] : '', // 簡單處理
             txidHash: product.txid_hash || '',
@@ -284,13 +301,6 @@ export default function EditProductPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    // 驗證大獎等級設定
-    if (formData.majorPrizes.length === 0) {
-      alert('請至少選擇一個大獎等級')
-      return
-    }
-    
     setIsSubmitting(true)
     
     try {
@@ -327,7 +337,6 @@ export default function EditProductPage() {
         total_count: calculatedTotalCount,
         distributor: formData.distributor,
         rarity: formData.rarity,
-        major_prizes: formData.majorPrizes.length > 0 ? formData.majorPrizes : ['A賞'],
         ended_at: formData.status === 'ended' ? formData.endedAt : null,
         txid_hash: formData.txidHash || null,
         seed: formData.seed || null,
@@ -754,49 +763,6 @@ export default function EditProductPage() {
             </label>
           </div>
 
-          {/* 大獎等級設定 */}
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-              大獎等級設定 <span className="text-red-500">*</span>
-            </label>
-            <p className="text-xs text-neutral-500 mb-2">選擇哪些等級屬於大獎（用於判斷是否為廢套）</p>
-            <div className="flex flex-wrap gap-1.5">
-              {availableLevels.map(level => (
-                <label
-                  key={level}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 cursor-pointer transition-all ${
-                    formData.majorPrizes.includes(level)
-                      ? 'bg-primary text-white border-primary'
-                      : 'bg-white text-neutral-700 border-neutral-200 hover:border-primary/50'
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={formData.majorPrizes.includes(level)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setFormData({
-                          ...formData,
-                          majorPrizes: [...formData.majorPrizes, level]
-                        })
-                      } else {
-                        setFormData({
-                          ...formData,
-                          majorPrizes: formData.majorPrizes.filter(l => l !== level)
-                        })
-                      }
-                    }}
-                    className="w-4 h-4 rounded border-2 border-current"
-                  />
-                  <span className="text-sm font-medium">{level}</span>
-                </label>
-              ))}
-            </div>
-            {formData.majorPrizes.length === 0 && (
-              <p className="text-xs text-red-500 mt-1">請至少選擇一個大獎等級</p>
-            )}
-          </div>
-
           {/* 商品圖片 */}
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-1.5">
@@ -913,15 +879,17 @@ export default function EditProductPage() {
                           className="w-full px-3 py-2 bg-white border-2 border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 hover:border-neutral-300 shadow-sm appearance-none cursor-pointer"
                         >
                           <option value="">請選擇等級</option>
-                          <option value="A賞">A賞</option>
-                          <option value="B賞">B賞</option>
-                          <option value="C賞">C賞</option>
-                          <option value="D賞">D賞</option>
-                          <option value="E賞">E賞</option>
-                          <option value="F賞">F賞</option>
-                          <option value="G賞">G賞</option>
-                          <option value="H賞">H賞</option>
-                          <option value="最後賞">最後賞</option>
+                          {formData.type === 'gacha'
+                            ? gachaLevels.map(level => (
+                                <option key={level.value} value={level.value}>
+                                  {level.label}
+                                </option>
+                              ))
+                            : ichibanLevels.map(level => (
+                                <option key={level.value} value={level.value}>
+                                  {level.label}
+                                </option>
+                              ))}
                         </select>
                         <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
                           <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
