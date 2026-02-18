@@ -10,9 +10,10 @@ import Link from 'next/link';
 interface GachaCollectionListProps {
   productId: number;
   prizes: Database['public']['Tables']['product_prizes']['Row'][];
+  refreshKey?: number;
 }
 
-export function GachaCollectionList({ productId, prizes }: GachaCollectionListProps) {
+export function GachaCollectionList({ productId, prizes, refreshKey }: GachaCollectionListProps) {
   const { user } = useAuth();
   const [obtainedPrizeIds, setObtainedPrizeIds] = useState<Set<number>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
@@ -44,7 +45,9 @@ export function GachaCollectionList({ productId, prizes }: GachaCollectionListPr
     }
 
     fetchUserCollection();
-  }, [user, productId, supabase]);
+  }, [user, productId, supabase, refreshKey]);
+
+  const allObtainedPrizeIds = new Set(obtainedPrizeIds);
 
   // Filter out Last One prize for the collection list as it's a special prize
   // But usually in Gacha, every item is collectable. 
@@ -73,7 +76,7 @@ export function GachaCollectionList({ productId, prizes }: GachaCollectionListPr
           style={{ top: '-3.5%' }}
         >
           <h2 className="text-base font-black text-white tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
-            全套收集 ({user ? obtainedPrizeIds.size : 0}/{prizes.length})
+            全套收集 ({user ? allObtainedPrizeIds.size : 0}/{prizes.length})
           </h2>
           {!user && (
             <div className="mt-1 text-[11px] font-bold text-white/80 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
@@ -87,8 +90,7 @@ export function GachaCollectionList({ productId, prizes }: GachaCollectionListPr
           style={{ transform: 'translateY(-9%)' }}
         >
         {prizes.map((prize, index) => {
-          const isObtained = obtainedPrizeIds.has(prize.id);
-          const isLocked = !user || (!isObtained && user);
+          const isObtained = allObtainedPrizeIds.has(prize.id);
 
           return (
             <div 
@@ -113,8 +115,14 @@ export function GachaCollectionList({ productId, prizes }: GachaCollectionListPr
                   className="object-contain drop-shadow-sm"
                   unoptimized
                 />
+                <div
+                  className={cn(
+                    "absolute inset-0 bg-black/60 pointer-events-none transition-opacity",
+                    isObtained ? "opacity-0" : "opacity-100"
+                  )}
+                />
               </div>
-              <div className="absolute bottom-0 -left-1 -right-1 flex justify-center" style={{ transform: 'translateY(6px)' }}>
+              <div className="absolute bottom-0 -left-1 -right-1 flex justify-center" style={{ transform: 'translateY(18px)' }}>
                 <span
                   className={cn(
                     "text-[10px] font-black px-2 rounded shadow-sm backdrop-blur-sm bg-white/75 text-neutral-800",
@@ -125,11 +133,6 @@ export function GachaCollectionList({ productId, prizes }: GachaCollectionListPr
                 >
                   {prize.name}
                 </span>
-              </div>
-              
-              {/* Tooltip on hover */}
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl flex items-center justify-center p-2 text-center z-10 pointer-events-none">
-                 <span className="text-white text-xs font-bold line-clamp-2">{prize.name}</span>
               </div>
             </div>
           );

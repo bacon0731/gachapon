@@ -136,7 +136,7 @@ export function GachaResultModal({ isOpen, onClose, results }: GachaResultModalP
                     />
                   </motion.div>
 
-                  <p className="absolute -translate-x-1/2 left-1/2 top-[69.5%] text-center text-[16px] font-black text-[#894801] leading-snug px-4">
+                  <p className="absolute -translate-x-1/2 left-1/2 top-[69.5%] text-center text-[14px] font-black text-[#894801] leading-snug px-4 whitespace-nowrap">
                     {activePrize.name}
                   </p>
 

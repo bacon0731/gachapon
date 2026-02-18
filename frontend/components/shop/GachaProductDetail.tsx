@@ -54,6 +54,7 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
   const [hasPendingResult, setHasPendingResult] = useState(false);
   const [isMachineLoaded, setIsMachineLoaded] = useState(false);
   const [isEggBoxImageMode, setIsEggBoxImageMode] = useState(false);
+  const [collectionRefreshKey, setCollectionRefreshKey] = useState(0);
 
   const handlePush = () => {
     if (machineState !== 'idle') return;
@@ -117,6 +118,7 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
       }));
 
       setWonPrizes(results);
+      setCollectionRefreshKey(prev => prev + 1);
       runGachaAnimation();
 
     } catch (error: unknown) {
@@ -238,7 +240,7 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
                 fontSize: 12,
               }}
             >
-              點擊蛋箱顯示商品圖片
+              點擊蛋箱顯示圖片
             </span>
           </div>
           <div className="w-full max-w-[750px] mx-auto">
@@ -308,7 +310,7 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
             </div>
 
             <div className="w-full">
-              <GachaCollectionList productId={product.id} prizes={prizes} />
+              <GachaCollectionList productId={product.id} prizes={prizes} refreshKey={collectionRefreshKey} />
             </div>
           </div>
         </div>
