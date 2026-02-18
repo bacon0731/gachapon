@@ -153,39 +153,10 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
         
         if (productError) throw productError;
         setProduct(productData);
-
-        // 同步一番賞商品的總籤數與剩餘抽數，與商品頁顯示來源一致
-        const { data: prizeRows } = await supabase
-          .from('product_prizes')
-          .select('level, total, remaining')
-          .eq('product_id', productId);
-
-        if (prizeRows && prizeRows.length > 0) {
-          const validPrizes = prizeRows.filter(p =>
-            p.level !== 'Last One' &&
-            p.level !== 'LAST ONE' &&
-            !p.level?.includes?.('最後賞')
-          );
-
-          const totalFromPrizes = validPrizes.reduce(
-            (sum, p) => sum + (p.total || 0),
-            0
-          );
-          const remainingFromPrizes = validPrizes.reduce(
-            (sum, p) => sum + (p.remaining || 0),
-            0
-          );
-
-          if (totalFromPrizes > 0) {
-            setTotalTicketsCount(totalFromPrizes);
-          } else {
-            setTotalTicketsCount(productData.total_count || 80);
-          }
-          setRemainingTickets(remainingFromPrizes);
-        } else {
-          setTotalTicketsCount(productData.total_count || 80);
-          setRemainingTickets(null);
-        }
+        setTotalTicketsCount(productData.total_count || 80);
+        setRemainingTickets(
+          typeof productData.remaining === 'number' ? productData.remaining : null
+        );
 
         const { data: historyData, error: historyError } = await supabase
           .from('draw_records')
@@ -437,12 +408,15 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
       setShowConfirm(false); // Close confirmation modal
       
     } catch (err: unknown) {
-      console.error(err);
-      if (err instanceof Error) {
-        alert(err.message || '購買失敗');
-      } else {
-        alert('購買失敗');
-      }
+      console.error('play_ichiban error', err);
+      const anyErr = err as any;
+      const message =
+        anyErr?.message ||
+        anyErr?.error_description ||
+        anyErr?.hint ||
+        anyErr?.details ||
+        '購買失敗';
+      alert(message);
     } finally {
       setIsProcessing(false);
     }

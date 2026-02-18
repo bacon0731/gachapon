@@ -291,6 +291,8 @@ function ProfileContent() {
   const [topupHistory, setTopupHistory] = useState<TopupHistoryItem[]>([]); 
   const [followedProducts, setFollowedProducts] = useState<FollowedProduct[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [couponCode, setCouponCode] = useState('');
+  const [isRedeemingCoupon, setIsRedeemingCoupon] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [isMobileDetailOpen, setIsMobileDetailOpen] = useState(false);
 
@@ -642,6 +644,66 @@ function ProfileContent() {
       setIsLoadingData(false);
     }
   }, [user, activeTab, activeWarehouseTab, activeMarketTab, supabase]);
+
+  const handleRedeemCoupon = async () => {
+    if (!user) return;
+    const code = couponCode.trim().toUpperCase();
+    if (!code) {
+      toast.error('請輸入折價券代碼');
+      return;
+    }
+
+    setIsRedeemingCoupon(true);
+    try {
+      const { data: coupon, error: couponError } = await supabase
+        .from('coupons')
+        .select('id, is_active, min_spend')
+        .eq('code', code)
+        .maybeSingle();
+
+      if (couponError) throw couponError;
+      if (!coupon) {
+        toast.error('找不到此折價券代碼');
+        return;
+      }
+      if (!coupon.is_active) {
+        toast.error('此折價券已停用');
+        return;
+      }
+
+      const { data: existing, error: existingError } = await supabase
+        .from('user_coupons')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('coupon_id', coupon.id)
+        .maybeSingle();
+
+      if (existingError) throw existingError;
+      if (existing) {
+        toast.error('此折價券您已領取過');
+        return;
+      }
+
+      const { error: insertError } = await supabase
+        .from('user_coupons')
+        .insert({
+          user_id: user.id,
+          coupon_id: coupon.id,
+          status: 'unused',
+        });
+
+      if (insertError) throw insertError;
+
+      toast.success('折價券領取成功');
+      setCouponCode('');
+      await fetchUserData();
+    } catch (error) {
+      console.error('Redeem coupon error:', error);
+      toast.error('折價券領取失敗，請稍後再試');
+    } finally {
+      setIsRedeemingCoupon(false);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -2089,6 +2151,37 @@ function ProfileContent() {
               </div>
               <div className="px-3 py-1 bg-neutral-50 dark:bg-neutral-800 rounded-xl lg:rounded-2xl border border-neutral-100 dark:border-neutral-800 text-[11px] lg:text-[13px] font-black text-neutral-400 uppercase tracking-widest w-fit">
                 共 {coupons.length} 張優惠券
+              </div>
+            </div>
+
+            <div className="mb-4 lg:mb-6">
+              <div className="bg-neutral-50 dark:bg-neutral-900/60 border border-dashed border-neutral-200 dark:border-neutral-700 rounded-2xl p-3 lg:p-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Ticket className="w-4 h-4 text-accent-yellow" />
+                    <span className="text-[13px] font-black text-neutral-800 dark:text-neutral-100 uppercase tracking-widest">輸入折價券代碼</span>
+                  </div>
+                  <p className="text-[12px] lg:text-[13px] text-neutral-400 font-bold">
+                    輸入活動或實體卡上的折價券代碼，領取對應優惠券。
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2 mt-2 lg:mt-0 w-full lg:w-auto">
+                  <input
+                    type="text"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    placeholder="例如：SPRING50"
+                    className="flex-1 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl px-3 py-2.5 text-sm font-mono font-bold text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRedeemCoupon}
+                    disabled={isRedeemingCoupon}
+                    className="px-4 py-2.5 rounded-xl text-sm font-black bg-primary text-white shadow-sm hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {isRedeemingCoupon ? '處理中...' : '領取折價券'}
+                  </button>
+                </div>
               </div>
             </div>
 

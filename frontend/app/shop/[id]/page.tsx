@@ -93,6 +93,39 @@ export default function ProductDetailPage() {
     checkFollowStatus();
   }, [user, product, supabase]);
 
+  useEffect(() => {
+    if (!product) return;
+    if (product.txid_hash) return;
+    if (product.status !== 'active') return;
+    if (typeof window === 'undefined' || !window.crypto) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const { calculateSeedHash } = await import('@/utils/drawLogicClient');
+        const randomBytes = Array.from(window.crypto.getRandomValues(new Uint8Array(32)));
+        const seed = randomBytes.map(b => b.toString(16).padStart(2, '0')).join('');
+        const hash = await calculateSeedHash(seed);
+
+        const { error } = await supabase
+          .from('products')
+          .update({ txid_hash: hash, seed })
+          .eq('id', product.id);
+
+        if (!error && !cancelled) {
+          setProduct(prev => (prev ? { ...prev, txid_hash: hash, seed } : prev));
+        }
+      } catch (e) {
+        console.error('自動生成 TXID Hash 失敗:', e);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [product, supabase]);
+
   const handleFollowToggle = async () => {
     if (!user || !product) {
       router.push('/login');
@@ -412,23 +445,25 @@ export default function ProductDetailPage() {
     );
   }
 
-  // Calculate total remaining items from real prizes
-  // Filter out Last One prize from the count as it's a bonus, not a ticket
   const validPrizes = prizes.filter(p => 
     p.level !== 'Last One' && 
     p.level !== 'LAST ONE' && 
     !p.level.includes('最後賞')
   );
   
-  // If no prizes found yet (loading or empty), fallback to product data
-  // But usually we should trust prizes if loaded
-  const totalRemaining = prizes.length > 0 
-    ? validPrizes.reduce((acc, prize) => acc + prize.remaining, 0)
-    : product.remaining;
+  const totalRemaining =
+    typeof product.remaining === 'number'
+      ? product.remaining
+      : (prizes.length > 0
+          ? validPrizes.reduce((acc, prize) => acc + (prize.remaining || 0), 0)
+          : 0);
 
-  const totalItems = prizes.length > 0
-    ? validPrizes.reduce((acc, prize) => acc + prize.total, 0)
-    : product.total_count;
+  const totalItems =
+    typeof product.total_count === 'number'
+      ? product.total_count
+      : (prizes.length > 0
+          ? validPrizes.reduce((acc, prize) => acc + (prize.total || 0), 0)
+          : 0);
 
   const majorPrizeLevelsRaw = (product.major_prizes as string[] | null) ?? [];
   const normalizedMajorLevels = majorPrizeLevelsRaw.map((level) => normalizePrizeLevel(level));

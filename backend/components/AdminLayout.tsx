@@ -344,6 +344,12 @@ export default function AdminLayout({ children, pageTitle, pageSubtitle, breadcr
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
     </svg>
   )
+  const IconCoupons = () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m-3 10a2 2 0 110-4 2 2 0 010 4z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 7h14a2 2 0 012 2v2.5a1.5 1.5 0 010 3V17a2 2 0 01-2 2H5a2 2 0 01-2-2v-2.5a1.5 1.5 0 010-3V9a2 2 0 012-2z" />
+    </svg>
+  )
 
   const menuItems = [
     { name: '儀表板', path: '/dashboard', icon: IconDashboard },
@@ -355,6 +361,7 @@ export default function AdminLayout({ children, pageTitle, pageSubtitle, breadcr
     { name: '儲值管理', path: '/recharges', icon: IconRecharges },
     { name: '輪播圖管理', path: '/banners', icon: IconBanners },
     { name: '文章管理', path: '/news', icon: IconNews },
+    { name: '折價券管理', path: '/coupons', icon: IconCoupons },
     { name: '殺率調整', path: '/settings/rates', icon: IconSettings },
     { name: '殺率演示', path: '/test/verify-demo', icon: IconVerify },
     { name: '管理員清單', path: '/analytics', icon: IconAnalytics },
