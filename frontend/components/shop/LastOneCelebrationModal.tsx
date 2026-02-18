@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sparkles, PartyPopper } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
+import { PartyPopper } from 'lucide-react';
 
 interface LastOneCelebrationModalProps {
   onClose: () => void;
@@ -39,7 +38,6 @@ export function LastOneCelebrationModal({ onClose }: LastOneCelebrationModalProp
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-        onClick={onClose}
       />
 
       {/* Content */}
@@ -55,14 +53,6 @@ export function LastOneCelebrationModal({ onClose }: LastOneCelebrationModalProp
             <div className="absolute top-0 left-1/4 w-32 h-32 bg-yellow-500/20 rounded-full blur-3xl animate-pulse" />
             <div className="absolute bottom-0 right-1/4 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl animate-pulse delay-700" />
           </div>
-
-          {/* Close Button */}
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 text-neutral-400 hover:text-white transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
 
           {/* Icon/Animation */}
           <motion.div

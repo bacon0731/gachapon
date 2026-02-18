@@ -31,6 +31,28 @@ interface PlayIchibanResult {
   ticket_number: number;
 }
 
+const getPlayErrorMessage = (err: unknown): string => {
+  if (err instanceof Error && err.message) {
+    return err.message;
+  }
+  if (typeof err === 'object' && err !== null) {
+    const maybe = err as {
+      message?: string;
+      error_description?: string;
+      hint?: string;
+      details?: string;
+    };
+    return (
+      maybe.message ||
+      maybe.error_description ||
+      maybe.hint ||
+      maybe.details ||
+      '購買失敗'
+    );
+  }
+  return '購買失敗';
+};
+
 export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct }: TicketSelectionFlowProps) {
   const params = useParams();
   const router = useRouter();
@@ -409,13 +431,7 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
       
     } catch (err: unknown) {
       console.error('play_ichiban error', err);
-      const anyErr = err as any;
-      const message =
-        anyErr?.message ||
-        anyErr?.error_description ||
-        anyErr?.hint ||
-        anyErr?.details ||
-        '購買失敗';
+      const message = getPlayErrorMessage(err);
       alert(message);
     } finally {
       setIsProcessing(false);

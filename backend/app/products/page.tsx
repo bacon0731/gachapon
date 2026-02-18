@@ -186,6 +186,12 @@ export default function ProductsPage() {
     if (trimmed.endsWith('賞')) return trimmed.slice(0, -1)
     return trimmed
   }
+
+  const isLastOneLevel = (level: string | null | undefined) => {
+    if (!level) return false
+    const l = level.toLowerCase()
+    return l.includes('last one') || level.includes('最後賞')
+  }
   
   const HIGH_TIER_LEVELS = ['SP', 'A', 'B', 'C']
   
@@ -221,15 +227,12 @@ export default function ProductsPage() {
   const handleExportCSV = () => {
     const headers = ['編號', '商品名稱', '分類', '種類', '價格(TWD)', '庫存/銷量', '大獎狀態', '上架', '建立時間', '開賣時間', '完抽時間']
     const csvData = sortedProducts.map(product => {
-      // 使用統一的統計函數，從實際抽獎記錄計算 (排除 LAST ONE 賞)
-      const calculatedRemaining = product.prizes
-        .filter(p => p.level !== 'last_one' && p.level !== 'LAST ONE')
-        .reduce((sum, s) => sum + s.remaining, 0)
-      const totalCount = product.prizes
-        .filter(p => p.level !== 'last_one' && p.level !== 'LAST ONE')
-        .reduce((sum, s) => sum + s.total, 0)
+      const normalPrizes = product.prizes.filter(p => !isLastOneLevel(p.level))
+      const totalCount = normalPrizes.reduce((sum, s) => sum + s.total, 0)
+      const fallbackRemaining = normalPrizes.reduce((sum, s) => sum + s.remaining, 0)
+      const remaining = typeof product.remaining === 'number' ? product.remaining : fallbackRemaining
       const calculatedSales = product.sales
-      const stockAndSales = `庫存：${calculatedRemaining}/${totalCount} 銷量：${calculatedSales}`
+      const stockAndSales = `庫存：${remaining}/${totalCount} 銷量：${calculatedSales}`
       const majorStatus = isMajorDepleted(product) ? '廢套' : '正常'
       
       // 轉換種類名稱
@@ -905,12 +908,15 @@ export default function ProductsPage() {
                             <span className="whitespace-nowrap">{product.name}</span>
                             {product.isHot && <span className="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-700 whitespace-nowrap flex-shrink-0">熱賣</span>}
                             {(() => {
-                              // 根據實際庫存判斷是否顯示「已完抽」
-                              const calculatedRemaining = product.prizes
-                                .filter(p => p.level !== 'last_one' && p.level !== 'LAST ONE')
-                                .reduce((sum, s) => sum + s.remaining, 0)
-                              const isSoldOut = calculatedRemaining === 0 && product.status !== 'pending'
-                              return isSoldOut && <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700 whitespace-nowrap flex-shrink-0">已完抽</span>
+                              const normalPrizes = product.prizes.filter(p => !isLastOneLevel(p.level))
+                              const fallbackRemaining = normalPrizes.reduce((sum, s) => sum + s.remaining, 0)
+                              const remaining = typeof product.remaining === 'number' ? product.remaining : fallbackRemaining
+                              const isSoldOut = remaining === 0 && product.status !== 'pending'
+                              return isSoldOut && (
+                                <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700 whitespace-nowrap flex-shrink-0">
+                                  已完抽
+                                </span>
+                              )
                             })()}
                           </div>
                         </td>
@@ -940,20 +946,15 @@ export default function ProductsPage() {
                       {visibleColumns.stockAndSales && (
                         <td className={`${getDensityClasses()} text-sm whitespace-nowrap`}>
                           {(() => {
-                            // 使用統一的統計函數，從實際抽獎記錄計算
-                            // 計算總庫存和總數 (排除 LAST ONE 賞)
-                            const calculatedRemaining = product.prizes
-                              .filter(p => !['last_one', 'last one'].includes(p.level.toLowerCase()))
-                              .reduce((sum, s) => sum + s.remaining, 0)
-                            const totalCount = product.prizes
-                              .filter(p => !['last_one', 'last one'].includes(p.level.toLowerCase()))
-                              .reduce((sum, s) => sum + s.total, 0)
-                            // 銷量從實際抽獎記錄計算
+                            const normalPrizes = product.prizes.filter(p => !isLastOneLevel(p.level))
+                            const totalCount = normalPrizes.reduce((sum, s) => sum + s.total, 0)
+                            const fallbackRemaining = normalPrizes.reduce((sum, s) => sum + s.remaining, 0)
+                            const remaining = typeof product.remaining === 'number' ? product.remaining : fallbackRemaining
                             const calculatedSales = product.sales
                             return (
                               <div className="flex flex-col gap-0.5">
-                                <span className={`whitespace-nowrap font-mono ${calculatedRemaining < 10 ? 'text-red-500 font-semibold' : 'text-neutral-700'}`}>
-                                  庫存：{calculatedRemaining}/{totalCount}
+                                <span className={`whitespace-nowrap font-mono ${remaining < 10 ? 'text-red-500 font-semibold' : 'text-neutral-700'}`}>
+                                  庫存：{remaining}/{totalCount}
                                 </span>
                                 <span className="whitespace-nowrap font-mono text-neutral-500 text-xs">
                                   銷量：{calculatedSales}

@@ -55,7 +55,19 @@ export async function POST(request: NextRequest) {
       originalProbability: p.probability
     }))
 
-    const profitRate = 1.0 // 默認殺率，未來可從 products 表讀取
+    const rawProfitRate = (product as any).profit_rate
+    let profitRate = 1.0
+    if (typeof rawProfitRate === 'number') {
+      profitRate = rawProfitRate
+    } else if (typeof rawProfitRate === 'string' && rawProfitRate.trim() !== '') {
+      const parsed = parseFloat(rawProfitRate)
+      if (!Number.isNaN(parsed)) {
+        profitRate = parsed
+      }
+    }
+    if (!Number.isFinite(profitRate) || profitRate <= 0) {
+      profitRate = 1.0
+    }
 
     // 5. 執行抽獎
     // 檢查是否為批量抽獎請求（包含 ticketNumbers 數組）

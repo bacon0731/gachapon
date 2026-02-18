@@ -34,7 +34,7 @@ const HIGH_TIER_LEVELS = ['SP', 'A', 'B', 'C'];
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { showToast } = useToast();
   const [supabase] = useState(() => createClient());
 
@@ -92,39 +92,6 @@ export default function ProductDetailPage() {
 
     checkFollowStatus();
   }, [user, product, supabase]);
-
-  useEffect(() => {
-    if (!product) return;
-    if (product.txid_hash) return;
-    if (product.status !== 'active') return;
-    if (typeof window === 'undefined' || !window.crypto) return;
-
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const { calculateSeedHash } = await import('@/utils/drawLogicClient');
-        const randomBytes = Array.from(window.crypto.getRandomValues(new Uint8Array(32)));
-        const seed = randomBytes.map(b => b.toString(16).padStart(2, '0')).join('');
-        const hash = await calculateSeedHash(seed);
-
-        const { error } = await supabase
-          .from('products')
-          .update({ txid_hash: hash, seed })
-          .eq('id', product.id);
-
-        if (!error && !cancelled) {
-          setProduct(prev => (prev ? { ...prev, txid_hash: hash, seed } : prev));
-        }
-      } catch (e) {
-        console.error('自動生成 TXID Hash 失敗:', e);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [product, supabase]);
 
   const handleFollowToggle = async () => {
     if (!user || !product) {
@@ -485,14 +452,16 @@ export default function ProductDetailPage() {
       .filter((p) => levelsForMajorCount.includes(normalizePrizeLevel(p.level)))
       .reduce((sum, p) => sum + (p.total || 0), 0) || undefined;
 
-  const fairnessSeed = product.seed || product.txid_hash || '';
+  const fairnessHref = `/fairness/${product.id}`;
 
-  const fairnessHref =
-    fairnessSeed && majorPrizeCount && totalItems
-      ? `/fairness/${product.id}?txid=${encodeURIComponent(
-          fairnessSeed,
-        )}&prizeCount=${majorPrizeCount}&totalTickets=${totalItems}`
-      : `/fairness/${product.id}`;
+  const handleGoToFairness = () => {
+    if (!isAuthenticated) {
+      showToast('請先登入後再使用公平性驗證功能', 'error');
+      router.push('/login');
+      return;
+    }
+    router.push(fairnessHref);
+  };
 
   if (product.type === 'gacha') {
     return <GachaProductDetail product={product} prizes={prizes} />;
@@ -735,15 +704,11 @@ export default function ProductDetailPage() {
               <div className="bg-primary/5 border border-primary/10 rounded-2xl p-3 sm:p-5 space-y-3 sm:space-y-4">
                 <div className="flex items-center gap-2 text-primary font-black text-[13px] sm:text-sm uppercase tracking-widest">
                   <Info className="w-3.5 h-3.5 stroke-[3]" />
-                  第三方驗證工具
+                  公平性驗證機制
                 </div>
                 <div className="space-y-1 sm:space-y-2">
-                  <Link href="#" className="text-[13px] sm:text-sm text-accent-red font-black hover:text-accent-red/80 transition-colors flex items-center gap-1.5 group">
-                    SHA256 哈希驗證工具 
-                    <Share2 className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                  </Link>
                   <p className="text-[13px] sm:text-sm text-neutral-500 dark:text-neutral-400 font-bold leading-relaxed">
-                    此工具可驗證 TXID 與 TXID Hash 的一致性，確保公平性，TXID 將於完抽後公布。
+                    每次抽獎會記錄隨機種子 Seed、籤號與對應的 TXID Hash。完抽後會公開 Seed，任何人都可以在公平性驗證頁輸入 Seed 與籤號，重算隨機值與 TXID Hash 來確認結果無法事後被修改。
                   </p>
                 </div>
               </div>
@@ -756,7 +721,7 @@ export default function ProductDetailPage() {
                   <div className="flex items-center gap-2">
                     <code
                       className={cn(
-                        "flex-1 bg-neutral-50 dark:bg-neutral-800 border border-neutral-100 dark:border-neutral-700 rounded-2xl px-3 sm:px-5 py-3 sm:py-4 text-[13px] sm:text-sm font-black font-mono break-all whitespace-pre-wrap min-h-[3.25rem]",
+                        "flex-1 bg-neutral-50 dark:bg-neutral-800 border border-neutral-100 dark:border-neutral-700 rounded-2xl px-3 sm:px-5 h-[3.25rem] flex items-center text-[13px] sm:text-sm font-black font-mono overflow-hidden whitespace-nowrap",
                         (totalRemaining === 0 && product.seed) ? "text-neutral-600 dark:text-neutral-400" : "text-neutral-400 dark:text-neutral-500 tracking-widest"
                       )}
                     >
@@ -784,8 +749,10 @@ export default function ProductDetailPage() {
                     <FileCheck className="w-3.5 h-3.5" /> 哈希值 (TXID Hash)
                   </div>
                   <div className="flex items-center gap-2">
-                    <code className="flex-1 bg-neutral-50 dark:bg-neutral-800 border border-neutral-100 dark:border-neutral-700 rounded-2xl px-3 sm:px-5 py-3 sm:py-4 text-[13px] sm:text-sm font-mono text-neutral-600 dark:text-neutral-400 font-bold leading-relaxed break-all whitespace-pre-wrap min-h-[3.25rem]">
-                      {product.txid_hash || 'Hash generating...'}
+                    <code className="flex-1 bg-neutral-50 dark:bg-neutral-800 border border-neutral-100 dark:border-neutral-700 rounded-2xl px-3 sm:px-5 h-[3.25rem] flex items-center text-[13px] sm:text-sm font-mono text-neutral-600 dark:text-neutral-400 font-bold overflow-hidden whitespace-nowrap">
+                      <span className="truncate">
+                        {product.txid_hash || '尚未生成，請稍後再試'}
+                      </span>
                     </code>
                     <button
                       type="button"
@@ -805,19 +772,18 @@ export default function ProductDetailPage() {
                 </div>
               </div>
 
-              {totalRemaining === 0 && product.seed && product.txid_hash && (
-                <div className="pt-3 sm:pt-4 border-t border-neutral-100 dark:border-neutral-800 space-y-2">
-                  <div className="text-[13px] sm:text-sm font-black text-neutral-500 dark:text-neutral-400">
-                    大賞位置驗證：
-                  </div>
-                  <Link
-                    href={fairnessHref}
-                    className="inline-flex items-center justify-center px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-primary text-white text-[13px] sm:text-sm font-black shadow-sm hover:bg-primary/90 transition-colors"
-                  >
-                    前往大賞位置驗證頁面
-                  </Link>
+              <div className="pt-3 sm:pt-4 border-t border-neutral-100 dark:border-neutral-800 space-y-2">
+                <div className="text-[13px] sm:text-sm font-black text-neutral-500 dark:text-neutral-400">
+                  公平性驗證頁：
                 </div>
-              )}
+                <button
+                  type="button"
+                  onClick={handleGoToFairness}
+                  className="inline-flex items-center justify-center px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-primary text-white text-[13px] sm:text-sm font-black shadow-sm hover:bg-primary/90 transition-colors"
+                >
+                  前往公平性驗證頁
+                </button>
+              </div>
             </div>
 
             {/* Product Meta Info */}

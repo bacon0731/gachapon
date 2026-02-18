@@ -100,11 +100,12 @@ interface DeliveryOrder {
 
 interface DrawHistoryItem {
   id: string;
+  productId: number;
   product: string;
   date: string;
   tickets: string[];
   cost: number;
-  items: { grade: string; name: string; ticket_number: string }[];
+  items: { grade: string; name: string; ticket_number: string; txid_hash?: string }[];
 }
 
 interface FollowedProduct {
@@ -218,18 +219,21 @@ interface DbTopup {
 interface GroupedDrawHistoryItem {
   _rawDate: string;
   id: number;
+  productId: number;
   product: string;
   date: string;
   tickets: string[];
   cost: number;
-  items: { grade: string; name: string; ticket_number: string }[];
+  items: { grade: string; name: string; ticket_number: string; txid_hash?: string }[];
 }
 
   interface DbDrawRecord {
     id: number;
+    product_id: number;
     ticket_number: number;
     created_at: string;
     status: string;
+    txid_hash?: string | null;
     prize_level?: string | null;
     prize_name?: string | null;
     product_prizes: {
@@ -521,14 +525,16 @@ function ProfileContent() {
         setDeliveryHistory(orders);
       }
       else if (activeTab === 'draw-history') {
-         const { data, error } = await supabase
+        const { data, error } = await supabase
           .from('draw_records')
           .select(`
             id,
+            product_id,
             ticket_number,
             created_at,
             prize_level,
             prize_name,
+            txid_hash,
             product_prizes ( level, name ),
             products ( name, price )
           `)
@@ -551,16 +557,17 @@ function ProfileContent() {
           if (lastGroup && lastGroup._rawDate === currentTimestamp && lastGroup.product === item.products?.name) {
             lastGroup.tickets.push(item.ticket_number?.toString());
             lastGroup.cost += (item.products?.price || 0);
-            lastGroup.items.push({ grade, name, ticket_number: item.ticket_number?.toString() });
+            lastGroup.items.push({ grade, name, ticket_number: item.ticket_number?.toString(), txid_hash: item.txid_hash || undefined });
           } else {
             groupedHistory.push({
               _rawDate: currentTimestamp,
               id: item.id,
+              productId: item.product_id,
               product: item.products?.name || '未知',
               date: new Date(item.created_at).toLocaleString('zh-TW'),
               tickets: [item.ticket_number?.toString()],
               cost: item.products?.price || 0,
-              items: [{ grade, name, ticket_number: item.ticket_number?.toString() }]
+              items: [{ grade, name, ticket_number: item.ticket_number?.toString(), txid_hash: item.txid_hash || undefined }]
             });
           }
         });
@@ -1918,10 +1925,50 @@ function ProfileContent() {
                           <span className="text-base font-black text-accent-red font-amount tracking-tighter">{item.cost.toLocaleString()}</span>
                         </div>
                       </div>
-                      <div className="w-full max-h-[100px] overflow-y-auto custom-scrollbar pr-1">
+                      <div className="w-full max-h-[120px] overflow-y-auto custom-scrollbar pr-1 space-y-1.5">
                         <div className="flex flex-wrap gap-1">
                           {item.tickets.map(t => (
-                            <span key={t} className="px-2 py-0.5 bg-neutral-50 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 rounded text-[10px] font-black font-amount border border-neutral-100 dark:border-neutral-700">{t}</span>
+                            <span key={t} className="px-2 py-0.5 bg-neutral-50 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-100 rounded text-[10px] font-black font-sans border border-neutral-100 dark:border-neutral-700">
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                        <div className="text-[10px] text-neutral-400 dark:text-neutral-500 font-mono leading-snug space-y-0.5">
+                          {item.items.map((r, idx) => (
+                            <div key={idx} className="flex flex-col gap-1">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="px-2 py-0.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 rounded-[8px] text-[10px] font-black font-sans border border-neutral-100 dark:border-neutral-700">
+                                  {r.ticket_number}
+                                </span>
+                              <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (!r.txid_hash) return;
+                                    navigator.clipboard?.writeText(r.txid_hash)
+                                      .then(() => toast.success('已複製 TXID Hash'))
+                                      .catch(() => toast.error('複製失敗，請再試一次'));
+                                  }}
+                                  className="flex items-center gap-1 text-[10px] text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
+                                >
+                                  <span className="max-w-[160px] truncate">
+                                    {r.txid_hash ? `TXID Hash：${r.txid_hash}` : 'TXID Hash：尚未提供'}
+                                  </span>
+                                  {r.txid_hash && (
+                                    <Copy className="w-3 h-3 shrink-0" />
+                                  )}
+                                </button>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (!r.txid_hash) return;
+                                  window.location.href = `/fairness/${item.productId}?nonce=${encodeURIComponent(r.ticket_number)}&txid_hash=${encodeURIComponent(r.txid_hash)}`;
+                                }}
+                                className="self-end inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-primary/5 text-[10px] font-black text-primary hover:bg-primary/10 transition-colors"
+                              >
+                                前往驗證
+                              </button>
+                            </div>
                           ))}
                         </div>
                       </div>
@@ -1964,7 +2011,7 @@ function ProfileContent() {
                                 <div className="max-h-[100px] overflow-y-auto custom-scrollbar pr-1">
                                   <div className="flex flex-wrap gap-1.5">
                                     {item.tickets.map(t => (
-                                      <span key={t} className="px-2 py-1 bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 rounded-lg text-xs font-black font-amount border border-neutral-100 dark:border-neutral-700">
+                                      <span key={t} className="px-2 py-1 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-100 rounded-lg text-xs font-black font-sans border border-neutral-100 dark:border-neutral-700">
                                         {t}
                                       </span>
                                     ))}
@@ -1977,20 +2024,49 @@ function ProfileContent() {
                               {isExpanded && (
                                 <tr>
                                   <td colSpan={4} className="px-0 py-0">
-                                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden bg-neutral-50/30 dark:bg-neutral-800/30">
-                                      <div className="py-6 px-8 lg:px-24 border-y border-neutral-100/50 dark:border-neutral-800/50">
-                                        <div className="text-[13px] font-black text-neutral-400 uppercase tracking-widest mb-4">獲得獎項明細</div>
-                                        <div className="max-h-[100px] overflow-y-auto custom-scrollbar pr-1">
-                                          <div className="grid grid-cols-1 gap-4">
+                                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden bg-neutral-50/40 dark:bg-neutral-800/40">
+                                      <div className="py-4 px-8 lg:px-20 border-y border-neutral-100/50 dark:border-neutral-800/50">
+                                        <div className="max-h-[280px] overflow-y-auto custom-scrollbar pr-1">
+                                          <div className="grid grid-cols-1 gap-2.5">
                                             {item.items.map((result, idx) => (
-                                              <div key={idx} className="flex items-center justify-between gap-4 bg-white dark:bg-neutral-900 p-3 rounded-2xl border border-neutral-100 dark:border-neutral-800 shadow-soft">
-                                                <div className="flex items-center gap-4 overflow-hidden">
-                                                  <span className="px-2 py-0.5 bg-accent-red/10 text-accent-red text-[13px] font-black rounded-md border border-accent-red/10 uppercase shrink-0">{result.grade}</span>
+                                              <div key={idx} className="flex items-center justify-between gap-3 bg-white dark:bg-neutral-900 px-3 py-2.5 rounded-xl border border-neutral-100 dark:border-neutral-800 shadow-soft h-14">
+                                                <div className="flex items-center gap-2.5 overflow-hidden">
+                                                  <span className="px-2 py-0.5 bg-accent-red/10 text-accent-red text-[12px] font-black rounded-md border border-accent-red/10 uppercase shrink-0">{result.grade}</span>
                                                   <span className="text-sm font-black text-neutral-700 dark:text-neutral-300 truncate">{result.name}</span>
                                                 </div>
-                                                <span className="px-2 py-1 bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 rounded-[8px] text-xs font-black font-amount border border-neutral-100 dark:border-neutral-700 shrink-0">
-                                                  {result.ticket_number}
-                                                </span>
+                                                <div className="flex items-center gap-3 shrink-0 max-w-[420px] justify-end">
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                      if (!result.txid_hash) return;
+                                                      navigator.clipboard?.writeText(result.txid_hash)
+                                                        .then(() => toast.success('已複製 TXID Hash'))
+                                                        .catch(() => toast.error('複製失敗，請再試一次'));
+                                                    }}
+                                                    className="flex items-center gap-1 text-[10px] text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors max-w-[260px]"
+                                                  >
+                                                    <span className="font-mono text-right truncate">
+                                                    {result.txid_hash ? `TXID Hash：${result.txid_hash}` : 'TXID Hash：尚未提供'}
+                                                    </span>
+                                                    {result.txid_hash && (
+                                                      <Copy className="w-3.5 h-3.5 shrink-0" />
+                                                    )}
+                                                  </button>
+                                                  <span className="px-2 py-0.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-100 rounded-[8px] text-[11px] font-black font-sans border border-neutral-100 dark:border-neutral-700">
+                                                    {result.ticket_number}
+                                                  </span>
+                                                  {result.txid_hash && (
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => {
+                                                        window.location.href = `/fairness/${item.productId}?nonce=${encodeURIComponent(result.ticket_number)}&txid_hash=${encodeURIComponent(result.txid_hash!)}`;
+                                                      }}
+                                                      className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-primary/5 text-[11px] font-black text-primary hover:bg-primary/10 transition-colors"
+                                                    >
+                                                      前往驗證
+                                                    </button>
+                                                  )}
+                                                </div>
                                               </div>
                                             ))}
                                           </div>

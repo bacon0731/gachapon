@@ -25,14 +25,42 @@ interface DrawRecord {
   time?: string
 }
 
-function getProductPrizeStats(product: Product) {
+function isLastOneLevel(level: string) {
+  if (!level) return false
+  const l = level.toLowerCase()
+  return l.includes('last one') || level.includes('最後賞')
+}
+
+function getProductPrizeStats(product: Product, draws: DrawRecord[]) {
   const stats: Record<string, { total: number; drawn: number; remaining: number }> = {}
   if (product && product.prizes) {
+    const nonLastPrizes = product.prizes.filter(p => !isLastOneLevel(p.level))
+    const nonLastTotal = nonLastPrizes.reduce(
+      (sum, p) => sum + (typeof p.total === 'number' ? p.total : 0),
+      0
+    )
+    const nonLastDrawn = draws.filter(d => !isLastOneLevel(d.prizeLevel)).length
+    const isLastPrizeDrawn = nonLastTotal > 0 && nonLastDrawn >= nonLastTotal
+
     product.prizes.forEach(p => {
-      stats[p.level] = {
-        total: p.total,
-        drawn: p.total - p.remaining,
-        remaining: p.remaining
+      const level = p.level
+      const total = typeof p.total === 'number' ? p.total : 0
+      const isLast = isLastOneLevel(level)
+      let drawn: number
+      let remaining: number
+
+      if (isLast) {
+        drawn = isLastPrizeDrawn ? total : 0
+        remaining = isLastPrizeDrawn ? 0 : total
+      } else {
+        drawn = draws.filter(d => d.prizeLevel === level).length
+        remaining = Math.max(total - drawn, 0)
+      }
+
+      stats[level] = {
+        total,
+        drawn,
+        remaining
       }
     })
   }
@@ -42,6 +70,23 @@ function getProductPrizeStats(product: Product) {
 // Helper to get seed
 function getProductSeed(product: Product): string {
   return product.seed || ''
+}
+
+function mapProductPrize(p: any) {
+  const level = p.level ?? p.prize_level ?? ''
+  const total = typeof p.total === 'number' ? p.total : (typeof p.quantity === 'number' ? p.quantity : 0)
+  const remainingRaw = p.remaining ?? p.remaining_quantity
+  const remaining = typeof remainingRaw === 'number' ? remainingRaw : total
+  return {
+    id: p.id,
+    level,
+    name: p.name,
+    quantity: total,
+    remaining,
+    probability: typeof p.probability === 'number' ? p.probability : 0,
+    imageUrl: p.image_url,
+    total
+  }
 }
 
 // 計算調整後的獎項機率（用於驗證）
@@ -153,16 +198,7 @@ export default function ProductVerifyPage() {
             txidHash: productData.txid_hash,
             majorPrizes: productData.major_prizes,
             prizes: (productData.prizes || [])
-              .map((p: any) => ({
-                id: p.id,
-                level: p.prize_level || '',
-                name: p.name,
-                quantity: p.quantity,
-                remaining: p.remaining_quantity,
-                probability: p.probability,
-                imageUrl: p.image_url,
-                total: p.quantity
-              }))
+              .map((p: any) => mapProductPrize(p))
               .sort((a: any, b: any) => (a.level || '').localeCompare(b.level || ''))
           }
           setProduct(formattedProduct)
@@ -171,7 +207,10 @@ export default function ProductVerifyPage() {
         // Fetch draw records
         const { data: drawsData, error: drawsError } = await supabase
           .from('draw_records')
-          .select('*')
+          .select(`
+            *,
+            user:users (id, name, email)
+          `)
           .eq('product_id', productId)
           .order('ticket_number', { ascending: true })
 
@@ -181,7 +220,7 @@ export default function ProductVerifyPage() {
           const formattedDraws: DrawRecord[] = drawsData.map((d: any) => ({
             id: d.id,
             productId: d.product_id,
-            userId: d.user_id,
+            userId: d.user?.id || d.user_id,
             prizeLevel: d.prize_level,
             ticketNumber: d.ticket_number,
             nonce: d.txid_nonce,
@@ -189,9 +228,10 @@ export default function ProductVerifyPage() {
             profitRate: d.profit_rate,
             randomValue: d.random_value,
             createdAt: d.created_at,
-            // Additional fields for compatibility
             drawId: d.id.toString(),
-            prize: `${d.prize_level}賞` // Simplified prize name
+            prize: `${d.prize_level}賞`,
+            userName: d.user?.name || d.user?.email || '',
+            time: d.created_at
           }))
           setDraws(formattedDraws)
         }
@@ -719,7 +759,6 @@ verifyDraws().then(results => {
           </div>
         </div>
 
-        {/* 驗證程式碼 */}
         {product.txidHash && verificationCode && (
           <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6">
             <h3 className="text-base font-semibold text-neutral-900 mb-2">驗證程式碼</h3>
@@ -767,6 +806,46 @@ verifyDraws().then(results => {
             </div>
           </div>
         )}
+
+        <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6">
+          <h3 className="text-base font-semibold text-neutral-900 mb-2">公平性資訊總覽</h3>
+          <p className="text-sm text-gray-600 mb-4">
+            快速檢視此商品目前對外公布的公平性關鍵資料，方便客服與自我檢查。
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
+            <div>
+              <div className="text-xs text-gray-500 mb-1">前台公平性驗證路徑</div>
+              <div className="px-3 py-2 bg-gray-50 border-2 border-gray-200 rounded-lg font-mono break-all text-xs">
+                /fairness/{product.id}
+              </div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-500 mb-1">目前 TXID Hash（商品級）</div>
+              <div className="px-3 py-2 bg-gray-50 border-2 border-gray-200 rounded-lg font-mono break-all text-xs">
+                {product.txidHash || '尚未生成'}
+              </div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-500 mb-1">Seed</div>
+              <div className="px-3 py-2 bg-gray-50 border-2 border-gray-200 rounded-lg font-mono break-all text-xs">
+                {product.seed || '完抽後公布'}
+              </div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-500 mb-1">狀態</div>
+              <div className="px-3 py-2 bg-gray-50 border-2 border-gray-200 rounded-lg text-xs">
+                {product.status === 'ended'
+                  ? '已完抽'
+                  : product.status === 'active'
+                    ? '進行中'
+                    : '待上架'}
+              </div>
+            </div>
+          </div>
+          <p className="mt-3 text-xs text-gray-500">
+            提示：前台玩家可在「公平性驗證」頁面透過 Seed Hash、TXID Hash 與自身抽獎紀錄完成第三方驗證。
+          </p>
+        </div>
 
         {/* 驗證結果彈窗 */}
         <Modal
@@ -857,8 +936,7 @@ verifyDraws().then(results => {
             {/* 統計資訊 - 從實際抽獎記錄計算 */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mb-6">
               {product.prizes.map((prize, index) => {
-                // 使用統一的統計函數，從實際抽獎記錄計算
-                const stats = getProductPrizeStats(product)
+                const stats = getProductPrizeStats(product, draws)
                 const prizeKey = prize.level || String(index)
                 const prizeStats = stats[prize.level] || { total: prize.total, drawn: 0, remaining: prize.total }
                 
