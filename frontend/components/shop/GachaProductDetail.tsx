@@ -66,10 +66,6 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
 
   const handlePurchaseClick = () => {
     if (machineState !== 'idle' || isProcessing) return;
-    if (!user) {
-      router.push('/login');
-      return;
-    }
     if (!product || product.remaining === 0) {
       showToast('已完抽', 'info');
       return;
@@ -78,7 +74,18 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
   };
 
   const handlePurchaseConfirm = async (quantity: number) => {
-    if (!product || !user) return;
+    if (!product) return;
+    if (!user) {
+      showToast('請先登入會員', 'info');
+      router.push('/login');
+      return;
+    }
+    const totalCost = product.price * quantity;
+    if ((user.tokens || 0) < totalCost) {
+      showToast('代幣不足，請先儲值', 'error');
+      router.push('/wallet');
+      return;
+    }
     
     setIsProcessing(true);
     setIsPurchaseModalOpen(false);
