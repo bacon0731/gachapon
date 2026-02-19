@@ -11,7 +11,7 @@ import { createClient } from '@/lib/supabase/client'
 function LoginContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const { user, isLoading: isAuthLoading } = useAuth()
+  const { user } = useAuth()
   const message = searchParams.get('message')
   const errorParam = searchParams.get('error')
   

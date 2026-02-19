@@ -224,9 +224,6 @@ export default function BlindboxDetailPage() {
     );
   }
 
-  const totalItems = prizes.reduce((sum, p) => sum + (p.total || 0), 0);
-  const totalRemaining = prizes.reduce((sum, p) => sum + (p.remaining || 0), 0);
-
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 pb-32 md:pb-12 pt-14 md:pt-0">
       <div className="max-w-7xl mx-auto px-0 py-2 sm:px-2 sm:py-6">

@@ -16,15 +16,11 @@ interface GachaCollectionListProps {
 export function GachaCollectionList({ productId, prizes, refreshKey }: GachaCollectionListProps) {
   const { user } = useAuth();
   const [obtainedPrizeIds, setObtainedPrizeIds] = useState<Set<number>>(new Set());
-  const [isLoading, setIsLoading] = useState(true);
   const [supabase] = useState(() => createClient());
 
   useEffect(() => {
     async function fetchUserCollection() {
-      if (!user) {
-        setIsLoading(false);
-        return;
-      }
+      if (!user) return;
 
       try {
         const { data, error } = await supabase
@@ -40,7 +36,7 @@ export function GachaCollectionList({ productId, prizes, refreshKey }: GachaColl
       } catch (error) {
         console.error('Error fetching collection:', error);
       } finally {
-        setIsLoading(false);
+        // no-op
       }
     }
 

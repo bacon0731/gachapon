@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import Button from '@/components/ui/Button';
-import Image from 'next/image';
 import { X, Loader2 } from 'lucide-react';
 
 export interface ResultPrize {
@@ -100,7 +99,6 @@ export const PrizeResultModal: React.FC<PrizeResultModalProps> = ({
   }, [isOpen, skipRevealAnimation]);
 
   const isHighTier = (grade: string) => HIGH_TIER_GRADES.some(tier => grade.includes(tier));
-  const hasLastOne = displayPrizes.some(p => p.is_last_one);
 
   return (
     <AnimatePresence>

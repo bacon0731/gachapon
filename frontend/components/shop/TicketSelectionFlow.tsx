@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/types/database.types';
@@ -112,7 +112,7 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
     return () => clearTimeout(timer);
   }, [product, drawnResults]);
 
-  const handleShowFullResults = async () => {
+  const handleShowFullResults = useCallback(async () => {
     if (!product) return;
     
     setIsFetchingFullResults(true);
@@ -127,19 +127,15 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
 
       if (error) throw error;
 
-      // Sort results: Normal tickets by number, Last One at the end (or handled by Modal sorting)
-      // The Modal expects normal array. It has its own sorting.
-      // But we should format it correctly.
       const formattedResults = data.map(record => ({
         grade: record.prize_level,
         name: record.prize_name,
-        isOpened: true, // All opened in history view
+        isOpened: true,
         image_url: record.image_url || '',
         is_last_one: record.is_last_one || false,
         ticket_number: record.ticket_number
       }));
 
-      // Fallback: 若查無最後賞記錄，但普通獎已為 0，補上一筆最後賞供顯示
       if (!formattedResults.some(r => r.is_last_one)) {
         const { data: prizeRows } = await supabase
           .from('product_prizes')
@@ -171,7 +167,7 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
     } finally {
       setIsFetchingFullResults(false);
     }
-  };
+  }, [product, supabase]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -268,6 +264,7 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
     hasTriggeredAutoResults,
     showResultModal,
     isFetchingFullResults,
+    handleShowFullResults,
   ]);
 
   const toggleTicket = (num: number) => {

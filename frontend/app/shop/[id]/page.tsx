@@ -21,16 +21,6 @@ import { PrizeResultModal } from '@/components/shop/PrizeResultModal';
 import { TicketSelectionFlow } from '@/components/shop/TicketSelectionFlow';
 import { GachaProductDetail } from '@/components/shop/GachaProductDetail';
 
-const normalizePrizeLevel = (level: string | null | undefined) => {
-  if (!level) return '';
-  const trimmed = level.trim();
-  if (trimmed === 'Last One') return 'Last One';
-  if (trimmed.endsWith('賞')) return trimmed.slice(0, -1);
-  return trimmed;
-};
-
-const HIGH_TIER_LEVELS = ['SP', 'A', 'B', 'C'];
-
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -437,26 +427,6 @@ export default function ProductDetailPage() {
       : (prizes.length > 0
           ? validPrizes.reduce((acc, prize) => acc + (prize.total || 0), 0)
           : 0);
-
-  const majorPrizeLevelsRaw = (product.major_prizes as string[] | null) ?? [];
-  const normalizedMajorLevels = majorPrizeLevelsRaw.map((level) => normalizePrizeLevel(level));
-
-  const highTierFromPrizes =
-    prizes
-      .map((p) => normalizePrizeLevel(p.level))
-      .filter((level) => HIGH_TIER_LEVELS.includes(level)) ?? [];
-
-  const levelsForMajorCount = Array.from(
-    new Set([
-      ...normalizedMajorLevels.filter((level) => HIGH_TIER_LEVELS.includes(level)),
-      ...highTierFromPrizes,
-    ]),
-  );
-
-  const majorPrizeCount =
-    prizes
-      .filter((p) => levelsForMajorCount.includes(normalizePrizeLevel(p.level)))
-      .reduce((sum, p) => sum + (p.total || 0), 0) || undefined;
 
   const fairnessHref = `/fairness/${product.id}`;
 

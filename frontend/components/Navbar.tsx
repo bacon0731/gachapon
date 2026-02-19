@@ -188,7 +188,7 @@ function NavbarInner() {
   const hotSearches = ['航海王', '七龍珠', '鬼滅之刃', 'SPY×FAMILY', '寶可夢', '進擊的巨人', '鏈鋸人', '約定的夢幻島', '東京復仇者', '排球少年'];
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
 
-  const [notifications, setNotifications] = useState<Array<{
+  type NotificationItem = {
     id: number
     type: string
     title: string
@@ -196,7 +196,9 @@ function NavbarInner() {
     link: string | null
     is_read: boolean
     created_at: string | null
-  }>>([])
+  }
+
+  const [notifications, setNotifications] = useState<NotificationItem[]>([])
 
   const unreadCount = notifications.filter(n => !n.is_read).length
 
@@ -235,7 +237,16 @@ function NavbarInner() {
         .limit(20)
 
       if (!error && data) {
-        setNotifications(data as any)
+        const mapped: NotificationItem[] = data.map(item => ({
+          id: item.id,
+          type: item.type,
+          title: item.title,
+          body: item.body,
+          link: item.link,
+          is_read: item.is_read,
+          created_at: item.created_at,
+        }))
+        setNotifications(mapped)
       }
     }
 
@@ -256,7 +267,15 @@ function NavbarInner() {
           filter: `user_id=eq.${user.id}`,
         },
         payload => {
-          const n: any = payload.new
+          const n = payload.new as {
+            id: number
+            type: string
+            title: string
+            body: string | null
+            link: string | null
+            is_read: boolean
+            created_at: string | null
+          } | null
           if (!n) return
 
           setNotifications(prev => {

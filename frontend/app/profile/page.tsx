@@ -650,7 +650,7 @@ function ProfileContent() {
     } finally {
       setIsLoadingData(false);
     }
-  }, [user, activeTab, activeWarehouseTab, activeMarketTab, supabase]);
+  }, [user, activeTab, activeWarehouseTab, supabase]);
 
   const handleRedeemCoupon = async () => {
     if (!user) return;
