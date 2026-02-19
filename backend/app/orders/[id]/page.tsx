@@ -138,6 +138,30 @@ export default function OrderDetailPage() {
       if (error) throw error
 
       setShipment({ ...shipment, status: newStatus })
+
+      const statusTextMap: Record<ShipmentStatus, string> = {
+        submitted: '已提交',
+        processing: '處理中',
+        picked_up: '物流已收取',
+        shipping: '配送中',
+        delivered: '已送達',
+        cancelled: '已取消',
+      }
+
+      const statusText = statusTextMap[newStatus]
+
+      await supabase.from('notifications').insert({
+        user_id: shipment.userId,
+        type: 'order_status',
+        title: '配送訂單狀態更新',
+        body: `您的配送訂單 ${shipment.orderId} 狀態已更新為：${statusText}`,
+        link: '/profile?tab=delivery',
+        meta: {
+          order_id: shipment.id,
+          order_number: shipment.orderId,
+          status: newStatus,
+        },
+      })
     } catch (err) {
       console.error('Error updating status:', err)
       alert('更新狀態失敗')

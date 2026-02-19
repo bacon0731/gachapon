@@ -60,7 +60,9 @@ function NavbarInner() {
   const isHomePage = pathname === '/';
   const isMainTab = pathname === '/shop' || pathname === '/news' || pathname === '/check-in' || pathname === '/market' || (pathname === '/profile' && !activeTab);
   const isInnerPage = !isHomePage && !isMainTab;
-  const isProductDetailPage = /^\/shop\/\d+$/.test(pathname);
+  const isShopProductDetailPage = /^\/shop\/\d+$/.test(pathname);
+  const isBlindboxDetailPage = /^\/blindbox\/\d+$/.test(pathname);
+  const isProductDetailPage = isShopProductDetailPage || isBlindboxDetailPage;
   const isNewsDetailPage = /^\/news\/[^/]+$/.test(pathname);
 
   const showMobileThemeToggle = pathname === '/' || pathname === '/shop' || pathname === '/market' || pathname === '/news';
@@ -69,7 +71,7 @@ function NavbarInner() {
 
   useEffect(() => {
     if (isProductDetailPage) {
-      const match = pathname.match(/^\/shop\/(\d+)$/);
+      const match = pathname.match(/^(?:\/shop|\/blindbox)\/(\d+)$/);
       if (match) {
         const productId = match[1];
         
@@ -131,7 +133,7 @@ function NavbarInner() {
       return;
     }
     
-    const match = pathname.match(/^\/shop\/(\d+)$/);
+    const match = pathname.match(/^(?:\/shop|\/blindbox)\/(\d+)$/);
     if (!match) return;
     const productId = match[1];
 
@@ -186,11 +188,17 @@ function NavbarInner() {
   const hotSearches = ['航海王', '七龍珠', '鬼滅之刃', 'SPY×FAMILY', '寶可夢', '進擊的巨人', '鏈鋸人', '約定的夢幻島', '東京復仇者', '排球少年'];
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
 
-  const notifications = [
-    { id: 1, type: 'delivery', title: '訂單配送通知', content: '您的訂單 #OD12345 已發貨', time: '10分鐘前', icon: <Truck className="w-4 h-4" />, status: 'unread' },
-    { id: 2, type: 'product', title: '關注商品開賣', content: '您關注的「航海王 蛋頭島一番賞」已正式開賣！', time: '2小時前', icon: <Sparkles className="w-4 h-4" />, status: 'unread' },
-    { id: 3, type: 'delivery', title: '配送狀態更新', content: '您的獎項已抵達門市', time: '昨日', icon: <Clock className="w-4 h-4" />, status: 'read' },
-  ];
+  const [notifications, setNotifications] = useState<Array<{
+    id: number
+    type: string
+    title: string
+    body: string | null
+    link: string | null
+    is_read: boolean
+    created_at: string | null
+  }>>([])
+
+  const unreadCount = notifications.filter(n => !n.is_read).length
 
   useEffect(() => {
     const saved = localStorage.getItem('searchHistory');
@@ -212,6 +220,120 @@ function NavbarInner() {
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setNotifications([])
+      return
+    }
+
+    const loadNotifications = async () => {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('id, type, title, body, link, is_read, created_at')
+        .order('created_at', { ascending: false })
+        .limit(20)
+
+      if (!error && data) {
+        setNotifications(data as any)
+      }
+    }
+
+    loadNotifications()
+  }, [user, supabase])
+
+  useEffect(() => {
+    if (!user) return
+
+    const channel = supabase
+      .channel(`notifications:${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        payload => {
+          const n: any = payload.new
+          if (!n) return
+
+          setNotifications(prev => {
+            if (prev.some(item => item.id === n.id)) return prev
+
+            const next = [
+              {
+                id: n.id,
+                type: n.type,
+                title: n.title,
+                body: n.body,
+                link: n.link,
+                is_read: n.is_read,
+                created_at: n.created_at,
+              },
+              ...prev,
+            ]
+
+            return next.slice(0, 20)
+          })
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [supabase, user])
+
+  const handleNotificationClick = async (n: {
+    id: number
+    type: string
+    title: string
+    body: string | null
+    link: string | null
+    is_read: boolean
+    created_at: string | null
+  }) => {
+    if (!n.is_read) {
+      setNotifications(prev =>
+        prev.map(item =>
+          item.id === n.id ? { ...item, is_read: true } : item
+        )
+      )
+
+      await supabase
+        .from('notifications')
+        .update({
+          is_read: true,
+          read_at: new Date().toISOString(),
+        })
+        .eq('id', n.id)
+    }
+
+    if (n.link) {
+      setIsNotificationOpen(false)
+      router.push(n.link)
+    }
+  }
+
+  const handleMarkAllNotificationsRead = async () => {
+    if (unreadCount === 0) return
+
+    setNotifications(prev =>
+      prev.map(item =>
+        item.is_read ? item : { ...item, is_read: true }
+      )
+    )
+
+    await supabase
+      .from('notifications')
+      .update({
+        is_read: true,
+        read_at: new Date().toISOString(),
+      })
+      .eq('is_read', false)
+  }
 
   // Debounce search effect
   useEffect(() => {
@@ -498,7 +620,9 @@ function NavbarInner() {
                   )}
                 >
                   <Bell className="w-5 h-5 stroke-[2.5]" />
-                  <span className="absolute top-2 right-2 w-2 h-2 bg-accent-red rounded-full border-2 border-white shadow-sm"></span>
+                  {unreadCount > 0 && (
+                    <span className="absolute top-2 right-2 min-w-[0.5rem] h-2 bg-accent-red rounded-full border-2 border-white shadow-sm" />
+                  )}
                 </button>
 
                 {/* Notifications Dropdown */}
@@ -506,32 +630,81 @@ function NavbarInner() {
                   <div className="absolute right-0 mt-3 w-80 bg-white dark:bg-neutral-900 rounded-3xl shadow-modal border border-neutral-100 dark:border-neutral-800 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-300">
                     <div className="p-4 border-b border-neutral-50 dark:border-neutral-800 flex items-center justify-between bg-neutral-50/30 dark:bg-neutral-800/30">
                       <h3 className="text-[13px] font-black text-neutral-900 dark:text-white uppercase tracking-widest">個人通知</h3>
-                      <span className="text-[11px] font-black text-primary bg-primary/5 px-2 py-0.5 rounded-md uppercase">2 則未讀</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-black text-primary bg-primary/5 px-2 py-0.5 rounded-md uppercase">
+                          {unreadCount > 0 ? `${unreadCount} 則未讀` : '無未讀通知'}
+                        </span>
+                        {unreadCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={handleMarkAllNotificationsRead}
+                            className="text-[11px] font-black text-neutral-400 hover:text-primary transition-colors"
+                          >
+                            全部標記為已讀
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
-                      {notifications.map((n) => (
-                        <button 
-                          key={n.id}
-                          className={cn(
-                            "w-full p-4 flex gap-4 text-left hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors border-b border-neutral-50 dark:border-neutral-800 last:border-0",
-                            n.status === 'unread' && "bg-primary/[0.02] dark:bg-primary/[0.05]"
-                          )}
-                        >
-                          <div className={cn(
-                            "w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
-                            n.type === 'delivery' ? "bg-accent-emerald/10 text-accent-emerald" : "bg-accent-yellow/10 text-accent-yellow"
-                          )}>
-                            {n.icon}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-0.5">
-                              <span className="text-[13px] font-black text-neutral-900 dark:text-white">{n.title}</span>
-                              <span className="text-[11px] font-black text-neutral-400 uppercase">{n.time}</span>
+                      {notifications.length === 0 && (
+                        <div className="px-4 py-6 text-center text-[13px] text-neutral-400 font-bold">
+                          目前沒有通知
+                        </div>
+                      )}
+                      {notifications.map((n) => {
+                        const iconBgClass =
+                          n.type === 'order_status'
+                            ? 'bg-accent-emerald/10 text-accent-emerald'
+                            : n.type === 'topup'
+                            ? 'bg-accent-yellow/10 text-accent-yellow'
+                            : n.type === 'coupon'
+                            ? 'bg-primary/10 text-primary'
+                            : 'bg-neutral-100 text-neutral-500'
+
+                        const icon =
+                          n.type === 'order_status' ? (
+                            <Truck className="w-4 h-4" />
+                          ) : n.type === 'product_follow' ? (
+                            <Heart className="w-4 h-4" />
+                          ) : n.type === 'topup' ? (
+                            <Sparkles className="w-4 h-4" />
+                          ) : (
+                            <Clock className="w-4 h-4" />
+                          )
+
+                        return (
+                          <button
+                            key={n.id}
+                            onClick={() => handleNotificationClick(n)}
+                            className={cn(
+                              'w-full p-4 flex gap-4 text-left hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors border-b border-neutral-50 dark:border-neutral-800 last:border-0',
+                              !n.is_read && 'bg-primary/[0.02] dark:bg-primary/[0.05]'
+                            )}
+                          >
+                            <div
+                              className={cn(
+                                'w-9 h-9 rounded-xl flex items-center justify-center shrink-0',
+                                iconBgClass
+                              )}
+                            >
+                              {icon}
                             </div>
-                            <p className="text-[13px] text-neutral-500 dark:text-neutral-400 font-bold leading-snug line-clamp-2">{n.content}</p>
-                          </div>
-                        </button>
-                      ))}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between mb-0.5">
+                                <span className="text-[13px] font-black text-neutral-900 dark:text-white">
+                                  {n.title}
+                                </span>
+                                <span className="text-[11px] font-black text-neutral-400 uppercase">
+                                  {n.created_at ? new Date(n.created_at).toLocaleString() : ''}
+                                </span>
+                              </div>
+                              <p className="text-[13px] text-neutral-500 dark:text-neutral-400 font-bold leading-snug line-clamp-2">
+                                {n.body || ''}
+                              </p>
+                            </div>
+                          </button>
+                        )
+                      })}
                     </div>
                     <Link href="/profile" className="block w-full py-3.5 text-center text-[13px] font-black text-neutral-400 hover:text-primary transition-colors bg-neutral-50/50 dark:bg-neutral-800/50 uppercase tracking-widest">
                       查看所有通知

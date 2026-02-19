@@ -293,6 +293,12 @@ export default function ProductDetailPage() {
         .single();
       
       if (productError) throw productError;
+
+      if (productData?.type === 'blindbox') {
+        router.replace(`/blindbox/${productId}`);
+        return;
+      }
+
       setProduct(productData);
 
       const { data: prizesData, error: prizesError } = await supabase

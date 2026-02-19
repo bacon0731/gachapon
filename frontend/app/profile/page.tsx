@@ -701,6 +701,18 @@ function ProfileContent() {
 
       if (insertError) throw insertError;
 
+      await supabase.from('notifications').insert({
+        user_id: user.id,
+        type: 'coupon',
+        title: '折價券領取成功',
+        body: '您成功領取一張新的優惠券，可至「我的優惠券」查看詳情。',
+        link: '/profile?tab=coupons',
+        meta: {
+          coupon_id: coupon.id,
+          code,
+        },
+      });
+
       toast.success('折價券領取成功');
       setCouponCode('');
       await fetchUserData();
@@ -761,6 +773,19 @@ function ProfileContent() {
         .in('id', selectedForDelivery);
 
       if (updateError) throw updateError;
+
+      await supabase.from('notifications').insert({
+        user_id: user!.id,
+        type: 'order_status',
+        title: '配送申請已提交',
+        body: `您的配送申請已提交，訂單編號：${order.order_number}`,
+        link: '/profile?tab=delivery',
+        meta: {
+          order_id: order.id,
+          order_number: order.order_number,
+          status: 'submitted',
+        },
+      });
 
       toast.success('配送申請已提交！');
       setShowDeliveryModal(false);

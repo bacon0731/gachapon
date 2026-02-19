@@ -203,7 +203,7 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
           <div
             className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center px-4 rounded-full"
             style={{
-              top: 40,
+              top: 92,
               height: 24,
               backgroundColor: 'rgba(0,0,0,0.7)',
               maxWidth: 320,
@@ -245,7 +245,7 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
           </div>
           <div className="w-full max-w-[750px] mx-auto">
             <div className="w-full">
-              <div className="relative w-full" style={{ aspectRatio: '750/1036' }}>
+              <div className="relative w-full" style={{ aspectRatio: '750/932' }}>
                 <GachaMachineVisual
                   state={machineState}
                   shakeRepeats={shakeRepeats}

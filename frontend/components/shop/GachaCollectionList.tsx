@@ -56,16 +56,13 @@ export function GachaCollectionList({ productId, prizes, refreshKey }: GachaColl
   // I will include all prizes.
 
   return (
-    <div
-      className="relative w-full"
-      style={{ aspectRatio: '750/750', transform: 'translateY(-7%)' }}
-    >
+    <div className="relative w-full" style={{ aspectRatio: '750/798' }}>
       <div className="absolute inset-0 overflow-hidden">
         <Image
           src="/images/gacha/cab.png"
           alt="全套收集背景"
           fill
-          className="object-cover"
+          className="object-cover object-[0_0]"
           unoptimized
         />
       </div>
@@ -73,7 +70,7 @@ export function GachaCollectionList({ productId, prizes, refreshKey }: GachaColl
       <div className="relative z-10 h-full px-6 pt-10 pb-6">
         <div
           className="absolute left-1/2 -translate-x-1/2 text-center"
-          style={{ top: '-3.5%' }}
+          style={{ top: '2.5%' }}
         >
           <h2 className="text-base font-black text-white tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
             全套收集 ({user ? allObtainedPrizeIds.size : 0}/{prizes.length})
@@ -86,8 +83,8 @@ export function GachaCollectionList({ productId, prizes, refreshKey }: GachaColl
         </div>
 
         <div
-          className="grid grid-cols-3 gap-y-2 gap-x-[9%] relative h-[calc(100%-3rem)]"
-          style={{ transform: 'translateY(-9%)' }}
+          className="grid grid-cols-3 gap-y-2 gap-x-[9%] relative h-[calc(100%-3.6rem)]"
+          style={{ transform: 'translateY(-1%)' }}
         >
         {prizes.map((prize, index) => {
           const isObtained = allObtainedPrizeIds.has(prize.id);
@@ -101,9 +98,9 @@ export function GachaCollectionList({ productId, prizes, refreshKey }: GachaColl
               )}
               style={
                 index < 3
-                  ? { transform: 'translateY(6%)' }
+                  ? { transform: 'translateY(8%)' }
                   : index >= 3 && index < 6
-                    ? { transform: 'translateY(-8%)' }
+                    ? { transform: 'translateY(-10%)' }
                     : undefined
               }
             >

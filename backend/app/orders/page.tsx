@@ -145,14 +145,37 @@ export default function OrdersPage() {
 
       if (error) throw error
 
-      setLocalShipments(prev => prev.map(s => 
-        s.id === shipModal.orderId ? { 
-          ...s, 
-          status: 'shipping' as const,
-          trackingNumber: shipModal.trackingNumber,
-          shippedAt: formatDateTime(new Date().toISOString())
-        } : s
-      ))
+      const targetOrder = localShipments.find(s => s.id === shipModal.orderId) || null
+
+      const now = formatDateTime(new Date().toISOString())
+      setLocalShipments(prev =>
+        prev.map(s =>
+          s.id === shipModal.orderId
+            ? {
+                ...s,
+                status: 'shipping' as const,
+                trackingNumber: shipModal.trackingNumber,
+                shippedAt: now,
+              }
+            : s
+        )
+      )
+
+      if (targetOrder) {
+        await supabase.from('notifications').insert({
+          user_id: targetOrder.userId,
+          type: 'order_status',
+          title: '訂單已出貨',
+          body: `您的配送訂單 ${targetOrder.orderId} 已出貨，物流單號：${shipModal.trackingNumber}`,
+          link: '/profile?tab=delivery',
+          meta: {
+            order_id: targetOrder.id,
+            order_number: targetOrder.orderId,
+            status: 'shipping',
+            tracking_number: shipModal.trackingNumber,
+          },
+        })
+      }
 
       addLog('訂單出貨', '配送管理', `訂單 ${shipModal.orderNumber} 已出貨，物流單號：${shipModal.trackingNumber}`, 'success')
       setShipModal({ isOpen: false, orderId: null, orderNumber: '', trackingNumber: '' })

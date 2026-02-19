@@ -357,7 +357,7 @@ export function GachaMachineVisual({
         className="absolute overflow-hidden"
         style={{
           left: '8%',
-          top: '6%',
+          top: '10.58%',
           width: '84%',
           height: '36%',
         }}
@@ -386,7 +386,7 @@ export function GachaMachineVisual({
         className="absolute"
         style={{
           left: '41.2%',
-          top: '50.29%',
+          top: '55.87%',
           width: '17.47%',
           height: '12.16%',
         }}
@@ -435,7 +435,7 @@ export function GachaMachineVisual({
         textClassName="text-base md:text-lg"
         style={{
           left: '5.33%',
-          top: '75.39%',
+          top: '84.5%',
           width: '25.06%',
           height: '11.2%',
         }}
@@ -452,7 +452,7 @@ export function GachaMachineVisual({
         textClassName="text-base md:text-lg"
         style={{
           left: '31.73%',
-          top: '75.39%',
+          top: '84.5%',
           width: '36.53%',
           height: '11.2%',
         }}
@@ -469,7 +469,7 @@ export function GachaMachineVisual({
         textClassName="text-base md:text-lg"
         style={{
           left: '69.6%',
-          top: '75.39%',
+          top: '84.5%',
           width: '25.06%',
           height: '11.2%',
         }}

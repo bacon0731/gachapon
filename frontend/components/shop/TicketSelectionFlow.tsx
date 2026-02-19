@@ -93,12 +93,24 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
   const [hasTriggeredAutoResults, setHasTriggeredAutoResults] = useState(false);
   const [totalTicketsCount, setTotalTicketsCount] = useState<number>(80);
   const [remainingTickets, setRemainingTickets] = useState<number | null>(null);
+  const [blindboxPhase, setBlindboxPhase] = useState<'opening' | 'revealed'>('opening');
 
   useEffect(() => {
     if (!showAPrizePopup) return;
     const timer = setTimeout(() => setShowAPrizePopup(false), 3000);
     return () => clearTimeout(timer);
   }, [showAPrizePopup]);
+
+  useEffect(() => {
+    if (!product || product.type !== 'blindbox') return;
+    if (drawnResults.length === 0) {
+      setBlindboxPhase('opening');
+      return;
+    }
+    setBlindboxPhase('opening');
+    const timer = setTimeout(() => setBlindboxPhase('revealed'), 2000);
+    return () => clearTimeout(timer);
+  }, [product, drawnResults]);
 
   const handleShowFullResults = async () => {
     if (!product) return;
@@ -461,6 +473,7 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
     setShowLastOneCelebration(false);
     setShowResultModal(false);
     setShowAPrizePopup(false);
+    setBlindboxPhase('opening');
   };
 
   const handleBackToProduct = () => {
@@ -471,13 +484,22 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
       return;
     }
 
+    if (product?.type === 'blindbox' && product.id) {
+      router.push(`/blindbox/${product.id}`);
+      return;
+    }
+
     if (params?.id) {
       router.push(`/shop/${params.id}`);
-    } else if (product?.id) {
-      router.push(`/shop/${product.id}`);
-    } else {
-      router.push('/shop');
+      return;
     }
+
+    if (product?.id) {
+      router.push(`/shop/${product.id}`);
+      return;
+    }
+
+    router.push('/shop');
   };
 
   // If we are showing results, render the result flow (New: Inline, Old: Modal)
@@ -491,6 +513,127 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
   if (!product) return <div className="min-h-[50vh] flex items-center justify-center">Product not found</div>;
 
   // Prize Reveal View (Full Screen Overlay)
+  if (drawnResults.length > 0 && product?.type === 'blindbox') {
+    const hasLastOne = drawnResults.some(r => r.is_last_one);
+    const ticketsRemaining = Math.max(totalTicketsCount - soldTickets.length, 0);
+    const isFinished = ticketsRemaining <= 0 || product.status === 'ended';
+
+    return (
+      <div className="fixed inset-0 z-[2000] bg-white flex flex-col items-center justify-center p-6">
+        <AnimatePresence>
+          {showLastOneCelebration && (
+            <LastOneCelebrationModal onClose={() => setShowLastOneCelebration(false)} />
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {showAPrizePopup && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="fixed inset-0 z-[2500] flex items-center justify-center px-4"
+            >
+              <div className="bg-black/80 text-white rounded-3xl px-8 py-5 text-center shadow-xl border border-yellow-400/60 flex flex-col items-center justify-center gap-1">
+                <div className="text-xl font-black tracking-widest">
+                  出「A賞」
+                </div>
+                <div className="text-lg font-black">
+                  那就真的很玄了喔！
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {blindboxPhase === 'opening' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex flex-col items-center justify-center gap-4"
+          >
+            <div className="w-32 h-32 rounded-3xl bg-neutral-900 text-white flex items-center justify-center text-lg font-black tracking-widest">
+              開盒中...
+            </div>
+            <div className="text-sm font-black text-neutral-500 tracking-widest uppercase">
+              BLIND BOX
+            </div>
+          </motion.div>
+        )}
+
+        {blindboxPhase === 'revealed' && (
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 24 }}
+            className="w-full max-w-xl mx-auto flex flex-col items-center gap-6"
+          >
+            <div className="text-xs font-black text-neutral-400 tracking-widest uppercase">
+              YOU GOT
+            </div>
+            <div className="w-full rounded-3xl bg-neutral-50 border border-neutral-200 shadow-lg overflow-hidden">
+              <div className="grid grid-cols-1 sm:grid-cols-2">
+                <div className="relative aspect-square bg-neutral-100">
+                  <Image
+                    src={drawnResults[0]?.image_url}
+                    alt={drawnResults[0]?.name}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
+                </div>
+                <div className="p-4 sm:p-6 flex flex-col justify-between gap-3">
+                  <div className="space-y-2">
+                    <div className="inline-flex items-center px-2 py-0.5 rounded-full bg-black text-white text-[11px] font-black tracking-widest">
+                      {drawnResults[0]?.grade}
+                    </div>
+                    <div className="text-lg sm:text-xl font-black text-neutral-900 leading-tight">
+                      {drawnResults[0]?.name}
+                    </div>
+                    <div className="text-[11px] text-neutral-400 font-black">
+                      票號 {drawnResults[0]?.ticket_number}
+                    </div>
+                    {hasLastOne && (
+                      <div className="inline-flex items-center px-2 py-0.5 rounded-full bg-accent-red/10 text-accent-red text-[11px] font-black tracking-widest">
+                        LAST ONE
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-[11px] text-neutral-400 font-black">
+                    剩餘 {ticketsRemaining.toLocaleString()} / {totalTicketsCount.toLocaleString()}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2 w-full max-w-xl">
+              <Button
+                className="flex-1 h-[44px] rounded-xl text-sm font-black tracking-widest uppercase"
+                onClick={handleContinueDraw}
+              >
+                再開一盒
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1 h-[44px] rounded-xl text-sm font-black tracking-widest uppercase"
+                onClick={handleBackToProduct}
+              >
+                返回盒玩頁
+              </Button>
+            </div>
+
+            {isFinished && (
+              <div className="text-[11px] font-black text-neutral-400 tracking-widest uppercase">
+                此商品已無剩餘盒數
+              </div>
+            )}
+          </motion.div>
+        )}
+      </div>
+    );
+  }
+
   if (drawnResults.length > 0) {
     const allOpened = drawnResults.every(r => r.isOpened);
     const hasLastOne = drawnResults.some(r => r.is_last_one);

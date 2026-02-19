@@ -90,8 +90,10 @@ export default function ProductCard({
     }
   };
 
+  const href = type === 'blindbox' ? `/blindbox/${id}` : `/shop/${id}`;
+
   return (
-    <Link href={`/shop/${id}`} className="group block h-full">
+    <Link href={href} className="group block h-full">
       <div className="relative h-full flex flex-col bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 overflow-hidden hover:shadow-card hover:-translate-y-1 transition-all duration-300">
         {/* Image Container */}
         <div className="relative aspect-square overflow-hidden bg-neutral-100 dark:bg-neutral-800 rounded-t-2xl">
@@ -107,8 +109,18 @@ export default function ProductCard({
           
           {/* Status Badges */}
           <div className="absolute top-0 left-0 z-10 flex flex-col pointer-events-none">
-            {isHot && <ProductBadge type="hot" className="rounded-2xl rounded-tr-none rounded-bl-none" />}
-            {isNew && !isHot && <ProductBadge type="new" className="rounded-2xl rounded-tr-none rounded-bl-none" />}
+            {isHot && (
+              <ProductBadge
+                type="hot"
+                className="h-6 rounded-2xl rounded-tr-none rounded-bl-none"
+              />
+            )}
+            {isNew && !isHot && (
+              <ProductBadge
+                type="new"
+                className="h-6 rounded-2xl rounded-tr-none rounded-bl-none"
+              />
+            )}
           </div>
           
           <div className="absolute top-0 right-0 z-10 flex flex-col items-end pointer-events-none">

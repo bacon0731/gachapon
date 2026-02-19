@@ -223,6 +223,44 @@ export interface Database {
           created_at?: string | null
         }
       }
+      notifications: {
+        Row: {
+          id: number
+          user_id: string | null
+          type: string
+          title: string
+          body: string | null
+          link: string | null
+          is_read: boolean
+          read_at: string | null
+          meta: Json | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: number
+          user_id?: string | null
+          type: string
+          title: string
+          body?: string | null
+          link?: string | null
+          is_read?: boolean
+          read_at?: string | null
+          meta?: Json | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: number
+          user_id?: string | null
+          type?: string
+          title?: string
+          body?: string | null
+          link?: string | null
+          is_read?: boolean
+          read_at?: string | null
+          meta?: Json | null
+          created_at?: string | null
+        }
+      }
       draw_records: {
         Row: {
           id: number

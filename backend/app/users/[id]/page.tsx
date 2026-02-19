@@ -330,6 +330,18 @@ export default function UserDetailPage() {
           // Revert
           setUserStatus(user.status)
           setUser({ ...user, status: user.status })
+        } else {
+          const text = getStatusText(newStatus)
+          await supabase.from('notifications').insert({
+            user_id: user.id,
+            type: 'security',
+            title: '帳號狀態變更通知',
+            body: `您的帳號狀態已被管理員設為：${text}`,
+            link: '/profile?tab=settings',
+            meta: {
+              status: newStatus,
+            },
+          })
         }
       } catch (err) {
         console.error('Error:', err)
