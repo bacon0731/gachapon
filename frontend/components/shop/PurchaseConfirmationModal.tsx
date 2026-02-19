@@ -181,7 +181,12 @@ export function PurchaseConfirmationModal({
                     >
                       <Minus className={cn(isDesktop ? "w-4 h-4" : "w-3.5 h-3.5")} />
                     </button>
-                    <span className={cn("w-6 text-center font-amount font-black text-neutral-900 dark:text-white", isDesktop ? "text-2xl" : "text-lg")}>
+                    <span
+                      className={cn(
+                        "w-6 text-center font-black text-neutral-900 dark:text-white font-[\"Chiron_GoRound_TC\"]",
+                        isDesktop ? "text-2xl" : "text-lg"
+                      )}
+                    >
                       {quantity}
                     </span>
                     <button
@@ -227,13 +232,11 @@ export function PurchaseConfirmationModal({
                 className={cn(
                   "w-full rounded-xl font-black shadow-xl transition-all active:scale-[0.98]",
                   isDesktop ? "h-[52px] text-lg" : "h-[44px] text-base",
-                  isInsufficient 
-                    ? "bg-neutral-200 text-neutral-400 shadow-none cursor-not-allowed"
-                    : "bg-accent-red text-white shadow-accent-red/20 hover:bg-accent-red/90"
+                  "bg-accent-red text-white shadow-accent-red/20 hover:bg-accent-red/90"
                 )}
                 variant="danger"
               >
-                {isProcessing ? '處理中...' : isInsufficient ? '餘額不足' : `確認支付 ${totalPrice.toLocaleString()} 代幣`}
+                {isProcessing ? '處理中...' : `確認支付 ${totalPrice.toLocaleString()} 代幣`}
               </Button>
             </div>
           </motion.div>

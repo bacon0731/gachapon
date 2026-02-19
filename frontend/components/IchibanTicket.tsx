@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
@@ -23,6 +23,34 @@ const formatPrizeName = (name: string) => {
   }
 
   return lines.join('\n');
+};
+
+const useTearSound = () => {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const audio = new Audio('/audio/tanweraman-paper-rip-fast-252617.mp3');
+    audio.preload = 'auto';
+    audioRef.current = audio;
+
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+        audioRef.current.load();
+      }
+    };
+  }, []);
+
+  const play = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.currentTime = 0;
+    void audio.play().catch(() => {});
+  };
+
+  return play;
 };
 
 interface IchibanTicketProps {
@@ -52,6 +80,7 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
 }) => {
   const [internalIsOpened, setInternalIsOpened] = useState(false);
   const [dragProgress, setDragProgress] = useState(0);
+  const playTearSound = useTearSound();
   const isOpened = externalIsOpened !== undefined ? externalIsOpened : internalIsOpened;
   const formattedPrizeName = React.useMemo(() => formatPrizeName(prizeName), [prizeName]);
 
@@ -59,6 +88,7 @@ export const IchibanTicket: React.FC<IchibanTicketProps> = ({
     if (!isOpened) {
       setInternalIsOpened(true);
       setDragProgress(1);
+      playTearSound();
       onOpen?.();
     }
   };

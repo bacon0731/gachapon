@@ -42,6 +42,7 @@ import { ProfileSkeleton } from '@/components/Skeletons';
 import { WarehouseItemDetailModal } from '@/components/warehouse/WarehouseItemDetailModal';
 import ProductCard from '@/components/ProductCard';
 import Image from 'next/image';
+import { useAlert } from '@/components/ui/AlertDialog';
 
 import DailyCheckInTab from '@/components/profile/DailyCheckInTab';
 
@@ -270,6 +271,7 @@ const getStatusConfig = (status: string) => {
 
 function ProfileContent() {
   const { user, logout, refreshProfile, isLoading: isAuthLoading } = useAuth();
+  const { showAlert } = useAlert();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [supabase] = useState(() => createClient());
@@ -925,10 +927,16 @@ function ProfileContent() {
     }
   };
 
-  const handleLogout = async () => {
-    if (confirm('確定要登出您的帳號嗎？')) {
-      await logout();
-    }
+  const handleLogout = () => {
+    showAlert({
+      title: '登出確認',
+      message: '確定要登出您的帳號嗎？',
+      type: 'confirm',
+      confirmText: '確認登出',
+      onConfirm: async () => {
+        await logout();
+      },
+    });
   };
 
   if (isAuthLoading || !user) {

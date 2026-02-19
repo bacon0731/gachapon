@@ -101,16 +101,12 @@ export function GachaResultModal({ isOpen, onClose, results }: GachaResultModalP
                 />
               </div>
 
-              <p className="absolute -translate-x-1/2 left-1/2 top-[3%] text-[28px] font-black text-[#fcf2dc] text-center whitespace-nowrap">
-                恭喜！您獲得了
-              </p>
-
               {activePrize && (
                 <>
                   <motion.div
                     key={activePrize.id ?? activeIndex}
-                    className="absolute left-[32.4%] top-[32.5%] h-[30.9%] w-[33.3%]"
-                    drag={hasMultiple ? "x" : false}
+                    className="absolute left-[38%] top-[42%] -translate-x-1/2 -translate-y-1/2 w-[24%] aspect-square"
+                    drag={hasMultiple ? 'x' : false}
                     dragConstraints={{ left: 0, right: 0 }}
                     dragElastic={0.2}
                     onDragEnd={(_, info) => {
@@ -126,19 +122,33 @@ export function GachaResultModal({ isOpen, onClose, results }: GachaResultModalP
                     exit={{ opacity: 0, scale: 0.9, x: -20 }}
                     transition={{ type: 'spring', stiffness: 260, damping: 20 }}
                   >
-                    <div className="absolute left-0 top-0 h-full w-full bg-[#d4d4d4]" />
-                    <Image
-                      src={activePrize.image_url || '/images/item.png'}
-                      alt={activePrize.name}
-                      fill
-                      className="object-contain"
-                      unoptimized
-                    />
+                    <div className="absolute inset-0 rounded-xl overflow-hidden bg-[#d4d4d4]">
+                      <Image
+                        src={activePrize.image_url || '/images/item.png'}
+                        alt={activePrize.name}
+                        fill
+                        className="object-cover object-[25%_50%]"
+                        unoptimized
+                      />
+                    </div>
                   </motion.div>
 
-                  <p className="absolute -translate-x-1/2 left-1/2 top-[69.5%] text-center text-[14px] font-black text-[#894801] leading-snug px-4 whitespace-nowrap">
-                    {activePrize.name}
-                  </p>
+                  <div className="absolute left-1/2 top-[72.5%] -translate-x-1/2 w-[37.3%] h-[8.4%] flex items-center justify-center">
+                    <p
+                      className="w-full text-center overflow-hidden text-white text-[14px] font-bold"
+                      style={{
+                        textShadow: '0 2px 2px rgba(87, 13, 13, 0.25)',
+                        fontFamily: '"Chiron GoRound TC"',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        wordBreak: 'break-word',
+                        lineHeight: 1,
+                      }}
+                    >
+                      {activePrize.name}
+                    </p>
+                  </div>
 
                   {hasMultiple && (
                     <>
@@ -214,7 +224,7 @@ export function GachaResultModal({ isOpen, onClose, results }: GachaResultModalP
                 </div>
               </div>
 
-              <div className="absolute left-[28.2%] top-[88.8%] h-[9.9%] w-[41.8%]">
+              <div className="absolute left-1/2 -translate-x-1/2 top-[88.8%] h-[9.9%] w-[41.8%]">
                 <div className="absolute left-0 top-0 h-full w-full">
                   <Image
                     src="/images/gacha/popup/btn.png"

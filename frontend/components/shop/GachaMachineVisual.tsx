@@ -27,6 +27,62 @@ interface Egg {
   angularVelocity: number;
 }
 
+const usePushSound = () => {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const audio = new Audio('/audio/freesound_community-lid-close-98389.mp3');
+    audio.preload = 'auto';
+    audioRef.current = audio;
+
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+        audioRef.current.load();
+      }
+    };
+  }, []);
+
+  const play = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.currentTime = 0;
+    void audio.play().catch(() => {});
+  };
+
+  return play;
+};
+
+const useDropSound = () => {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const audio = new Audio('/audio/spinopel-open-a-egg-carton-345737.mp3');
+    audio.preload = 'auto';
+    audioRef.current = audio;
+
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+        audioRef.current.load();
+      }
+    };
+  }, []);
+
+  const play = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.currentTime = 0;
+    void audio.play().catch(() => {});
+  };
+
+  return play;
+};
+
 export function GachaMachineVisual({
   state,
   shakeRepeats = 1,
@@ -113,6 +169,8 @@ export function GachaMachineVisual({
     return eggs;
   };
 
+  const playPushSound = usePushSound();
+  const playDropSound = useDropSound();
   const [eggs, setEggs] = useState<Egg[]>(() => createInitialEggs());
   const eggsRef = useRef<Egg[]>(eggs);
 
@@ -127,6 +185,7 @@ export function GachaMachineVisual({
 
   const stateRef = useRef({ isSpinning, isShaking });
   const prevIsShaking = useRef(false);
+  const prevIsDropping = useRef(isDropping);
   const lastShakeTimeRef = useRef<number | null>(null);
   const hasNotifiedLoadedRef = useRef(false);
 
@@ -138,25 +197,30 @@ export function GachaMachineVisual({
     stateRef.current = { isSpinning, isShaking };
   }, [isSpinning, isShaking]);
 
-  const applyShakeImpulse = () => {
-    lastShakeTimeRef.current = performance.now() / 1000;
-    const next = eggsRef.current.map((egg) => {
-      const angle = Math.random() * Math.PI * 2;
-      const strength = 4;
-      return {
-        ...egg,
-        vx: egg.vx + Math.cos(angle) * strength,
-        vy: egg.vy - Math.abs(Math.sin(angle)) * strength - 6,
-      };
-    });
-    eggsRef.current = next;
-    setEggs(next);
-  };
+  const applyShakeImpulseRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    applyShakeImpulseRef.current = () => {
+      playPushSound();
+      lastShakeTimeRef.current = performance.now() / 1000;
+      const next = eggsRef.current.map((egg) => {
+        const angle = Math.random() * Math.PI * 2;
+        const strength = 4;
+        return {
+          ...egg,
+          vx: egg.vx + Math.cos(angle) * strength,
+          vy: egg.vy - Math.abs(Math.sin(angle)) * strength - 6,
+        };
+      });
+      eggsRef.current = next;
+      setEggs(next);
+    };
+  }, [playPushSound]);
 
   useEffect(() => {
     const timeouts: number[] = [];
 
-    if (isShaking && !prevIsShaking.current) {
+    if (isShaking && !prevIsShaking.current && applyShakeImpulseRef.current) {
       const repeats = Math.max(1, Math.floor(shakeRepeats));
       const baseInterval = 1000;
       const jitter = 0;
@@ -165,7 +229,7 @@ export function GachaMachineVisual({
         const delay = Math.max(0, i * baseInterval + offset);
         const id = window.setTimeout(() => {
           if (stateRef.current.isShaking) {
-            applyShakeImpulse();
+            applyShakeImpulseRef.current?.();
           }
         }, delay);
         timeouts.push(id);
@@ -178,6 +242,13 @@ export function GachaMachineVisual({
       timeouts.forEach((id) => window.clearTimeout(id));
     };
   }, [isShaking, shakeRepeats]);
+
+  useEffect(() => {
+    if (isDropping && !prevIsDropping.current) {
+      playDropSound();
+    }
+    prevIsDropping.current = isDropping;
+  }, [isDropping, playDropSound]);
 
   useEffect(() => {
     let frameId: number;

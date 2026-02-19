@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/types/database.types';
 import { Button } from '@/components/ui';
@@ -11,6 +10,8 @@ import ProductDetailSkeleton from '@/components/ProductDetailSkeleton';
 import { PurchaseConfirmationModal } from '@/components/shop/PurchaseConfirmationModal';
 import { ImageButton } from '@/components/ui/ImageButton';
 import { GachaCollectionList } from '@/components/shop/GachaCollectionList';
+import { GachaResultModal } from '@/components/shop/GachaResultModal';
+import type { Prize as GachaPrize } from '@/components/GachaMachine';
 
 type ProductRow = Database['public']['Tables']['products']['Row'];
 type PrizeRow = Database['public']['Tables']['product_prizes']['Row'];
@@ -41,6 +42,9 @@ export default function BlindboxDetailPage() {
   const [collectionRefreshKey, setCollectionRefreshKey] = useState(0);
   const [videoMode, setVideoMode] = useState<'trial' | 'purchase' | null>(null);
   const [scale, setScale] = useState(1);
+  const [bgVariantIndex, setBgVariantIndex] = useState(0);
+  const bgVideos = ['/videos/bg.mp4'];
+  const bgVideoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -108,13 +112,24 @@ export default function BlindboxDetailPage() {
     };
   }, []);
 
+  const replayBackgroundVideo = () => {
+    const el = bgVideoRef.current;
+    if (!el) return;
+    try {
+      el.currentTime = 0;
+      el.play().catch(() => undefined);
+    } catch {
+    }
+  };
+
   const handlePlay = () => {
     if (!product) return;
     setIsPurchaseModalOpen(true);
   };
 
   const handleChangeBox = () => {
-    router.push('/shop');
+    setBgVariantIndex((prev) => (prev + 1) % bgVideos.length);
+    replayBackgroundVideo();
   };
 
   const handleTrial = () => {
@@ -167,7 +182,6 @@ export default function BlindboxDetailPage() {
       }));
 
       setWonPrizes(results);
-      setCollectionRefreshKey(prev => prev + 1);
       setIsPurchaseModalOpen(false);
       setVideoMode('purchase');
       setIsVideoOpen(true);
@@ -183,6 +197,7 @@ export default function BlindboxDetailPage() {
 
     if (wonPrizes.length > 0 && videoMode !== null) {
       setIsPrizeModalOpen(true);
+      setCollectionRefreshKey((prev) => prev + 1);
     }
 
     setVideoMode(null);
@@ -193,6 +208,7 @@ export default function BlindboxDetailPage() {
 
     if (wonPrizes.length > 0 && videoMode !== null) {
       setIsPrizeModalOpen(true);
+      setCollectionRefreshKey((prev) => prev + 1);
     }
 
     setVideoMode(null);
@@ -200,12 +216,17 @@ export default function BlindboxDetailPage() {
 
   const handlePrizeClose = () => {
     setIsPrizeModalOpen(false);
+    replayBackgroundVideo();
   };
 
-  const handlePrizeGoToWarehouse = () => {
-    setIsPrizeModalOpen(false);
-    router.push(`/profile?tab=warehouse&product_id=${product?.id}`);
-  };
+  const blindboxResults: GachaPrize[] = wonPrizes.map(p => ({
+    id: p.id,
+    name: p.name,
+    rarity: p.grade,
+    image_url: p.image_url,
+    grade: p.grade,
+    is_last_one: p.is_last_one,
+  }));
 
   if (isLoading) {
     return <ProductDetailSkeleton />;
@@ -226,8 +247,8 @@ export default function BlindboxDetailPage() {
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 pb-32 md:pb-12 pt-14 md:pt-0">
-      <div className="max-w-7xl mx-auto px-0 py-2 sm:px-2 sm:py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 lg:gap-6 items-start">
+      <div className="max-w-7xl mx-auto px-0 pb-2 sm:px-2 sm:pb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 lg:gap-6 items-start">
           <div className="lg:col-span-4 lg:sticky lg:top-24">
             <div className="w-full flex justify-center">
               <div
@@ -241,7 +262,8 @@ export default function BlindboxDetailPage() {
                 <div className="bg-neutral-950 shadow-card border border-neutral-900 overflow-hidden">
                   <div className="relative w-full" style={{ aspectRatio: '750/932' }}>
                     <video
-                      src="/videos/bg.mp4"
+                      ref={bgVideoRef}
+                      src={bgVideos[bgVariantIndex]}
                       className="absolute inset-0 w-full h-full object-cover"
                       autoPlay
                       muted
@@ -351,61 +373,11 @@ export default function BlindboxDetailPage() {
         </div>
       )}
       {isPrizeModalOpen && (
-        <div className="fixed inset-0 z-[2150] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handlePrizeClose} />
-          <div className="relative z-[2151] w-full max-w-sm mx-4 bg-white dark:bg-neutral-900 rounded-3xl shadow-2xl border border-neutral-100 dark:border-neutral-800 p-5 space-y-4">
-            <div className="text-center space-y-1">
-              <div className="text-xs font-black text-neutral-400 tracking-widest uppercase">恭喜獲得</div>
-              <div className="text-lg font-black text-neutral-900 dark:text-neutral-50">
-                {wonPrizes.length === 1 ? wonPrizes[0]?.name : `共 ${wonPrizes.length} 件獎品`}
-              </div>
-            </div>
-            <div className="grid grid-cols-1 gap-3 max-h-[260px] overflow-y-auto custom-scrollbar">
-              {wonPrizes.map((p) => (
-                <div
-                  key={p.id}
-                  className="flex items-center gap-3 rounded-2xl border border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/60 p-2.5"
-                >
-                  <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-neutral-100 dark:bg-neutral-800 flex-shrink-0">
-                    {p.image_url && (
-                      <Image src={p.image_url} alt={p.name} fill className="object-cover" unoptimized />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-black text-white text-[11px] font-black tracking-widest">
-                        {p.grade}
-                      </span>
-                      {p.ticket_number !== undefined && (
-                        <span className="text-[11px] font-black text-neutral-400">
-                          票號 {p.ticket_number}
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-1 text-sm font-black text-neutral-900 dark:text-neutral-50 line-clamp-2">
-                      {p.name}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Button
-                className="flex-1 h-[44px] rounded-xl text-sm font-black tracking-widest uppercase"
-                onClick={handlePrizeGoToWarehouse}
-              >
-                前往倉庫
-              </Button>
-              <Button
-                variant="outline"
-                className="flex-1 h-[44px] rounded-xl text-sm font-black tracking-widest uppercase"
-                onClick={handlePrizeClose}
-              >
-                繼續開盒
-              </Button>
-            </div>
-          </div>
-        </div>
+        <GachaResultModal
+          isOpen={isPrizeModalOpen}
+          onClose={handlePrizeClose}
+          results={blindboxResults}
+        />
       )}
     </div>
   );

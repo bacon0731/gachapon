@@ -118,7 +118,6 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
       }));
 
       setWonPrizes(results);
-      setCollectionRefreshKey(prev => prev + 1);
       runGachaAnimation();
 
     } catch (error: unknown) {
@@ -177,6 +176,7 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
   const handleHoleClick = () => {
     if (!hasPendingResult || wonPrizes.length === 0) return;
     setShowResultModal(true);
+    setCollectionRefreshKey(prev => prev + 1);
     setMachineState('result');
   };
 
@@ -203,7 +203,7 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
           <div
             className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center px-4 rounded-full"
             style={{
-              top: 92,
+              top: isMobile ? 92 : 40,
               height: 24,
               backgroundColor: 'rgba(0,0,0,0.7)',
               maxWidth: 320,
