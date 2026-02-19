@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import { Volume2, VolumeX } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/types/database.types';
@@ -45,6 +46,8 @@ export default function BlindboxDetailPage() {
   const [bgVariantIndex, setBgVariantIndex] = useState(0);
   const bgVideos = ['/videos/bg.mp4'];
   const bgVideoRef = useRef<HTMLVideoElement | null>(null);
+  const [isVideoMuted, setIsVideoMuted] = useState(true);
+  const openingVideoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -201,6 +204,7 @@ export default function BlindboxDetailPage() {
     }
 
     setVideoMode(null);
+    setIsVideoMuted(true);
   };
 
   const handleVideoError = () => {
@@ -212,6 +216,7 @@ export default function BlindboxDetailPage() {
     }
 
     setVideoMode(null);
+    setIsVideoMuted(true);
   };
 
   const handlePrizeClose = () => {
@@ -360,16 +365,51 @@ export default function BlindboxDetailPage() {
         />
       )}
       {isVideoOpen && (
-        <div className="fixed inset-0 z-[2100] flex items-center justify-center bg-black">
-          <video
-            src="/videos/blindbox-opening.mp4"
-            className="w-full h-full object-contain"
-            autoPlay
-            muted
-            playsInline
-            onEnded={handleVideoEnd}
-            onError={handleVideoError}
-          />
+        <div className="fixed inset-0 z-[2100] bg-black">
+          <div className="relative w-full h-full flex items-center justify-center">
+            <video
+              ref={openingVideoRef}
+              src="/videos/blindbox_op.mp4"
+              className="w-full h-full object-contain"
+              autoPlay
+              muted={isVideoMuted}
+              playsInline
+              onEnded={handleVideoEnd}
+              onError={handleVideoError}
+            />
+            <button
+              type="button"
+              className="absolute top-4 left-4 z-10 w-10 h-10 rounded-full bg-black/60 border border-white/30 flex items-center justify-center text-white"
+              onClick={() => {
+                setIsVideoMuted((prev) => {
+                  const next = !prev;
+                  const el = openingVideoRef.current;
+                  if (el) {
+                    el.muted = next;
+                    if (!next) {
+                      el.play().catch(() => undefined);
+                    }
+                  }
+                  return next;
+                });
+              }}
+            >
+              {isVideoMuted ? (
+                <VolumeX className="w-5 h-5" />
+              ) : (
+                <Volume2 className="w-5 h-5" />
+              )}
+            </button>
+            <div className="absolute bottom-0 left-0 right-0 h-16 px-4 border-t border-white/10 bg-black/80 flex items-center justify-center z-10">
+              <button
+                type="button"
+                className="w-full max-w-xs h-11 rounded-full bg-white/90 text-black text-base font-black tracking-[0.2em]"
+                onClick={handleVideoEnd}
+              >
+                跳過
+              </button>
+            </div>
+          </div>
         </div>
       )}
       {isPrizeModalOpen && (
