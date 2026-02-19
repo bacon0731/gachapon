@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/types/database.types';
@@ -58,6 +58,29 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
   const router = useRouter();
   const [supabase] = useState(() => createClient());
   const { user, refreshProfile } = useAuth();
+  const tearSoundRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const audio = new Audio('/audio/tanweraman-paper-rip-fast-252617.mp3');
+    audio.preload = 'auto';
+    tearSoundRef.current = audio;
+
+    return () => {
+      if (tearSoundRef.current) {
+        tearSoundRef.current.pause();
+        tearSoundRef.current.src = '';
+        tearSoundRef.current.load();
+      }
+    };
+  }, []);
+
+  const playTearSound = useCallback(() => {
+    const audio = tearSoundRef.current;
+    if (!audio) return;
+    audio.currentTime = 0;
+    void audio.play().catch(() => undefined);
+  }, []);
   
   const [product, setProduct] = useState<Database['public']['Tables']['products']['Row'] | null>(null);
   const [soldTickets, setSoldTickets] = useState<number[]>([]);
@@ -448,6 +471,7 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
   };
 
   const handleOpenAll = () => {
+    playTearSound();
     setDrawnResults(prev => {
       const hasNewAPrize = prev.some(r => {
         if (r.is_last_one) return false;

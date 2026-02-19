@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { Prize } from '@/components/GachaMachine'; // Reuse type
@@ -13,6 +13,34 @@ export function GachaResultModal({ isOpen, onClose, results }: GachaResultModalP
   const [activeIndex, setActiveIndex] = useState(0);
   const hasMultiple = results.length > 1;
   const activePrize = results[activeIndex] || results[0];
+  const soundRef = useRef<HTMLAudioElement | null>(null);
+  const prevOpenRef = useRef(isOpen);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const audio = new Audio('/audio/u_o8xh7gwsrj-correct_answer_toy_bi-bling-476370.mp3');
+    audio.preload = 'auto';
+    soundRef.current = audio;
+
+    return () => {
+      if (soundRef.current) {
+        soundRef.current.pause();
+        soundRef.current.src = '';
+        soundRef.current.load();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isOpen && !prevOpenRef.current) {
+      const audio = soundRef.current;
+      if (audio) {
+        audio.currentTime = 0;
+        void audio.play().catch(() => {});
+      }
+    }
+    prevOpenRef.current = isOpen;
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -124,7 +152,7 @@ export function GachaResultModal({ isOpen, onClose, results }: GachaResultModalP
                   >
                     <div className="absolute inset-0 rounded-xl overflow-hidden bg-[#d4d4d4]">
                       <Image
-                        src={activePrize.image_url || '/images/item.png'}
+                        src={activePrize.image_url || `/images/item/${(activePrize.id ?? '').toString().padStart(5, '0')}.jpg`}
                         alt={activePrize.name}
                         fill
                         className="object-cover object-[25%_50%]"

@@ -1117,7 +1117,7 @@ function ProfileContent() {
                           >
                             <div className="aspect-square bg-[#28324E] relative">
                               <Image 
-                                src={item.image || '/images/item.png'} 
+                                src={item.image || `/images/item/${item.product_id.toString().padStart(5, '0')}.jpg`} 
                                 alt={item.name} 
                                 fill 
                                 className="object-cover" 
@@ -1182,7 +1182,7 @@ function ProfileContent() {
                                   <div className="flex items-center gap-3 lg:gap-4">
                                     <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl lg:rounded-2xl bg-[#28324E] overflow-hidden flex-shrink-0 shadow-soft relative">
                                       <Image 
-                                        src={item.image || '/images/item.png'} 
+                                        src={item.image || `/images/item/${item.product_id.toString().padStart(5, '0')}.jpg`} 
                                         alt={item.name} 
                                         fill 
                                         className="object-cover group-hover:scale-110 transition-transform duration-700 opacity-80 group-hover:opacity-100" 

@@ -136,7 +136,7 @@ export function PurchaseConfirmationModal({
                   isDesktop ? "w-16 h-16" : "w-12 h-12"
                 )}>
                   <Image 
-                    src={product.image_url || '/images/item.png'} 
+                    src={`/images/item/${product.id.toString().padStart(5, '0')}.jpg`} 
                     alt={product.name}
                     fill
                     className="object-cover"

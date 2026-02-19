@@ -2,6 +2,40 @@
 
 import Image from 'next/image';
 
+const ITEM_IMAGES = [
+  '/images/item/10001.jpg',
+  '/images/item/10002.jpg',
+  '/images/item/10003.jpg',
+  '/images/item/10004.jpg',
+  '/images/item/10005.jpg',
+  '/images/item/10006.jpg',
+  '/images/item/10007.jpg',
+  '/images/item/10008.jpg',
+  '/images/item/10009.jpg',
+  '/images/item/10010.jpg',
+  '/images/item/10011.jpg',
+  '/images/item/10012.jpg',
+  '/images/item/10013.jpg',
+  '/images/item/10014.jpg',
+  '/images/item/10015.jpg',
+  '/images/item/10016.jpg',
+  '/images/item/10017.jpg',
+  '/images/item/10018.jpg',
+  '/images/item/10019.jpg',
+  '/images/item/10020.jpg',
+];
+
+const getItemImageForId = (id: string | number) => {
+  if (ITEM_IMAGES.length === 0) return '/images/item.png';
+  const key = typeof id === 'number' ? id.toString() : id;
+  let hash = 0;
+  for (let i = 0; i < key.length; i += 1) {
+    hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+  }
+  const index = hash % ITEM_IMAGES.length;
+  return ITEM_IMAGES[index] || '/images/item.png';
+};
+
 interface MarketProductCardProps {
   id: string | number;
   productId?: number;
@@ -15,6 +49,7 @@ interface MarketProductCardProps {
 }
 
 export default function MarketProductCard({
+  id,
   name,
   image,
   price,
@@ -34,7 +69,7 @@ export default function MarketProductCard({
         <div className="relative aspect-square overflow-hidden bg-neutral-100 dark:bg-neutral-800 rounded-t-2xl">
           <div className="w-full h-full flex items-center justify-center text-white/20 group-hover:scale-105 transition-transform duration-500 relative">
             <Image 
-              src={image || '/images/item.png'} 
+              src={image || getItemImageForId(id)} 
               alt={name}
               fill
               className="object-fill"

@@ -102,7 +102,7 @@ export function GachaCollectionList({ productId, prizes, refreshKey }: GachaColl
             >
               <div className="relative w-[92%] h-[92%] mx-auto my-auto">
                 <Image
-                  src={prize.image_url || '/images/item.png'}
+                  src={prize.image_url || `/images/item/${productId.toString().padStart(5, '0')}.jpg`}
                   alt={prize.name}
                   fill
                   className="object-contain drop-shadow-sm"
