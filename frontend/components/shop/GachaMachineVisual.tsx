@@ -32,7 +32,7 @@ const usePushSound = () => {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const audio = new Audio('/audio/freesound_community-lid-close-98389.mp3');
+    const audio = new Audio('/audio/push.mp3');
     audio.preload = 'auto';
     audioRef.current = audio;
 

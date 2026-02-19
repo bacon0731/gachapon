@@ -273,11 +273,11 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
                         transition: 'opacity 200ms ease-out',
                       }}
                       onClick={() => {
-                        if (!product.image_url) return;
+                        if (!product.id) return;
                         setIsEggBoxImageMode(true);
                       }}
                     />
-                    {product.image_url && (
+                    {product.id && (
                       <div
                         className="absolute inset-0 flex items-center justify-center cursor-pointer"
                         style={{
@@ -288,7 +288,7 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
                         onClick={() => setIsEggBoxImageMode(false)}
                       >
                         <Image
-                          src={product.image_url}
+                          src={`/images/item/${product.id.toString().padStart(5, '0')}.jpg`}
                           alt={product.name}
                           fill
                           className="rounded-lg object-fill"

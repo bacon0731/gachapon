@@ -46,8 +46,50 @@ export default function BlindboxDetailPage() {
   const [bgVariantIndex, setBgVariantIndex] = useState(0);
   const bgVideos = ['/videos/bg.mp4'];
   const bgVideoRef = useRef<HTMLVideoElement | null>(null);
-  const [isVideoMuted, setIsVideoMuted] = useState(true);
+  const [isVideoMuted, setIsVideoMuted] = useState(false);
   const openingVideoRef = useRef<HTMLVideoElement | null>(null);
+  const resultSoundRef = useRef<HTMLAudioElement | null>(null);
+  const [isResultSoundPrimed, setIsResultSoundPrimed] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const audio = new Audio('/audio/u_o8xh7gwsrj-correct_answer_toy_bi-bling-476370.mp3');
+    audio.preload = 'auto';
+    resultSoundRef.current = audio;
+
+    return () => {
+      if (resultSoundRef.current) {
+        resultSoundRef.current.pause();
+        resultSoundRef.current.src = '';
+        resultSoundRef.current.load();
+      }
+    };
+  }, []);
+
+  const primeResultSound = async () => {
+    if (isResultSoundPrimed) return;
+    const audio = resultSoundRef.current;
+    if (!audio) return;
+    try {
+      const originalVolume = audio.volume;
+      audio.volume = 0;
+      await audio.play();
+      audio.pause();
+      audio.currentTime = 0;
+      audio.volume = originalVolume;
+      setIsResultSoundPrimed(true);
+    } catch {
+      // ignore
+    }
+  };
+
+  useEffect(() => {
+    if (!isPrizeModalOpen) return;
+    const audio = resultSoundRef.current;
+    if (!audio) return;
+    audio.currentTime = 0;
+    void audio.play().catch(() => undefined);
+  }, [isPrizeModalOpen]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -127,6 +169,7 @@ export default function BlindboxDetailPage() {
 
   const handlePlay = () => {
     if (!product) return;
+    void primeResultSound();
     setIsPurchaseModalOpen(true);
   };
 
@@ -136,6 +179,7 @@ export default function BlindboxDetailPage() {
   };
 
   const handleTrial = () => {
+    void primeResultSound();
     if (prizes.length > 0) {
       const index = Math.floor(Math.random() * prizes.length);
       const sample = prizes[index];
@@ -204,7 +248,7 @@ export default function BlindboxDetailPage() {
     }
 
     setVideoMode(null);
-    setIsVideoMuted(true);
+    setIsVideoMuted(false);
   };
 
   const handleVideoError = () => {
@@ -216,7 +260,7 @@ export default function BlindboxDetailPage() {
     }
 
     setVideoMode(null);
-    setIsVideoMuted(true);
+    setIsVideoMuted(false);
   };
 
   const handlePrizeClose = () => {
