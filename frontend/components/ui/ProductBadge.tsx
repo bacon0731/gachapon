@@ -60,7 +60,7 @@ export default function ProductBadge({ type, className, icon = false }: ProductB
       style.shadow,
       className
     )}>
-      {icon && <Icon className="w-3 h-3 fill-current" />}
+      {icon && <Icon className="w-3.5 h-3.5 fill-current" />}
       {style.text}
     </span>
   );

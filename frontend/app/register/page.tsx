@@ -101,7 +101,7 @@ function RegisterContent() {
                 type="email"
                 placeholder="user@example.com"
                 required
-                leftIcon={<Mail className="w-4 h-4" />}
+                leftIcon={<Mail className="w-5 h-5" />}
                 className="bg-neutral-50/50 dark:bg-neutral-800/50 border-transparent focus:bg-white dark:focus:bg-neutral-800 transition-all"
               />
 
@@ -112,8 +112,8 @@ function RegisterContent() {
                 placeholder="••••••••"
                 required
                 minLength={6}
-                leftIcon={<Lock className="w-4 h-4" />}
-                rightIcon={showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                leftIcon={<Lock className="w-5 h-5" />}
+                rightIcon={showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 onRightIconClick={() => setShowPassword(prev => !prev)}
                 className="bg-neutral-50/50 dark:bg-neutral-800/50 border-transparent focus:bg-white dark:focus:bg-neutral-800 transition-all"
               />
@@ -123,7 +123,7 @@ function RegisterContent() {
                 name="inviteCode"
                 type="text"
                 placeholder="輸入好友的邀請碼"
-                leftIcon={<User className="w-4 h-4" />}
+                leftIcon={<User className="w-5 h-5" />}
                 className="bg-neutral-50/50 dark:bg-neutral-800/50 border-transparent focus:bg-white dark:focus:bg-neutral-800 transition-all font-mono uppercase"
               />
 

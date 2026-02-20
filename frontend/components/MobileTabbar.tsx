@@ -99,7 +99,7 @@ function MobileTabbarInner() {
                         isActive ? "shadow-primary/40" : "shadow-neutral-200 dark:shadow-neutral-950"
                       )}
                     >
-                      <Icon size={24} className="stroke-[2.5]" />
+                      <Icon size={28} className="stroke-[2.5]" />
                     </motion.div>
                     <span className={cn(
                       "text-[13px] font-black transition-all duration-300",
@@ -127,7 +127,7 @@ function MobileTabbarInner() {
                   className="relative z-10"
                 >
                   <Icon
-                    size={24}
+                    size={26}
                     className={cn(isActive && "fill-current/10")}
                     strokeWidth={isActive ? 2.5 : 2}
                   />
