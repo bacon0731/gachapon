@@ -43,13 +43,15 @@ export default function WinningMarquee() {
         .limit(10);
 
       if (data) {
-        const formatted = (data as unknown as JoinedDrawRecord[]).map((item) => ({
-          id: item.id,
-          user_name: item.users?.name || '神秘客',
-          product_name: item.products?.name || '未知商品',
-          prize_level: item.prize_level,
-          prize_name: item.prize_name || '未知獎項'
-        }));
+        const formatted = (data as unknown as JoinedDrawRecord[])
+          .map((item) => ({
+            id: item.id,
+            user_name: item.users?.name || '神秘客',
+            product_name: item.products?.name || '未知商品',
+            prize_level: item.prize_level,
+            prize_name: item.prize_name || '未知獎項'
+          }))
+          .filter((item) => ['A', 'B', 'C'].includes(item.prize_level));
         setRecords(formatted);
       } else if (error) {
         console.error('Error fetching winning records:', error);
@@ -79,32 +81,35 @@ export default function WinningMarquee() {
     return () => clearInterval(interval);
   }, [records.length]);
 
-  if (records.length === 0) {
-    // Fallback if no records found
-    return null;
-  }
-
-  const currentRecord = records[currentIndex];
+  const hasRecords = records.length > 0;
+  const currentRecord = hasRecords ? records[currentIndex] : null;
 
   return (
-    <div className="mb-6 h-[40px] bg-primary/5 border border-primary/10 rounded-2xl px-1.5 flex items-center gap-3 overflow-hidden shadow-soft dark:bg-blue-900/10 dark:border-blue-900/20">
+    <div className="mb-6 h-[40px] bg-primary/5 px-3 flex items-center gap-3 overflow-hidden shadow-soft -mx-2 sm:mx-0 rounded-none sm:rounded-2xl border-0 sm:border sm:border-primary/10 dark:bg-blue-900/10 sm:dark:border-blue-900/20">
       <div className="flex-shrink-0 bg-primary text-white p-1.5 rounded-xl shadow-sm">
         <Trophy className="w-3.5 h-3.5 stroke-[3]" />
       </div>
       <div className="flex-1 overflow-hidden relative h-full flex items-center">
         <AnimatePresence mode="wait">
           <motion.div
-            key={currentRecord.id}
+            key={hasRecords && currentRecord ? currentRecord.id : 'winning-marquee-placeholder'}
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -20, opacity: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
             className="absolute w-full truncate text-[13px] text-neutral-600 dark:text-neutral-300 font-medium"
           >
-            恭喜 <span className="text-primary font-black mx-0.5">{currentRecord.user_name}</span> 
-            抽中一番賞 <span className="text-primary font-black mx-0.5">{currentRecord.product_name}</span> 
-            的 <span className="text-accent-red font-black mx-0.5">{currentRecord.prize_level}賞</span> 
-            <span className="text-accent-red font-black mx-0.5">{currentRecord.prize_name}</span>
+            {hasRecords && currentRecord ? (
+              <>
+                恭喜 <span className="text-primary font-black mx-0.5">{currentRecord.user_name}</span>
+                抽中 <span className="text-accent-red font-black mx-0.5">{currentRecord.prize_level}賞</span>
+                <span className="text-accent-red font-black mx-0.5">{currentRecord.prize_name}</span>
+              </>
+            ) : (
+              <span className="font-black text-primary">
+                日本超夯一番賞同步上線
+              </span>
+            )}
           </motion.div>
         </AnimatePresence>
       </div>

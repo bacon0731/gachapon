@@ -13,7 +13,31 @@ export function GachaResultModal({ isOpen, onClose, results }: GachaResultModalP
   const [activeIndex, setActiveIndex] = useState(0);
   const hasMultiple = results.length > 1;
   const activePrize = results[activeIndex] || results[0];
- 
+  const resultSoundRef = React.useRef<HTMLAudioElement | null>(null);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const audio = new Audio('/audio/u_o8xh7gwsrj-correct_answer_toy_bi-bling-476370.mp3');
+    audio.preload = 'auto';
+    resultSoundRef.current = audio;
+
+    return () => {
+      if (resultSoundRef.current) {
+        resultSoundRef.current.pause();
+        resultSoundRef.current.src = '';
+        resultSoundRef.current.load();
+      }
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const audio = resultSoundRef.current;
+    if (!audio) return;
+    audio.currentTime = 0;
+    void audio.play().catch(() => undefined);
+  }, [isOpen]);
+
   React.useEffect(() => {
     if (!isOpen) {
       setActiveIndex(0);

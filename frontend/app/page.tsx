@@ -11,23 +11,6 @@ import { ArrowRight, Flame } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 
-const BANNER_IMAGES = [
-  '/images/banner/1bankuji-brand_banner_pink_0321.jpg',
-  '/images/banner/85c1fb94-78c2-4d32-9a9b-c5d08636ecb8.jpg',
-  '/images/banner/kimetsu_kuji.jpg',
-];
-
-const getBannerImageForId = (id: number | string) => {
-  if (BANNER_IMAGES.length === 0) return '';
-  const key = id.toString();
-  let hash = 0;
-  for (let i = 0; i < key.length; i += 1) {
-    hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
-  }
-  const index = hash % BANNER_IMAGES.length;
-  return BANNER_IMAGES[index] || BANNER_IMAGES[0];
-};
-
 export default function Home() {
   const [hotProducts, setHotProducts] = useState<Database['public']['Tables']['products']['Row'][]>([]);
   const [newProducts, setNewProducts] = useState<Database['public']['Tables']['products']['Row'][]>([]);
@@ -107,14 +90,14 @@ export default function Home() {
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 pb-20 transition-colors">
       <div className="max-w-7xl mx-auto px-2 pt-0 sm:pt-4">
         {/* Hero Section */}
-        <section className="mb-2 sm:mb-6 -mx-2 sm:mx-0">
+        <section className="mb-0 sm:mb-6 -mx-2 sm:mx-0">
           {isLoading ? (
             <BannerSkeleton />
           ) : (
             <HeroBanner
               banners={banners.map((b) => ({
                 id: b.id,
-                image: getBannerImageForId(b.id),
+                image: b.image_url,
                 link: b.link_url || '#',
               }))}
             />

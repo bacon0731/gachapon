@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo, useEffect, Suspense, useCallback } from 'react';
+import { useState, useMemo, useEffect, Suspense, useCallback, useRef } from 'react';
+import type { TouchEvent } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Database } from '@/types/database.types';
@@ -44,6 +45,9 @@ function ShopContent() {
   const [priceMin, setPriceMin] = useState('');
   const [priceMax, setPriceMax] = useState('');
   const [isMobileSortOpen, setIsMobileSortOpen] = useState(false);
+  const touchStartXRef = useRef<number | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
+  const touchStartTimeRef = useRef<number | null>(null);
 
   const fetchData = useCallback(async () => {
     const LOAD_TIMEOUT_MS = 8000;
@@ -118,6 +122,31 @@ function ShopContent() {
     ...categories.map(c => ({ ...c, kind: 'category' } as TabItem))
   ], [categories]);
 
+  const getActiveTabIndex = () => {
+    return combinedTabs.findIndex((tab) => {
+      if (tab.kind === 'reset') {
+        return activeType === 'all' && activeCategory === 'all';
+      }
+      if (tab.kind === 'type') {
+        return activeType === tab.id;
+      }
+      if (tab.kind === 'category') {
+        return activeCategory === tab.id;
+      }
+      return false;
+    });
+  };
+
+  const goToAdjacentTab = (direction: 'next' | 'prev') => {
+    if (!combinedTabs.length) return;
+    const currentIndex = getActiveTabIndex();
+    if (currentIndex === -1) return;
+    const nextIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
+    if (nextIndex < 0 || nextIndex >= combinedTabs.length) return;
+    const nextTab = combinedTabs[nextIndex];
+    handleTabClick(nextTab);
+  };
+
   const handleTabClick = (item: TabItem) => {
     if (item.kind === 'reset') {
       const params = new URLSearchParams(searchParams);
@@ -128,6 +157,35 @@ function ShopContent() {
       handleTypeChange(item.id);
     } else if (item.kind === 'category') {
       handleCategoryChange(item.id);
+    }
+  };
+
+  const handleTouchStart = (e: TouchEvent<HTMLDivElement>) => {
+    const touch = e.touches[0];
+    touchStartXRef.current = touch.clientX;
+    touchStartYRef.current = touch.clientY;
+    touchStartTimeRef.current = Date.now();
+  };
+
+  const handleTouchEnd = (e: TouchEvent<HTMLDivElement>) => {
+    const startX = touchStartXRef.current;
+    const startY = touchStartYRef.current;
+    const startTime = touchStartTimeRef.current;
+    touchStartXRef.current = null;
+    touchStartYRef.current = null;
+    touchStartTimeRef.current = null;
+    if (startX == null || startY == null || startTime == null) return;
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - startX;
+    const dy = touch.clientY - startY;
+    const dt = Date.now() - startTime;
+    if (dt > 600) return;
+    if (Math.abs(dx) < 40) return;
+    if (Math.abs(dx) < Math.abs(dy)) return;
+    if (dx < 0) {
+      goToAdjacentTab('next');
+    } else {
+      goToAdjacentTab('prev');
     }
   };
 
@@ -213,7 +271,9 @@ function ShopContent() {
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 pb-20 transition-colors">
       <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-2 md:pt-6">
         {/* 1. Mobile Filter Row */}
-        <div className="md:hidden flex flex-col gap-3 mb-4 animate-in fade-in slide-in-from-top-2 relative z-30">
+        <div
+          className="md:hidden flex flex-col gap-3 mb-4 animate-in fade-in slide-in-from-top-2 relative z-30"
+        >
           <div className="flex items-center gap-2">
             {/* Scrollable Category Tabs */}
             <div className="flex-1 overflow-x-auto scrollbar-hide">
@@ -470,7 +530,11 @@ function ShopContent() {
           </aside>
 
           {/* Product Grid */}
-          <div className="flex-1 w-full">
+          <div
+            className="flex-1 w-full"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
             {isLoading ? (
               <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2 md:gap-4">
                 {Array.from({ length: 10 }).map((_, index) => (

@@ -7,6 +7,10 @@ module.exports = {
   ],
   theme: {
     extend: {
+      spacing: {
+        4: '0.5rem',
+        6: '1rem',
+      },
       colors: {
         primary: {
           DEFAULT: '#3B82F6', // 主題藍

@@ -62,6 +62,7 @@ export default function ProductCard(props: ProductCardProps) {
   const {
     id,
     name,
+    image,
     price,
     remaining,
     total,
@@ -126,6 +127,7 @@ export default function ProductCard(props: ProductCardProps) {
 
   const href = type === 'blindbox' ? `/blindbox/${id}` : `/shop/${id}`;
   const fallbackImage = getItemImageForId(id);
+  const displayImage = image || fallbackImage;
 
   return (
     <Link href={href} className="group block h-full">
@@ -134,7 +136,7 @@ export default function ProductCard(props: ProductCardProps) {
         <div className="relative aspect-square overflow-hidden bg-neutral-100 dark:bg-neutral-800 rounded-t-2xl">
           <div className="w-full h-full flex items-center justify-center text-white/20 group-hover:scale-105 transition-transform duration-500 relative">
             <Image 
-              src={fallbackImage} 
+              src={displayImage}
               alt={name}
               fill
               className="object-fill"
