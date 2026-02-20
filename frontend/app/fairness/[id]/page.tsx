@@ -372,8 +372,12 @@ async function verifyDraw(seed: string, nonce: number, expectedHash: string) {
                 {isVerifyingSeed ? '驗證中...' : '驗證 Seed 與 Seed Hash'}
               </button>
               <div className="mt-2 space-y-1.5 text-[11px] sm:text-xs text-neutral-500 dark:text-neutral-400">
-                <p>Seed Hash（平台公開值）：{seedHashExpected || '尚未提供'}</p>
-                <p>Seed 重新計算 Hash：{seedHashCalculated || '—'}</p>
+                <p className="break-all leading-relaxed">
+                  Seed Hash（平台公開值）：{seedHashExpected || '尚未提供'}
+                </p>
+                <p className="break-all leading-relaxed">
+                  Seed 重新計算 Hash：{seedHashCalculated || '—'}
+                </p>
                 <div className="flex items-baseline gap-1">
                   <span>驗證結果：</span>
                   <span
@@ -404,34 +408,37 @@ async function verifyDraw(seed: string, nonce: number, expectedHash: string) {
                 <div className="text-[11px] sm:text-xs font-black text-neutral-500 dark:text-neutral-400">
                   您在此商品已抽到的籤號
                 </div>
-                <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                  {isLoadingTickets && (
-                    <span className="text-[11px] sm:text-xs text-neutral-400">
-                      載入中...
-                    </span>
-                  )}
-                  {!isLoadingTickets && userTickets.length === 0 && (
-                    <span className="text-[11px] sm:text-xs text-neutral-400">
-                      尚無抽獎紀錄
-                    </span>
-                  )}
-                  {!isLoadingTickets &&
-                    userTickets.map((t) => (
-                      <button
-                        key={t.ticket_number}
-                        type="button"
-                        onClick={() => {
-                          setNonceInput(String(t.ticket_number));
-                          if (t.txid_hash) {
-                            setExpectedTxidHashInput(t.txid_hash);
-                          }
-                        }}
-                        className="px-2.5 py-1 rounded-full border border-neutral-200 dark:border-neutral-700 text-[11px] sm:text-xs font-black font-sans text-neutral-700 dark:text-neutral-100 bg-neutral-50 dark:bg-neutral-800 hover:bg-primary/10 hover:border-primary/40 hover:text-primary transition-colors"
-                      >
-                        {t.ticket_number}
-                      </button>
-                    ))}
-                </div>
+                {isLoadingTickets && (
+                  <span className="text-[11px] sm:text-xs text-neutral-400">
+                    載入中...
+                  </span>
+                )}
+                {!isLoadingTickets && userTickets.length === 0 && (
+                  <span className="text-[11px] sm:text-xs text-neutral-400">
+                    尚無抽獎紀錄
+                  </span>
+                )}
+                {!isLoadingTickets && userTickets.length > 0 && (
+                  <div className="max-h-[144px] sm:max-h-[200px] overflow-y-auto pr-1 sm:pr-2 custom-scrollbar">
+                    <div className="grid grid-cols-6 sm:grid-cols-10 gap-1.5 sm:gap-2">
+                      {userTickets.map((t) => (
+                        <button
+                          key={t.ticket_number}
+                          type="button"
+                          onClick={() => {
+                            setNonceInput(String(t.ticket_number));
+                            if (t.txid_hash) {
+                              setExpectedTxidHashInput(t.txid_hash);
+                            }
+                          }}
+                          className="px-2.5 py-1 rounded-full border border-neutral-200 dark:border-neutral-700 text-[11px] sm:text-xs font-black font-sans text-neutral-700 dark:text-neutral-100 bg-neutral-50 dark:bg-neutral-800 hover:bg-primary/10 hover:border-primary/40 hover:text-primary transition-colors"
+                        >
+                          {t.ticket_number}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="space-y-3">
                 <div className="space-y-1.5">
