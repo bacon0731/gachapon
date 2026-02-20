@@ -11,6 +11,9 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SlidersHorizontal, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import HeroBanner from '@/components/HeroBanner';
+import WinningMarquee from '@/components/WinningMarquee';
+import { hasAdjustedRates } from '@/utils/rateUtils';
 
 interface TabItem {
   id: string;
@@ -41,10 +44,12 @@ function ShopContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [supabase] = useState(() => createClient());
+  const [banners, setBanners] = useState<Database['public']['Tables']['banners']['Row'][]>([]);
 
   const [priceMin, setPriceMin] = useState('');
   const [priceMax, setPriceMax] = useState('');
   const [isMobileSortOpen, setIsMobileSortOpen] = useState(false);
+  const [activeLabelTab, setActiveLabelTab] = useState<'hot' | 'new' | 'rate'>('new');
   const touchStartXRef = useRef<number | null>(null);
   const touchStartYRef = useRef<number | null>(null);
   const touchStartTimeRef = useRef<number | null>(null);
@@ -110,6 +115,23 @@ function ShopContent() {
       supabase.removeChannel(channel);
     };
   }, [supabase, fetchData]);
+
+  useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        type BannerRow = Database['public']['Tables']['banners']['Row'];
+        const { data } = await supabase
+          .from('banners')
+          .select('*')
+          .eq('is_active', true)
+          .order('sort_order', { ascending: true });
+        setBanners((data as BannerRow[]) || []);
+      } catch (error) {
+        console.error('Error fetching banners:', error);
+      }
+    };
+    fetchBanners();
+  }, [supabase]);
 
   const allCategories = useMemo(() => [
     { id: 'all', name: '全部商品', sort_order: -1, is_active: true, created_at: '' },
@@ -192,40 +214,41 @@ function ShopContent() {
   const filteredProducts = useMemo(() => {
     let result = [...products];
 
-    // Filter by type
     if (activeType !== 'all') {
       result = result.filter((p) => p.type === activeType);
     }
 
-    // Filter by category (Tag)
     if (activeCategory !== 'all') {
-      result = result.filter((p) => 
-        p.product_tags?.some(tag => tag.category_id === activeCategory)
+      result = result.filter((p) =>
+        p.product_tags?.some((tag) => tag.category_id === activeCategory)
       );
     }
 
-    // Filter by search
     if (searchQuery) {
-      result = result.filter((p) => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
+      result = result.filter((p) =>
+        p.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
     }
 
-    // Sort
+    if (activeLabelTab === 'hot') {
+      result = result.filter((p) => p.is_hot);
+    }
+
+    if (activeLabelTab === 'rate') {
+      result = result.filter((p) => hasAdjustedRates(p.id));
+    }
+
     if (sortBy === 'price-asc') result.sort((a, b) => a.price - b.price);
     if (sortBy === 'price-desc') result.sort((a, b) => b.price - a.price);
-    // Default newest (by created_at or id if created_at is not reliable for sorting in this context, 
-    // but here we assume generic newest logic. If products have created_at, we can use it)
     if (sortBy === 'newest') {
-        // Assuming higher ID is newer or use created_at if available and consistent
-        // The original mock logic didn't explicitly handle 'newest' sort implementation details other than default
-        // Let's stick to default order or add explicit sort if needed.
-        // For now, let's just reverse if it was naturally ordered by ID asc
-        // or actually, supabase returns in insertion order usually.
-        // Let's sort by created_at desc if available
-        result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      result.sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
     }
 
     return result;
-  }, [activeCategory, activeType, searchQuery, sortBy, products]);
+  }, [activeCategory, activeType, searchQuery, sortBy, products, activeLabelTab]);
 
   const handleCategoryChange = (id: string) => {
     const params = new URLSearchParams(searchParams);
@@ -267,54 +290,133 @@ function ShopContent() {
     setter(parseInt(raw).toLocaleString());
   };
 
+  const handleKeywordSearch = (term: string) => {
+    const params = new URLSearchParams(searchParams);
+    const current = params.get('search') || '';
+    if (current === term) {
+      params.delete('search');
+    } else {
+      params.set('search', term);
+    }
+    router.push(`/shop?${params.toString()}`);
+  };
+
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 pb-20 transition-colors">
-      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-2 md:pt-6">
-        {/* 1. Mobile Filter Row */}
-        <div
-          className="md:hidden flex flex-col gap-3 mb-4 animate-in fade-in slide-in-from-top-2 relative z-30"
-        >
-          <div className="flex items-center gap-2">
-            {/* Scrollable Category Tabs */}
-            <div className="flex-1 overflow-x-auto scrollbar-hide">
-               <div className="flex gap-2">
-                 {combinedTabs.map((tab) => (
-                   <button
-                     key={`${tab.kind}-${tab.id}`}
-                     onClick={() => handleTabClick(tab)}
-                     className={cn(
-                      "flex-shrink-0 px-3 py-2 min-h-[40px] flex items-center rounded-xl text-sm font-black whitespace-nowrap transition-all",
-                       (tab.kind === 'reset' && activeType === 'all' && activeCategory === 'all') ||
-                       (tab.kind === 'type' && activeType === tab.id) ||
-                       (tab.kind === 'category' && activeCategory === tab.id)
-                         ? "bg-primary text-white shadow-lg shadow-primary/20"
-                         : "bg-white dark:bg-neutral-900 text-neutral-500 dark:text-neutral-400 border border-neutral-100 dark:border-neutral-800"
-                     )}
-                   >
-                     {tab.name}
-                   </button>
-                 ))}
-               </div>
+      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-0 md:pt-4">
+        {activeType === 'all' && activeCategory === 'all' && (
+          <div className="md:hidden mb-0">
+            <WinningMarquee />
+            {banners.length > 0 && (
+              <div className="-mx-2 max-h-[180px] overflow-hidden">
+                <HeroBanner
+                  banners={banners.map((b) => ({
+                    id: b.id.toString(),
+                    image: b.image_url,
+                    link: b.link_url || '#',
+                  }))}
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="md:hidden sticky top-[54px] flex flex-col gap-0 mb-[0.4rem] animate-in fade-in slide-in-from-top-2 z-40 bg-white/95 dark:bg-neutral-950/95 backdrop-blur-sm">
+          {/* 上排：種類 Tabs */}
+          <div className="flex items-center">
+            <div className="flex-1 overflow-x-auto overscroll-x-contain touch-pan-x scrollbar-hide">
+              <div className="flex gap-4 min-w-max px-0">
+                {combinedTabs.map((tab) => {
+                  const isActive =
+                    (tab.kind === 'reset' && activeType === 'all' && activeCategory === 'all') ||
+                    (tab.kind === 'type' && activeType === tab.id) ||
+                    (tab.kind === 'category' && activeCategory === tab.id);
+
+                  return (
+                    <button
+                      key={`${tab.kind}-${tab.id}`}
+                      onClick={() => handleTabClick(tab)}
+                      className={cn(
+                        "relative pb-2.5 pt-2.5 text-[16px] font-black whitespace-nowrap text-neutral-700 dark:text-neutral-300",
+                        isActive && "text-primary dark:text-primary"
+                      )}
+                    >
+                      {tab.name}
+                      {isActive && (
+                        <span className="absolute left-0 right-0 -bottom-[1px] h-1 bg-primary" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* 下排：模式 + IP 標籤 + 篩選按鈕 */}
+          <div className="flex items-center gap-1 overflow-x-visible">
+            <div className="flex-1 overflow-x-auto overscroll-x-contain touch-pan-x scrollbar-hide">
+              <div className="flex gap-2 px-0 py-2">
+                {[
+                  { kind: 'mode' as const, id: 'hot', label: '熱門' },
+                  { kind: 'mode' as const, id: 'new', label: '最新' },
+                  { kind: 'mode' as const, id: 'rate', label: '機率UP' },
+                  { kind: 'kw' as const, id: 'kw-pokemon', label: '寶可夢' },
+                  { kind: 'kw' as const, id: 'kw-demon', label: '鬼滅之刃' },
+                  { kind: 'kw' as const, id: 'kw-shin', label: '蠟筆小新' },
+                  { kind: 'kw' as const, id: 'kw-labubu', label: 'LABUBU' },
+                  { kind: 'kw' as const, id: 'kw-onepiece', label: '海賊王' },
+                ].map((item) => {
+                  const isMode = item.kind === 'mode';
+                  const isActiveMode = isMode && activeLabelTab === (item.id as 'hot' | 'new' | 'rate');
+                  const isActiveKw = !isMode && searchQuery === item.label;
+
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        if (isMode) {
+                          setActiveLabelTab(item.id as 'hot' | 'new' | 'rate');
+                          if (item.id === 'new') {
+                            setSortBy('newest');
+                          }
+                        } else {
+                          handleKeywordSearch(item.label);
+                        }
+                      }}
+                      className={cn(
+                        "px-2.5 py-[7px] rounded-full text-[12px] font-black whitespace-nowrap tracking-[0.04em] border transition-all active:scale-95",
+                        isMode
+                          ? isActiveMode
+                            ? "bg-neutral-900 text-white border-neutral-900 shadow-soft"
+                            : "bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-300 border-neutral-100 dark:border-neutral-800"
+                          : isActiveKw
+                            ? "bg-neutral-900 text-white border-neutral-900 shadow-soft"
+                            : "bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-300 border-neutral-100 dark:border-neutral-800"
+                      )}
+                    >
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            {/* Sort Button */}
             <div className="relative shrink-0">
-              <button 
+              <button
                 onClick={() => setIsMobileSortOpen(!isMobileSortOpen)}
                 className={cn(
-                  "flex items-center justify-center w-11 h-11 bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-2xl text-neutral-600 dark:text-neutral-400 shadow-soft active:scale-95 transition-all",
-                  isMobileSortOpen && "border-primary text-primary"
+                  "flex items-center justify-center w-8 h-8 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white/95 dark:bg-neutral-900 text-neutral-500 dark:text-neutral-400 active:scale-95 transition-all",
+                  isMobileSortOpen && "border-primary bg-primary/5 text-primary"
                 )}
               >
-                <SlidersHorizontal className="w-5 h-5 stroke-[2.5]" />
+                <SlidersHorizontal className="w-4 h-4 stroke-[2.25]" />
               </button>
-              
-              {/* Dropdown */}
+
               {isMobileSortOpen && (
                 <>
-                  <div 
-                    className="fixed inset-0 z-40" 
-                    onClick={() => setIsMobileSortOpen(false)} 
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setIsMobileSortOpen(false)}
                   />
                   <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-neutral-900 rounded-3xl shadow-modal border border-neutral-100 dark:border-neutral-800 p-2 z-50 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
                     {[
@@ -330,7 +432,9 @@ function ShopContent() {
                         }}
                         className={cn(
                           "w-full text-left px-4 py-3 text-sm font-black rounded-xl transition-colors",
-                          sortBy === opt.id ? "bg-primary/5 text-primary" : "text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white"
+                          sortBy === opt.id
+                            ? "bg-primary/5 text-primary"
+                            : "text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white"
                         )}
                       >
                         {opt.label}
@@ -342,8 +446,6 @@ function ShopContent() {
             </div>
           </div>
         </div>
-
-
 
         {/* 3. Header Section (Desktop Title) */}
         <div className="hidden md:flex flex-col gap-4 sm:gap-6 mb-4">
@@ -536,7 +638,7 @@ function ShopContent() {
             onTouchEnd={handleTouchEnd}
           >
             {isLoading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2 md:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-[6px] md:gap-4">
                 {Array.from({ length: 10 }).map((_, index) => (
                   <div key={index} className="h-[280px]">
                     <ProductCardSkeleton />
@@ -554,7 +656,7 @@ function ShopContent() {
                 }}
               />
             ) : filteredProducts.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2 md:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-[6px] md:gap-4">
                 {filteredProducts.map((product) => (
                   <ProductCard 
                     key={product.id} 

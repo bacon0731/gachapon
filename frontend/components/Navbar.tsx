@@ -57,15 +57,15 @@ function NavbarInner() {
   const activeTab = searchParams.get('tab');
   
   // Define page types
-  const isHomePage = pathname === '/';
-  const isMainTab = pathname === '/shop' || pathname === '/news' || pathname === '/check-in' || pathname === '/market' || (pathname === '/profile' && !activeTab);
+  const isHomePage = pathname === '/shop';
+  const isMainTab = pathname === '/shop' || pathname === '/news' || pathname === '/ranking' || pathname === '/check-in' || (pathname === '/profile' && !activeTab);
   const isInnerPage = !isHomePage && !isMainTab;
   const isShopProductDetailPage = /^\/shop\/\d+$/.test(pathname);
   const isBlindboxDetailPage = /^\/blindbox\/\d+$/.test(pathname);
   const isProductDetailPage = isShopProductDetailPage || isBlindboxDetailPage;
   const isNewsDetailPage = /^\/news\/[^/]+$/.test(pathname);
 
-  const showMobileThemeToggle = pathname === '/' || pathname === '/shop' || pathname === '/market' || pathname === '/news';
+  const showMobileThemeToggle = pathname === '/shop' || pathname === '/news' || pathname === '/ranking';
 
   const isTicketSelectionPage = pathname.endsWith('/select');
 
@@ -148,14 +148,15 @@ function NavbarInner() {
   
   // Control visibility based on page type
   const showBackButton = isInnerPage;
-  const showTitle = !isHomePage; // Show title on all pages except Home
-  const showLogo = isHomePage; // Only show Logo on Home for mobile
+  const showTitle = !isHomePage && pathname !== '/shop';
+  const showLogo = isHomePage || pathname === '/shop';
 
   // 獲取頁面名稱
   const getPageTitle = () => {
     if (pathname === '/shop') return '全部商品';
     if (pathname === '/market') return '自由市集';
     if (pathname === '/news') return '最新情報';
+    if (pathname === '/ranking') return '排行榜';
     if (pathname.startsWith('/fairness')) return '公平性驗證';
     if (pathname === '/check-in') return '每日簽到';
     if (pathname.endsWith('/select')) return '選擇籤號';
@@ -445,8 +446,8 @@ function NavbarInner() {
         isProductDetailPage ? "fixed left-0 right-0 md:sticky" : "sticky",
         ((pathname === '/profile' && !activeTab) || isTicketSelectionPage) && "hidden md:block"
       )}>
-        <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-14">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-[54px] md:h-14">
             {/* 左：Logo + 標語 / 返回按鈕 */}
             <div className="flex items-center gap-2 md:gap-4 flex-none min-w-0">
               {showTitle ? (
@@ -455,20 +456,20 @@ function NavbarInner() {
                     <button 
                       onClick={() => {
                         if (['/login', '/register', '/forgot-password'].includes(pathname)) {
-                          router.push('/');
+                          router.push('/shop');
                         } else if (pathname === '/profile' && activeTab) {
                           router.push('/profile');
                         } else {
                           router.back();
                         }
                       }}
-                      className="p-2 -ml-2 text-neutral-900 dark:text-neutral-100 hover:bg-neutral-50 dark:hover:bg-neutral-800 rounded-xl transition-colors flex items-center gap-2 md:hidden shrink-0"
+                      className="px-2.5 py-2 -ml-2 text-neutral-900 dark:text-neutral-100 hover:bg-neutral-50 dark:hover:bg-neutral-800 rounded-xl transition-colors flex items-center gap-2 md:hidden shrink-0"
                     >
                       <ArrowLeft className="w-6 h-6 stroke-[3]" />
                     </button>
                   )}
                   <span className={cn(
-                    "md:hidden text-lg font-black tracking-tight text-neutral-900 dark:text-white truncate text-left px-1 min-w-0 max-w-[60vw] sm:max-w-[70vw] flex-1",
+                    "md:hidden text-[20px] font-black tracking-tight text-neutral-900 dark:text-white truncate text-left px-2 min-w-0 max-w-[60vw] sm:max-w-[70vw] flex-1",
                     !showBackButton && "ml-0" // Adjust margin if no back button
                   )}>
                     {(productName && (isProductDetailPage || isNewsDetailPage)) ? productName : getPageTitle()}
@@ -476,8 +477,8 @@ function NavbarInner() {
                 </div>
               ) : null}
               
-              <Link href="/" className={cn("flex items-center group", !showLogo && "hidden md:flex")}>
-                <div className="relative w-[120px] h-[40px] transition-transform group-hover:scale-105">
+              <Link href="/shop" className={cn("flex items-center group", !showLogo && "hidden md:flex")}>
+                <div className="relative w-[100px] h-[44px] transition-transform group-hover:scale-105">
                   <Image
                     src="/images/logo.png"
                     alt="一番賞"
@@ -497,105 +498,114 @@ function NavbarInner() {
               </div>
             </div>
             
-            {/* Search Bar - Responsive - Only show on Shop and Market pages */}
+            {/* Search Bar - 桌機搜尋輸入框，只在 /shop /market 顯示 */}
             {(pathname === '/shop' || pathname === '/market') && (
-              <div ref={searchContainerRef} className="flex-1 w-full md:max-w-[280px] lg:max-w-[400px] mx-2 transition-all duration-300 relative">
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    handleSearch(query);
-                  }}
-                >
-                  <div className="relative group">
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-neutral-500 group-focus-within:text-primary transition-colors">
-                      <Search className="w-3.5 h-3.5 stroke-[2.5]" />
-                    </div>
-                    <input
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      onFocus={() => setIsDesktopSearchOpen(true)}
-                      placeholder={pathname === '/market' ? "搜尋自由市集商品..." : "搜尋商品..."}
-                      className="w-full h-11 md:h-9 pl-9 pr-8 bg-neutral-100 dark:bg-neutral-800 border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 text-[13px] font-bold transition-all placeholder:text-neutral-400 dark:text-white dark:placeholder:text-neutral-500"
-                    />
-                    {query && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setQuery('');
-                          handleSearch('');
-                        }}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </form>
-
-                {/* Search Dropdown */}
-                {isDesktopSearchOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-neutral-900 rounded-2xl shadow-modal border border-neutral-100 dark:border-neutral-800 p-4 z-50 animate-in fade-in zoom-in-95 duration-200">
-                    {/* Hot Searches */}
-                    <div className="mb-4">
-                      <h3 className="text-[11px] font-black text-neutral-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                        <Flame className="w-3.5 h-3.5 text-accent-red" />
-                        熱門搜尋
-                      </h3>
-                      <div className="flex flex-wrap gap-1.5">
-                        {hotSearches.map((term) => (
-                          <button
-                            key={term}
-                            onClick={() => handleSearch(term)}
-                            className="px-2.5 py-1 bg-neutral-50 text-neutral-600 rounded-lg text-[11px] font-black hover:bg-primary/5 hover:text-primary transition-all"
-                          >
-                            {term}
-                          </button>
-                        ))}
+              <div className="hidden md:block flex-1 w-full md:max-w-[280px] lg:max-w-[400px] mx-3 transition-all duration-300">
+                <div ref={searchContainerRef} className="relative">
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleSearch(query);
+                    }}
+                  >
+                    <div className="relative group">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-neutral-500 group-focus-within:text-primary transition-colors">
+                        <Search className="w-3.5 h-3.5 stroke-[2.5]" />
                       </div>
+                      <input
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        onFocus={() => setIsDesktopSearchOpen(true)}
+                        placeholder={pathname === '/market' ? "搜尋自由市集商品..." : "搜尋商品..."}
+                        className="w-full h-10 pl-9 pr-8 bg-neutral-100 dark:bg-neutral-800 border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 text-[16px] font-black transition-all placeholder:text-neutral-400 dark:text-white dark:placeholder:text-neutral-500"
+                      />
+                      {query && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuery('');
+                            handleSearch('');
+                          }}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
+                  </form>
 
-                    {/* History */}
-                    {searchHistory.length > 0 && (
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <h3 className="text-[11px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-                            <History className="w-3.5 h-3.5" />
-                            最近搜尋
-                          </h3>
-                          <button 
-                            onClick={clearHistory}
-                            className="text-[10px] font-black text-neutral-300 hover:text-neutral-500 uppercase"
-                          >
-                            清除
-                          </button>
-                        </div>
-                        <div className="space-y-0.5">
-                          {searchHistory.map((term) => (
-                            <div
+                  {isDesktopSearchOpen && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-neutral-900 rounded-2xl shadow-modal border border-neutral-100 dark:border-neutral-800 p-4 z-50 animate-in fade-in zoom-in-95 duration-200">
+                      <div className="mb-4">
+                        <h3 className="text-[11px] font-black text-neutral-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                          <Flame className="w-3.5 h-3.5 text-accent-red" />
+                          熱門搜尋
+                        </h3>
+                        <div className="flex flex-wrap gap-1.5">
+                          {hotSearches.map((term) => (
+                            <button
                               key={term}
                               onClick={() => handleSearch(term)}
-                              className="flex items-center justify-between py-2 px-2.5 hover:bg-neutral-50 rounded-lg cursor-pointer group transition-all"
+                              className="px-2.5 py-1 bg-neutral-50 text-neutral-600 rounded-lg text-[11px] font-black hover:bg-primary/5 hover:text-primary transition-all"
                             >
-                              <span className="text-[13px] font-bold text-neutral-600 group-hover:text-neutral-900">{term}</span>
-                              <button
-                                onClick={(e) => deleteHistoryItem(e, term)}
-                                className="p-1 text-neutral-300 hover:text-accent-red opacity-0 group-hover:opacity-100 transition-all"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            </div>
+                              {term}
+                            </button>
                           ))}
                         </div>
                       </div>
-                    )}
-                  </div>
-                )}
+
+                      {searchHistory.length > 0 && (
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="text-[11px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
+                              <History className="w-3.5 h-3.5" />
+                              最近搜尋
+                            </h3>
+                            <button 
+                              onClick={clearHistory}
+                              className="text-[10px] font-black text-neutral-300 hover:text-neutral-500 uppercase"
+                            >
+                              清除
+                            </button>
+                          </div>
+                          <div className="space-y-0.5">
+                            {searchHistory.map((term) => (
+                              <div
+                                key={term}
+                                onClick={() => handleSearch(term)}
+                                className="flex items-center justify-between py-2 px-2.5 hover:bg-neutral-50 rounded-lg cursor-pointer group transition-all"
+                              >
+                                <span className="text-[13px] font-bold text-neutral-600 group-hover:text-neutral-900">{term}</span>
+                                <button
+                                  onClick={(e) => deleteHistoryItem(e, term)}
+                                  className="p-1 text-neutral-300 hover:text-accent-red opacity-0 group-hover:opacity-100 transition-all"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
-            {/* 右：搜尋 + 通知 + 登入/會員 */}
+            {/* 右：搜尋圖標 + 夜間模式 + 通知/登入 */}
             <div className="flex items-center gap-0.5 lg:gap-2 shrink-0">
-              {/* Dark Mode Toggle */}
+              {(pathname === '/shop' || pathname === '/market') && (
+                <button
+                  onClick={() => setIsSearchOpen(!isSearchOpen)}
+                  className={cn(
+                    "md:hidden p-2 rounded-xl text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors active:scale-95",
+                    isSearchOpen && "text-primary bg-neutral-100 dark:bg-neutral-800"
+                  )}
+                >
+                  <Search className="w-5 h-5 stroke-[2.5]" />
+                </button>
+              )}
               <button
                 onClick={toggleTheme}
                 className={cn(
@@ -867,7 +877,7 @@ function NavbarInner() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="搜尋感興趣的商品..."
-                  className="w-full bg-neutral-100 dark:bg-neutral-800 rounded-2xl py-2.5 pl-10 pr-4 text-sm font-black focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all dark:text-white"
+                  className="w-full bg-neutral-100 dark:bg-neutral-800 rounded-2xl py-2.5 pl-10 pr-4 text-[16px] font-black focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all dark:text-white"
                 />
               </form>
             </div>

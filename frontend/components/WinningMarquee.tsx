@@ -51,7 +51,11 @@ export default function WinningMarquee() {
             prize_level: item.prize_level,
             prize_name: item.prize_name || '未知獎項'
           }))
-          .filter((item) => ['A', 'B', 'C'].includes(item.prize_level));
+          .filter((item) => {
+            const level = (item.prize_level || '').toUpperCase();
+            if (!level || level.includes('LAST')) return false;
+            return level.startsWith('A') || level.startsWith('B') || level.startsWith('C');
+          });
         setRecords(formatted);
       } else if (error) {
         console.error('Error fetching winning records:', error);
@@ -77,7 +81,7 @@ export default function WinningMarquee() {
     if (records.length <= 1) return;
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % records.length);
-    }, 4000);
+    }, 3000);
     return () => clearInterval(interval);
   }, [records.length]);
 
@@ -85,33 +89,35 @@ export default function WinningMarquee() {
   const currentRecord = hasRecords ? records[currentIndex] : null;
 
   return (
-    <div className="mb-6 h-[40px] bg-primary/5 px-3 flex items-center gap-3 overflow-hidden shadow-soft -mx-2 sm:mx-0 rounded-none sm:rounded-2xl border-0 sm:border sm:border-primary/10 dark:bg-blue-900/10 sm:dark:border-blue-900/20">
-      <div className="flex-shrink-0 bg-primary text-white p-1.5 rounded-xl shadow-sm">
-        <Trophy className="w-3.5 h-3.5 stroke-[3]" />
-      </div>
-      <div className="flex-1 overflow-hidden relative h-full flex items-center">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={hasRecords && currentRecord ? currentRecord.id : 'winning-marquee-placeholder'}
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -20, opacity: 0 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="absolute w-full truncate text-[13px] text-neutral-600 dark:text-neutral-300 font-medium"
-          >
-            {hasRecords && currentRecord ? (
-              <>
-                恭喜 <span className="text-primary font-black mx-0.5">{currentRecord.user_name}</span>
-                抽中 <span className="text-accent-red font-black mx-0.5">{currentRecord.prize_level}賞</span>
-                <span className="text-accent-red font-black mx-0.5">{currentRecord.prize_name}</span>
-              </>
-            ) : (
-              <span className="font-black text-primary">
-                日本超夯一番賞同步上線
-              </span>
-            )}
-          </motion.div>
-        </AnimatePresence>
+    <div className="h-[32px] bg-primary px-2 flex items-center overflow-hidden -mx-2 sm:mx-0 rounded-none sm:rounded-2xl border-0 sm:border sm:border-primary/20 shadow-soft">
+      <div className="flex items-center gap-2 w-full">
+        <div className="flex-shrink-0 w-5 h-5 rounded-full bg-white/15 flex items-center justify-center shadow-sm border border-white/25">
+          <Trophy className="w-3 h-3 stroke-[2.5] text-white" />
+        </div>
+        <div className="flex-1 overflow-hidden relative h-full flex items-center">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={hasRecords && currentRecord ? currentRecord.id : 'winning-marquee-placeholder'}
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -20, opacity: 0 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              className="absolute w-full truncate text-[12px] text-white/90 font-medium tracking-[0.04em]"
+            >
+              {hasRecords && currentRecord ? (
+                <>
+                  恭喜 <span className="font-black mx-0.5 text-white">{currentRecord.user_name}</span>
+                  抽中 <span className="font-black mx-0.5 text-accent-yellow">{currentRecord.prize_level}賞</span>
+                  <span className="font-black mx-0.5 text-accent-yellow">{currentRecord.prize_name}</span>
+                </>
+              ) : (
+                <span className="font-black text-white">
+                  日本超夯一番賞同步上線
+                </span>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   );

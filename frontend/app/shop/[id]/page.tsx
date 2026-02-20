@@ -428,6 +428,8 @@ export default function ProductDetailPage() {
           ? validPrizes.reduce((acc, prize) => acc + (prize.total || 0), 0)
           : 0);
 
+  const isSoldOut = typeof totalRemaining === 'number' && totalRemaining <= 0;
+
   const fairnessHref = `/fairness/${product.id}`;
 
   const handleGoToFairness = () => {
@@ -748,7 +750,7 @@ export default function ProductDetailPage() {
                 </div>
               </div>
 
-              {product.type === 'ichiban' && product.status === 'ended' && (
+              {product.type === 'ichiban' && isSoldOut && (
                 <div className="pt-3 sm:pt-4 border-t border-neutral-100 dark:border-neutral-800 space-y-2">
                   <div className="text-[13px] sm:text-sm font-black text-neutral-500 dark:text-neutral-400">
                     公平性驗證頁：

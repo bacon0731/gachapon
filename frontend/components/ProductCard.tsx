@@ -131,31 +131,29 @@ export default function ProductCard(props: ProductCardProps) {
 
   return (
     <Link href={href} className="group block h-full">
-      <div className="relative h-full flex flex-col bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 overflow-hidden hover:shadow-card hover:-translate-y-1 transition-all duration-300">
-        {/* Image Container */}
-        <div className="relative aspect-square overflow-hidden bg-neutral-100 dark:bg-neutral-800 rounded-t-2xl">
-          <div className="w-full h-full flex items-center justify-center text-white/20 group-hover:scale-105 transition-transform duration-500 relative">
+      <div className="relative h-full flex flex-col bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200/80 dark:border-neutral-800/80 overflow-hidden transition-all duration-200">
+        <div className="relative aspect-square overflow-hidden bg-neutral-100 dark:bg-neutral-800">
+          <div className="w-full h-full flex items-center justify-center text-white/20 group-hover:scale-[1.03] transition-transform duration-500 relative">
             <Image 
               src={displayImage}
               alt={name}
               fill
-              className="object-fill"
+              className="object-cover"
               unoptimized
             />
           </div>
           
-          {/* Status Badges */}
           <div className="absolute top-0 left-0 z-10 flex flex-col pointer-events-none">
             {isHot && (
               <ProductBadge
                 type="hot"
-                className="h-6 rounded-2xl rounded-tr-none rounded-bl-none"
+                className="h-6 rounded-2xl rounded-tr-none rounded-bl-none text-[11px]"
               />
             )}
             {isNew && !isHot && (
               <ProductBadge
                 type="new"
-                className="h-6 rounded-2xl rounded-tr-none rounded-bl-none"
+                className="h-6 rounded-2xl rounded-tr-none rounded-bl-none text-[11px]"
               />
             )}
           </div>
@@ -168,7 +166,6 @@ export default function ProductCard(props: ProductCardProps) {
             )}
           </div>
 
-          {/* Sold Out Stamp */}
           {((typeof remaining === 'number' && remaining <= 0) || status === 'ended') && (
             <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/50 backdrop-blur-[1px]">
               <Image 
@@ -176,25 +173,28 @@ export default function ProductCard(props: ProductCardProps) {
                 alt="完抽" 
                 width={96}
                 height={96}
-                className="w-24 h-auto transform scale-110 drop-shadow-xl"
+                className="w-20 h-auto transform scale-105"
                 unoptimized
               />
             </div>
           )}
         </div>
 
-        {/* Content */}
-        <div className="flex flex-col flex-1 p-2 md:pt-2 md:-mt-0.5">
-          <div className="mb-1 min-h-[3rem]">
-            <h3 className="text-base font-black text-neutral-900 dark:text-white line-clamp-2 leading-tight group-hover:text-primary transition-colors tracking-tight">
+          <div className="flex flex-col flex-1 px-1.5 pt-1.5 pb-2 md:px-2">
+          <div className="mb-1.5 min-h-[2.8rem]">
+            <div className="text-[14px] leading-snug font-semibold text-neutral-900 dark:text-white tracking-[0.02em] line-clamp-2">
               {type && (
-                <ProductBadge
-                  type={type}
-                  className="inline-flex align-middle mr-2 relative -top-0.5"
-                />
+                <span className="inline-block align-middle mr-1.5 mb-[0.4rem]">
+                  <ProductBadge
+                    type={type}
+                    className="inline-flex align-middle px-1 py-0 text-[10px] h-4 rounded-[4px]"
+                  />
+                </span>
               )}
-              {name}
-            </h3>
+              <span className="inline">
+                {name}
+              </span>
+            </div>
           </div>
           
           <div className="mt-auto pt-2 border-t border-neutral-50 dark:border-neutral-800">
@@ -205,7 +205,7 @@ export default function ProductCard(props: ProductCardProps) {
                     <span className="text-[10px] text-white font-black leading-none">G</span>
                   </div>
                   <div className="flex items-baseline gap-0.5">
-                    <span className="text-[28px] leading-none font-black font-amount text-accent-red tracking-tight">{price.toLocaleString()}</span>
+                    <span className="text-[24px] leading-none font-black font-amount text-accent-red tracking-tight">{price.toLocaleString()}</span>
                     <span className="text-[11px] font-black text-neutral-400">/抽</span>
                   </div>
                 </div>
@@ -214,10 +214,10 @@ export default function ProductCard(props: ProductCardProps) {
               <button 
                 onClick={handleFollow}
                 className={cn(
-                  "w-7 h-7 rounded-lg flex items-center justify-center transition-all shadow-lg active:scale-90",
+                  "w-7 h-7 rounded-lg flex items-center justify-center transition-all border border-neutral-200/80 dark:border-neutral-700/80 active:scale-90 bg-white dark:bg-neutral-900",
                   isFollowed 
-                    ? "bg-accent-red text-white shadow-accent-red/20" 
-                    : "bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md text-neutral-400 hover:text-accent-red hover:bg-white dark:hover:bg-neutral-800 border border-neutral-100 dark:border-neutral-700"
+                    ? "bg-accent-red text-white border-accent-red/70" 
+                    : "text-neutral-400 hover:text-accent-red hover:border-accent-red/40"
                 )}
               >
                 <Heart className={cn("w-4 h-4 stroke-[3]", isFollowed && "fill-current")} />

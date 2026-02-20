@@ -69,7 +69,7 @@ export default function NewsDetailPage() {
       <div className="min-h-screen flex flex-col items-center justify-center bg-neutral-50 dark:bg-neutral-950 p-4 transition-colors">
         <h1 className="text-2xl font-black text-neutral-900 dark:text-white mb-2">找不到消息</h1>
         <p className="text-neutral-500 dark:text-neutral-400 font-bold mb-6">您查看的消息可能已經刪除或不存在。</p>
-        <Link href="/">
+        <Link href="/shop">
           <Button size="lg">返回首頁</Button>
         </Link>
       </div>
@@ -88,7 +88,7 @@ export default function NewsDetailPage() {
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <Link href="/" className="hover:text-primary font-black transition-colors uppercase tracking-wider text-sm">首頁</Link>
+            <Link href="/shop" className="hover:text-primary font-black transition-colors uppercase tracking-wider text-sm">首頁</Link>
             <ChevronRight className="w-3.5 h-3.5 mx-2 text-neutral-300 dark:text-neutral-600" />
             <span className="text-neutral-900 dark:text-white font-black truncate max-w-[200px] md:max-w-[400px]">{newsItem.title}</span>
           </div>

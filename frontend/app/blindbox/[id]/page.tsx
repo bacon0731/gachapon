@@ -481,18 +481,14 @@ export default function BlindboxDetailPage() {
           onTopUp={() => router.push('/wallet')}
         />
       )}
-      <div
-        className={[
-          'fixed inset-0 z-[2100] bg-black transition-opacity duration-200',
-          isVideoOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
-        ].join(' ')}
-      >
+
+      {isVideoOpen && (
+        <div className="fixed inset-0 z-[2100] bg-black opacity-100 pointer-events-auto transition-opacity duration-200">
           <div className="relative w-full h-full flex items-center justify-center">
             <video
               ref={openingVideoRef}
               src="/videos/blindbox_op.mp4"
               className="w-full h-full object-contain"
-              autoPlay
               preload="auto"
               muted={isVideoMuted}
               playsInline
@@ -533,6 +529,8 @@ export default function BlindboxDetailPage() {
             </div>
           </div>
         </div>
+      )}
+
       {isPrizeModalOpen && (
         <GachaResultModal
           isOpen={isPrizeModalOpen}

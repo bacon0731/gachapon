@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/Skeleton"
 
 export default function ProductCardSkeleton() {
   return (
-    <div className="h-full flex flex-col bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 overflow-hidden">
+    <div className="h-full flex flex-col bg-white dark:bg-neutral-900 rounded-xl border border-neutral-100 dark:border-neutral-800 overflow-hidden">
       {/* Image Container */}
       <div className="relative aspect-square overflow-hidden bg-neutral-100 dark:bg-neutral-800 rounded-t-2xl">
         <Skeleton className="w-full h-full" />

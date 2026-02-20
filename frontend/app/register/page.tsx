@@ -127,34 +127,25 @@ function RegisterContent() {
                 className="bg-neutral-50/50 dark:bg-neutral-800/50 border-transparent focus:bg-white dark:focus:bg-neutral-800 transition-all font-mono uppercase"
               />
 
-              <div className="flex items-start pt-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const checkbox = document.getElementById('terms') as HTMLInputElement | null
-                    if (checkbox) {
-                      checkbox.click()
-                    }
-                  }}
-                  className="mt-0.5 flex items-center justify-center h-6 w-6 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-neutral-900"
-                >
-                  <input
-                    id="terms"
-                    name="terms"
-                    type="checkbox"
-                    className="peer sr-only"
-                  />
+              <label className="flex items-start pt-1 cursor-pointer">
+                <input
+                  id="terms"
+                  name="terms"
+                  type="checkbox"
+                  className="peer sr-only"
+                />
+                <span className="mt-0.5 flex items-center justify-center h-6 w-6 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-neutral-900">
                   <span className="pointer-events-none inline-flex h-4 w-4 items-center justify-center rounded-md bg-transparent peer-checked:bg-primary">
                     <span className="h-2.5 w-2.5 rounded-[4px] bg-white peer-checked:block" />
                   </span>
-                </button>
-                <label htmlFor="terms" className="ml-3 block text-xs leading-relaxed text-neutral-600 dark:text-neutral-400">
+                </span>
+                <span className="ml-3 block text-xs leading-relaxed text-neutral-600 dark:text-neutral-400">
                   我已閱讀並同意
                   <a href="#" className="font-medium text-primary hover:text-primary/80 mx-1">服務條款</a>
                   與
                   <a href="#" className="font-medium text-primary hover:text-primary/80 mx-1">隱私權政策</a>
-                </label>
-              </div>
+                </span>
+              </label>
 
               <Button
                 type="submit"

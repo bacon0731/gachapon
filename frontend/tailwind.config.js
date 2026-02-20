@@ -7,10 +7,6 @@ module.exports = {
   ],
   theme: {
     extend: {
-      spacing: {
-        4: '0.5rem',
-        6: '1rem',
-      },
       colors: {
         primary: {
           DEFAULT: '#3B82F6', // 主題藍
@@ -51,6 +47,9 @@ module.exports = {
       fontFamily: {
         sans: ['Chiron GoRound TC', 'sans-serif'],
         amount: ['Tilt Warp', 'sans-serif'],
+      },
+      lineHeight: {
+        snug: '0.8',
       },
       keyframes: {
         marquee: {

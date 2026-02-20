@@ -37,7 +37,7 @@ export default function ProductBadge({ type, className, icon = false }: ProductB
       icon: Gift,
     },
     hot: {
-      text: '熱賣',
+      text: '熱門',
       color: 'bg-accent-red',
       shadow: 'shadow-accent-red/20',
       icon: Flame,

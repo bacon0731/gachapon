@@ -10,7 +10,7 @@ export default function NotFound() {
       <p className="text-neutral-500 dark:text-neutral-400 mb-8 max-w-md">
         您所尋找的頁面可能已被移除、名稱已更改或暫時無法使用。
       </p>
-      <Link href="/">
+      <Link href="/shop">
         <Button size="lg">回首頁</Button>
       </Link>
     </div>
