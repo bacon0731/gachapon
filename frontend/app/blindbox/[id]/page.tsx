@@ -84,14 +84,6 @@ export default function BlindboxDetailPage() {
   };
 
   useEffect(() => {
-    if (!isPrizeModalOpen) return;
-    const audio = resultSoundRef.current;
-    if (!audio) return;
-    audio.currentTime = 0;
-    void audio.play().catch(() => undefined);
-  }, [isPrizeModalOpen]);
-
-  useEffect(() => {
     const fetchData = async () => {
       try {
         const idParam = params.id;
