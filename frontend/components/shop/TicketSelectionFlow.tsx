@@ -393,6 +393,9 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
         ticketsToPlay.forEach(n => merged.add(n));
         return Array.from(merged).sort((a, b) => a - b);
       });
+      setRemainingTickets(prev =>
+        typeof prev === 'number' ? Math.max(prev - ticketsToPlay.length, 0) : prev
+      );
       setSelectedTickets([]);
       if (refreshProfile) refreshProfile();
       

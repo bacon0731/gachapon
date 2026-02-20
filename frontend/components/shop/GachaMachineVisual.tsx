@@ -11,6 +11,7 @@ interface GachaMachineVisualProps {
   onTrial?: () => void;
   onHoleClick?: () => void;
   onLoaded?: () => void;
+  isSoldOut?: boolean;
 }
 
 const EGG_IMAGES = ['/images/gacha/begg.png', '/images/gacha/gegg.png', '/images/gacha/pegg.png'];
@@ -91,6 +92,7 @@ export function GachaMachineVisual({
   onTrial,
   onHoleClick,
   onLoaded,
+  isSoldOut = false,
 }: GachaMachineVisualProps) {
   const createInitialEggs = (): Egg[] => {
     const count = 15;
@@ -175,8 +177,11 @@ export function GachaMachineVisual({
   const eggsRef = useRef<Egg[]>(eggs);
 
   const dropEggSrc = useMemo(() => {
+    if (isSoldOut) {
+      return EGG_IMAGES[1] || EGG_IMAGES[0];
+    }
     return EGG_IMAGES[Math.floor(Math.random() * EGG_IMAGES.length)];
-  }, []);
+  }, [isSoldOut]);
 
   const isSpinning = state === 'spinning';
   const isShaking = state === 'shaking';
@@ -192,6 +197,12 @@ export function GachaMachineVisual({
   useEffect(() => {
     eggsRef.current = eggs;
   }, [eggs]);
+
+  useEffect(() => {
+    if (isSoldOut) {
+      setEggs([]);
+    }
+  }, [isSoldOut]);
 
   useEffect(() => {
     stateRef.current = { isSpinning, isShaking };
@@ -509,6 +520,7 @@ export function GachaMachineVisual({
           top: '84.5%',
           width: '25.06%',
           height: '11.2%',
+          zIndex: 20,
         }}
         onClick={() => {
           if (onPush) onPush();
@@ -526,6 +538,7 @@ export function GachaMachineVisual({
           top: '84.5%',
           width: '36.53%',
           height: '11.2%',
+          zIndex: 20,
         }}
         onClick={() => {
           if (onPurchase) onPurchase();
@@ -543,6 +556,7 @@ export function GachaMachineVisual({
           top: '84.5%',
           width: '25.06%',
           height: '11.2%',
+          zIndex: 20,
         }}
         onClick={() => {
           if (onTrial) onTrial();
@@ -558,6 +572,19 @@ export function GachaMachineVisual({
           unoptimized
         />
       </div>
+
+      {isSoldOut && (
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 flex justify-center"
+          style={{ bottom: '0%', backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 10 }}
+        >
+          <div className="mt-16 inline-flex h-8 items-center px-4 rounded-full bg-black/90 shadow-lg">
+            <span className="text-[14px] font-black tracking-widest text-yellow-300">
+              該商品已完抽
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

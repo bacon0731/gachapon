@@ -45,6 +45,11 @@ export default function FairnessVerifyPage() {
   >([]);
   const [isLoadingTickets, setIsLoadingTickets] = useState(false);
 
+  const hasSeedForDraw = !!((seedInput && seedInput.trim()) || product?.seed);
+  const hasNonceForDraw = !!(nonceInput && nonceInput.trim());
+  const hasTxidHashForDraw = !!(expectedTxidHashInput && expectedTxidHashInput.trim());
+  const isVerifyDrawDisabled = isVerifyingDraw || !hasSeedForDraw || !hasNonceForDraw || !hasTxidHashForDraw;
+
   useEffect(() => {
     const prefillNonce = searchParams.get('nonce');
     const prefillTxid = searchParams.get('txid_hash');
@@ -82,7 +87,11 @@ export default function FairnessVerifyPage() {
         if (error) throw error;
 
         setProduct(data);
-        setSeedInput(data.seed || '');
+        if (data.status === 'ended') {
+          setSeedInput(data.seed || '');
+        } else {
+          setSeedInput('');
+        }
         setSeedHashExpected(data.txid_hash || null);
 
         const { data: prizeRows, error: prizeError } = await supabase
@@ -193,7 +202,7 @@ export default function FairnessVerifyPage() {
       return;
     }
 
-    const seed = seedInput.trim() || product.seed || '';
+    const seed = seedInput.trim();
     const nonce = Number(nonceInput.trim());
     const expectedHash = expectedTxidHashInput.trim();
 
@@ -472,7 +481,7 @@ async function verifyDraw(seed: string, nonce: number, expectedHash: string) {
               <button
                 type="button"
                 onClick={handleVerifyDraw}
-                disabled={isVerifyingDraw}
+                disabled={isVerifyDrawDisabled}
                 className="w-full mt-1 inline-flex items-center justify-center rounded-xl bg-primary text-white text-sm sm:text-base font-black py-2.5 sm:py-3 disabled:opacity-60 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
               >
                 {isVerifyingDraw ? '驗證中...' : '驗證這一抽'}

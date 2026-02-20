@@ -748,18 +748,20 @@ export default function ProductDetailPage() {
                 </div>
               </div>
 
-              <div className="pt-3 sm:pt-4 border-t border-neutral-100 dark:border-neutral-800 space-y-2">
-                <div className="text-[13px] sm:text-sm font-black text-neutral-500 dark:text-neutral-400">
-                  公平性驗證頁：
+              {product.type === 'ichiban' && product.status === 'ended' && (
+                <div className="pt-3 sm:pt-4 border-t border-neutral-100 dark:border-neutral-800 space-y-2">
+                  <div className="text-[13px] sm:text-sm font-black text-neutral-500 dark:text-neutral-400">
+                    公平性驗證頁：
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleGoToFairness}
+                    className="inline-flex items-center justify-center px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-primary text-white text-[13px] sm:text-sm font-black shadow-sm hover:bg-primary/90 transition-colors"
+                  >
+                    前往公平性驗證頁
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleGoToFairness}
-                  className="inline-flex items-center justify-center px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-primary text-white text-[13px] sm:text-sm font-black shadow-sm hover:bg-primary/90 transition-colors"
-                >
-                  前往公平性驗證頁
-                </button>
-              </div>
+              )}
             </div>
 
             {/* Product Meta Info */}

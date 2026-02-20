@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "db:clear": "node scripts/clear_db.js",
-    "db:sql": "node scripts/run_sql.js"
+    "db:sql": "node scripts/run_sql.js",
+    "db:reset-and-seed": "node scripts/run_sql.js ../reset_and_seed.sql"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.93.3",

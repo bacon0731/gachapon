@@ -41,6 +41,7 @@ export default function NewProductPage() {
   }
 
   const ichibanLevels = [
+    { value: 'SP賞', label: 'SP賞' },
     { value: 'A賞', label: 'A賞' },
     { value: 'B賞', label: 'B賞' },
     { value: 'C賞', label: 'C賞' },

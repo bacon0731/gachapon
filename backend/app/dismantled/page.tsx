@@ -152,11 +152,10 @@ export default function DismantledPage() {
 
   return (
     <AdminLayout
-      pageTitle="分解品管理"
-      breadcrumbs={[{ label: '商品管理', href: '/products' }, { label: '分解品管理', href: '/dismantled' }]}
+      pageTitle="回收池 / 分解品管理"
+      breadcrumbs={[{ label: '商品管理', href: '/products' }, { label: '回收池 / 分解品管理', href: '/dismantled' }]}
     >
       <div className="space-y-6">
-        {/* Stats Card */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <StatsCard
             title="總分解數量"

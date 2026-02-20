@@ -18,6 +18,13 @@ SET session_replication_role = 'origin';
 ALTER TABLE products DROP CONSTRAINT IF EXISTS products_type_check;
 ALTER TABLE products ADD CONSTRAINT products_type_check CHECK (type IN ('ichiban', 'blindbox', 'gacha', 'custom'));
 
+-- 4.1 Ensure columns for公平性驗證存在
+ALTER TABLE products ADD COLUMN IF NOT EXISTS txid_hash TEXT;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS seed TEXT;
+
+-- 4.2 啟用 pgcrypto 以便產生隨機 Seed 與 SHA256
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- 5. Insert Categories (Operation Themes)
 WITH cats AS (
   INSERT INTO categories (name, sort_order, is_active) VALUES 
@@ -44,19 +51,19 @@ INSERT INTO products (
   distributor, release_year, release_month
 ) VALUES (
   'ICHIBAN-001', '一番賞 海賊王 未來的島嶼', '人氣動漫專區', get_cat_id('人氣動漫專區'), 350, 'active', true,
-  80, 76, '/images/item.png', 'ichiban', ARRAY['A賞', 'B賞', 'Last One'],
+  80, 76, '/images/item/10001.jpg', 'ichiban', ARRAY['A賞', 'B賞', 'Last One'],
   'Bandai', '2025', '03'
 );
 
 INSERT INTO product_prizes (product_id, level, name, image_url, total, remaining, probability) 
-SELECT id, 'A', '蒙其·D·魯夫 模型', '/images/item.png', 2, 2, 2.5 FROM products WHERE product_code = 'ICHIBAN-001' UNION ALL
-SELECT id, 'B', '羅羅亞·索隆 模型', '/images/item.png', 2, 2, 2.5 FROM products WHERE product_code = 'ICHIBAN-001' UNION ALL
-SELECT id, 'C', '香吉士 模型', '/images/item.png', 2, 1, 2.5 FROM products WHERE product_code = 'ICHIBAN-001' UNION ALL
-SELECT id, 'D', '娜美 模型', '/images/item.png', 1, 1, 1.25 FROM products WHERE product_code = 'ICHIBAN-001' UNION ALL
-SELECT id, 'E', '大海賊毛巾', '/images/item.png', 23, 20, 28.75 FROM products WHERE product_code = 'ICHIBAN-001' UNION ALL
-SELECT id, 'F', '橡膠吊飾', '/images/item.png', 25, 25, 31.25 FROM products WHERE product_code = 'ICHIBAN-001' UNION ALL
-SELECT id, 'G', '通緝令資料夾', '/images/item.png', 25, 25, 31.25 FROM products WHERE product_code = 'ICHIBAN-001' UNION ALL
-SELECT id, 'Last One', '蒙其·D·魯夫 最後賞異色版', '/images/item.png', 1, 1, 0 FROM products WHERE product_code = 'ICHIBAN-001';
+SELECT id, 'A', '蒙其·D·魯夫 模型', '/images/item/10001.jpg', 2, 2, 2.5 FROM products WHERE product_code = 'ICHIBAN-001' UNION ALL
+SELECT id, 'B', '羅羅亞·索隆 模型', '/images/item/10001.jpg', 2, 2, 2.5 FROM products WHERE product_code = 'ICHIBAN-001' UNION ALL
+SELECT id, 'C', '香吉士 模型', '/images/item/10001.jpg', 2, 1, 2.5 FROM products WHERE product_code = 'ICHIBAN-001' UNION ALL
+SELECT id, 'D', '娜美 模型', '/images/item/10001.jpg', 1, 1, 1.25 FROM products WHERE product_code = 'ICHIBAN-001' UNION ALL
+SELECT id, 'E', '大海賊毛巾', '/images/item/10001.jpg', 23, 20, 28.75 FROM products WHERE product_code = 'ICHIBAN-001' UNION ALL
+SELECT id, 'F', '橡膠吊飾', '/images/item/10001.jpg', 25, 25, 31.25 FROM products WHERE product_code = 'ICHIBAN-001' UNION ALL
+SELECT id, 'G', '通緝令資料夾', '/images/item/10001.jpg', 25, 25, 31.25 FROM products WHERE product_code = 'ICHIBAN-001' UNION ALL
+SELECT id, 'Last One', '蒙其·D·魯夫 最後賞異色版', '/images/item/10001.jpg', 1, 1, 0 FROM products WHERE product_code = 'ICHIBAN-001';
 
 -- ==========================================
 -- PRODUCT 2: Ichiban - Dragon Ball (Clearance/Ended)
@@ -67,16 +74,16 @@ INSERT INTO products (
   distributor, release_year, release_month
 ) VALUES (
   'ICHIBAN-002', '一番賞 七龍珠 激戰歷史 (已完售)', '年末出清【限時】', get_cat_id('年末出清【限時】'), 300, 'ended', false,
-  80, 0, '/images/item.png', 'ichiban', ARRAY['A賞', 'Last One'],
+  80, 0, '/images/item/10001.jpg', 'ichiban', ARRAY['A賞', 'Last One'],
   'Bandai', '2024', '12'
 );
 
 INSERT INTO product_prizes (product_id, level, name, image_url, total, remaining, probability) 
-SELECT id, 'A', '孫悟空 超級賽亞人', '/images/item.png', 2, 0, 2.5 FROM products WHERE product_code = 'ICHIBAN-002' UNION ALL
-SELECT id, 'B', '貝吉塔 大猿', '/images/item.png', 2, 0, 2.5 FROM products WHERE product_code = 'ICHIBAN-002' UNION ALL
-SELECT id, 'C', '毛巾', '/images/item.png', 30, 0, 37.5 FROM products WHERE product_code = 'ICHIBAN-002' UNION ALL
-SELECT id, 'D', '資料夾', '/images/item.png', 46, 0, 57.5 FROM products WHERE product_code = 'ICHIBAN-002' UNION ALL
-SELECT id, 'Last One', '神龍 模型', '/images/item.png', 1, 0, 0 FROM products WHERE product_code = 'ICHIBAN-002';
+SELECT id, 'A', '孫悟空 超級賽亞人', '/images/item/10001.jpg', 2, 0, 2.5 FROM products WHERE product_code = 'ICHIBAN-002' UNION ALL
+SELECT id, 'B', '貝吉塔 大猿', '/images/item/10001.jpg', 2, 0, 2.5 FROM products WHERE product_code = 'ICHIBAN-002' UNION ALL
+SELECT id, 'C', '毛巾', '/images/item/10001.jpg', 30, 0, 37.5 FROM products WHERE product_code = 'ICHIBAN-002' UNION ALL
+SELECT id, 'D', '資料夾', '/images/item/10001.jpg', 46, 0, 57.5 FROM products WHERE product_code = 'ICHIBAN-002' UNION ALL
+SELECT id, 'Last One', '神龍 模型', '/images/item/10001.jpg', 1, 0, 0 FROM products WHERE product_code = 'ICHIBAN-002';
 
 -- ==========================================
 -- PRODUCT 3: Ichiban - Naruto (Anime)
@@ -371,6 +378,29 @@ INSERT INTO banners (name, image_url, link_url, sort_order, is_active) VALUES
 ('新春特輯：海賊王一番賞', '/images/banner.png', '/shop', 1, true),
 ('自製賞大放送：iPhone 16等你拿', '/images/banner.png', '/shop', 2, true),
 ('盲盒新品上市', '/images/banner.png', '/shop', 3, true);
+
+-- ==========================================
+-- Generate Seed & Seed Hash for active products (dev / demo only)
+-- ==========================================
+DO $$
+DECLARE
+  r RECORD;
+  v_seed TEXT;
+BEGIN
+  FOR r IN
+    SELECT id
+    FROM products
+    WHERE status IN ('active', 'ended')
+      AND type IN ('ichiban', 'blindbox', 'gacha', 'custom')
+  LOOP
+    v_seed := encode(gen_random_bytes(32), 'hex');
+
+    UPDATE products
+    SET seed = v_seed,
+        txid_hash = encode(digest(v_seed, 'sha256'), 'hex')
+    WHERE id = r.id;
+  END LOOP;
+END $$;
 
 -- ==========================================
 -- News

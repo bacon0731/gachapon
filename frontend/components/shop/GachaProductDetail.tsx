@@ -56,6 +56,8 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
   const [isEggBoxImageMode, setIsEggBoxImageMode] = useState(false);
   const [collectionRefreshKey, setCollectionRefreshKey] = useState(0);
 
+  const isSoldOut = product.status === 'ended' || product.remaining === 0;
+
   const handlePush = () => {
     if (machineState !== 'idle') return;
     setShakeRepeats(1);
@@ -67,15 +69,16 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
 
   const handlePurchaseClick = () => {
     if (machineState !== 'idle' || isProcessing) return;
-    if (!product || product.remaining === 0) {
-      showToast('已完抽', 'info');
-      return;
-    }
     setIsPurchaseModalOpen(true);
   };
 
   const handlePurchaseConfirm = async (quantity: number) => {
     if (!product) return;
+    if (product.status === 'ended' || product.remaining === 0) {
+      setIsPurchaseModalOpen(false);
+      showToast('商品已完抽', 'info');
+      return;
+    }
     if (!user) {
       showToast('請先登入會員', 'info');
       router.push('/login');
@@ -254,6 +257,7 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
                   onTrial={handleTrial}
                   onHoleClick={handleHoleClick}
                   onLoaded={() => setIsMachineLoaded(true)}
+                  isSoldOut={isSoldOut}
                 />
                 <div
                   className="absolute left-1/2 -translate-x-1/2"

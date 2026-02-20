@@ -350,6 +350,12 @@ export default function AdminLayout({ children, pageTitle, pageSubtitle, breadcr
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 7h14a2 2 0 012 2v2.5a1.5 1.5 0 010 3V17a2 2 0 01-2 2H5a2 2 0 01-2-2v-2.5a1.5 1.5 0 010-3V9a2 2 0 012-2z" />
     </svg>
   )
+  const IconMarketplace = () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9l1-4h16l1 4M5 9h14v11H5z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6" />
+    </svg>
+  )
 
   const menuItems = [
     { name: '儀表板', path: '/dashboard', icon: IconDashboard },
@@ -358,6 +364,7 @@ export default function AdminLayout({ children, pageTitle, pageSubtitle, breadcr
     { name: '配送管理', path: '/orders', icon: IconOrders },
     { name: '會員管理', path: '/users', icon: IconUsers },
     { name: '抽獎管理', path: '/draws', icon: IconDraws },
+     { name: '市集管理', path: '/marketplace', icon: IconMarketplace },
     { name: '儲值管理', path: '/recharges', icon: IconRecharges },
     { name: '輪播圖管理', path: '/banners', icon: IconBanners },
     { name: '文章管理', path: '/news', icon: IconNews },

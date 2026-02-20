@@ -99,7 +99,7 @@ function MobileTabbarInner() {
                         isActive ? "shadow-primary/40" : "shadow-neutral-200 dark:shadow-neutral-950"
                       )}
                     >
-                      <Icon className="w-6 h-6 stroke-[2.5]" />
+                      <Icon size={24} className="stroke-[2.5]" />
                     </motion.div>
                     <span className={cn(
                       "text-[13px] font-black transition-all duration-300",
@@ -126,7 +126,11 @@ function MobileTabbarInner() {
                   }}
                   className="relative z-10"
                 >
-                  <Icon className={cn("w-6 h-6", isActive && "fill-current/10")} strokeWidth={isActive ? 2.5 : 2} />
+                  <Icon
+                    size={24}
+                    className={cn(isActive && "fill-current/10")}
+                    strokeWidth={isActive ? 2.5 : 2}
+                  />
                   
                   <AnimatePresence>
                     {isActive && (

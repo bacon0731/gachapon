@@ -591,9 +591,9 @@ export default function ProductsPage() {
             }}
           />
           <StatsCard
-            title="分解數"
-            value={dismantledCount}
-            onClick={() => router.push('/dismantled')}
+            title="小物數量"
+            value={totalSmallItems}
+            onClick={() => router.push('/small-items')}
             isActive={false}
           />
           <StatsCard
@@ -639,9 +639,9 @@ export default function ProductsPage() {
             activeColor="primary"
           />
           <StatsCard
-            title="小物數量"
-            value={totalSmallItems}
-            onClick={() => router.push('/small-items')}
+            title="分解數"
+            value={dismantledCount}
+            onClick={() => router.push('/dismantled')}
             isActive={false}
           />
         </div>

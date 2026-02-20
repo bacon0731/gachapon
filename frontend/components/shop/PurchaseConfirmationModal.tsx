@@ -9,6 +9,7 @@ import { Button } from '@/components/ui';
 import { Database } from '@/types/database.types';
 import { cn } from '@/lib/utils';
 import { useAlert } from '@/components/ui/AlertDialog';
+import { useToast } from '@/components/ui/Toast';
 import Image from 'next/image';
 
 interface PurchaseConfirmationModalProps {
@@ -32,6 +33,7 @@ export function PurchaseConfirmationModal({
 }: PurchaseConfirmationModalProps) {
   const [quantity, setQuantity] = useState(1);
   const { showAlert } = useAlert();
+  const { showToast } = useToast();
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const router = useRouter();
   const { user } = useAuth();
@@ -50,9 +52,25 @@ export function PurchaseConfirmationModal({
     }
   }, [isOpen, onClose]);
 
-  const maxQuantity = Math.min(product.remaining, 10); // Limit to 10 per draw for safety/UX
+  const maxByRemaining = typeof product.remaining === 'number' ? product.remaining : 0;
+  const maxByPoints = product.price > 0 ? Math.floor(userPoints / product.price) : maxByRemaining;
+  const rawMaxQuantity = Math.min(
+    10,
+    maxByRemaining,
+    maxByPoints > 0 ? maxByPoints : maxByRemaining || 10
+  );
+  const maxQuantity = Math.max(1, rawMaxQuantity || 1); // 最少顯示 1 抽，避免 UI 壞掉
   const totalPrice = product.price * quantity;
   const isInsufficient = userPoints < totalPrice;
+  const isSoldOut = product.status === 'ended' || maxByRemaining === 0;
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setQuantity((prev) => {
+      const clamped = Math.min(Math.max(1, prev), maxQuantity);
+      return clamped;
+    });
+  }, [isOpen, maxQuantity]);
 
   const handleConfirm = () => {
     if (!user) {
@@ -66,6 +84,10 @@ export function PurchaseConfirmationModal({
       return;
     }
     
+    if (isSoldOut) {
+      return;
+    }
+
     if (isInsufficient) {
       onClose();
       showAlert({
@@ -78,7 +100,7 @@ export function PurchaseConfirmationModal({
       return;
     }
 
-    onConfirm(quantity);
+    onConfirm(Math.min(quantity, maxQuantity));
   };
 
   return (
@@ -190,8 +212,16 @@ export function PurchaseConfirmationModal({
                       {quantity}
                     </span>
                     <button
-                      onClick={() => setQuantity(Math.min(maxQuantity, quantity + 1))}
-                      disabled={quantity >= maxQuantity}
+                      onClick={() => {
+                        if (quantity >= maxQuantity) {
+                          if (!isSoldOut) {
+                            showToast('最後幾個了！快搶快搶！', 'info');
+                          }
+                          return;
+                        }
+                        setQuantity(Math.min(maxQuantity, quantity + 1));
+                      }}
+                      disabled={isSoldOut}
                       className={cn(
                         "rounded-full bg-white dark:bg-neutral-800 shadow-sm border border-neutral-200 dark:border-neutral-700 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 transition-all text-neutral-600",
                         isDesktop ? "w-10 h-10" : "w-8 h-8"
@@ -228,15 +258,21 @@ export function PurchaseConfirmationModal({
             )}>
               <Button
                 onClick={handleConfirm}
-                disabled={isProcessing || product.remaining === 0}
+                disabled={isProcessing || isSoldOut}
                 className={cn(
-                  "w-full rounded-xl font-black shadow-xl transition-all active:scale-[0.98]",
+                  "w-full rounded-xl font-black shadow-xl transition-all",
                   isDesktop ? "h-[52px] text-lg" : "h-[44px] text-base",
-                  "bg-accent-red text-white shadow-accent-red/20 hover:bg-accent-red/90"
+                  isSoldOut
+                    ? "bg-neutral-300 text-neutral-500 shadow-none cursor-not-allowed"
+                    : "bg-accent-red text-white shadow-accent-red/20 hover:bg-accent-red/90 active:scale-[0.98]"
                 )}
-                variant="danger"
+                variant={isSoldOut ? "secondary" : "danger"}
               >
-                {isProcessing ? '處理中...' : `確認支付 ${totalPrice.toLocaleString()} 代幣`}
+                {isSoldOut
+                  ? '商品已完抽'
+                  : isProcessing
+                    ? '處理中...'
+                    : `確認支付 ${totalPrice.toLocaleString()} 代幣`}
               </Button>
             </div>
           </motion.div>

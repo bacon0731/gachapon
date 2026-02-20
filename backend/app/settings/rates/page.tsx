@@ -187,12 +187,59 @@ export default function RatesPage() {
 
   // 獲取商品列表（帶殺率參數）
   const productsWithRates: ProductRate[] = useMemo(() => {
+    const matchLevel = (prizeLevel: string, configured: string) => {
+      const a = prizeLevel.trim().toLowerCase()
+      const b = configured.trim().toLowerCase()
+      if (!a || !b) return false
+      if (a === b) return true
+      const aNormalized = a.replace(/賞/g, '')
+      const bNormalized = b.replace(/賞/g, '')
+      if (aNormalized === bNormalized) return true
+      if (aNormalized.startsWith(bNormalized) || bNormalized.startsWith(aNormalized)) return true
+      return false
+    }
+
     return products.map(product => {
       const profitRate = profitRates[product.id] ?? 1.0
-      
-      // 確定哪些是大獎項（使用 majorPrizes 或默認 ['A賞']）
-      const majorPrizeLevels = product.majorPrizes || ['A賞']
-      
+
+      // 確定哪些是大獎項：
+      // 1) 先使用資料庫設定的 majorPrizes，容許「A / A賞 / A賞 xxx」等變化
+      // 2) 若沒有設定或設定無效，優先抓包含「隱藏 / Hidden / Last賞 / SP賞」等關鍵字的等級
+      // 3) 如果仍然找不到，就把機率最低的等級當成大獎項
+      let majorPrizeLevels = product.prizes
+        .filter(p => {
+          if (!p.level) return false
+          const configured = product.majorPrizes && product.majorPrizes.length > 0
+            ? product.majorPrizes
+            : ['A賞']
+          return configured.some(cfg => matchLevel(p.level as string, cfg))
+        })
+        .map(p => p.level)
+
+      if (majorPrizeLevels.length === 0 && product.prizes.length > 0) {
+        const keywordRegex = /(隱藏|hidden|Hidden|H賞|SP賞|最後賞|Last賞)/
+        const keywordLevels = Array.from(
+          new Set(
+            product.prizes
+              .filter(p => p.level && keywordRegex.test(p.level))
+              .map(p => p.level)
+          )
+        )
+
+        if (keywordLevels.length > 0) {
+          majorPrizeLevels = keywordLevels
+        } else {
+          const minProb = Math.min(...product.prizes.map(p => p.probability))
+          majorPrizeLevels = Array.from(
+            new Set(
+              product.prizes
+                .filter(p => p.probability === minProb)
+                .map(p => p.level)
+            )
+          )
+        }
+      }
+
       // 分離大獎項和小獎項
       const majorPrizes = product.prizes.filter(p => majorPrizeLevels.includes(p.level))
       const minorPrizes = product.prizes.filter(p => !majorPrizeLevels.includes(p.level))

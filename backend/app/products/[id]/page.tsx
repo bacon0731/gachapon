@@ -46,6 +46,7 @@ export default function EditProductPage() {
     return l.includes('last one') || level.includes('最後賞')
   }
   const ichibanLevels = [
+    { value: 'SP賞', label: 'SP賞' },
     { value: 'A賞', label: 'A賞' },
     { value: 'B賞', label: 'B賞' },
     { value: 'C賞', label: 'C賞' },
