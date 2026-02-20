@@ -41,8 +41,8 @@ export function PurchaseConfirmation({
         {/* Header: Product Info */}
         <div className="p-3 md:p-6 pb-2 md:pb-4 flex gap-3 md:gap-5">
           <div className="relative w-12 h-12 md:w-16 md:h-16 bg-neutral-100 dark:bg-neutral-800 rounded-lg overflow-hidden shrink-0 shadow-sm border border-neutral-100 dark:border-neutral-700">
-            <Image 
-              src={`/images/item/${product.id.toString().padStart(5, '0')}.jpg`} 
+            <Image
+              src={product.image_url || `/images/item/${product.id.toString().padStart(5, '0')}.jpg`}
               alt={product.name}
               fill
               className="object-cover"

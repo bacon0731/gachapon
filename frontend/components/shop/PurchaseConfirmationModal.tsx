@@ -135,8 +135,8 @@ export function PurchaseConfirmationModal({
                   "relative bg-neutral-100 dark:bg-neutral-800 rounded-lg overflow-hidden shrink-0 shadow-sm border border-neutral-100 dark:border-neutral-700",
                   isDesktop ? "w-16 h-16" : "w-12 h-12"
                 )}>
-                  <Image 
-                    src={`/images/item/${product.id.toString().padStart(5, '0')}.jpg`} 
+                  <Image
+                    src={product.image_url || `/images/item/${product.id.toString().padStart(5, '0')}.jpg`}
                     alt={product.name}
                     fill
                     className="object-cover"

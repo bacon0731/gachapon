@@ -352,13 +352,14 @@ async function verifyDraw(seed: string, nonce: number, expectedHash: string) {
                   <div className="text-xs sm:text-sm font-black text-neutral-500 dark:text-neutral-400">
                     商品 Seed
                   </div>
-                  <input
+                  <textarea
                     value={seedInput}
                     onChange={(e) => setSeedInput(e.target.value)}
                     placeholder="完抽後才會公開 Seed"
-                    className="block w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-[13px] sm:text-sm font-mono text-neutral-800 dark:text-neutral-200 break-all outline-none focus:ring-2 focus:ring-primary/60 focus:border-primary"
+                    className="block w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-[11px] sm:text-[13px] leading-snug font-mono text-neutral-800 dark:text-neutral-200 break-all outline-none focus:ring-2 focus:ring-primary/60 focus:border-primary resize-none min-h-[3.25rem]"
                     autoComplete="off"
                     spellCheck={false}
+                    rows={2}
                   />
                 </div>
               </div>
