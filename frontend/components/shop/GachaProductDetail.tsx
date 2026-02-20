@@ -288,7 +288,7 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
                         onClick={() => setIsEggBoxImageMode(false)}
                       >
                         <Image
-                          src={`/images/item/${product.id.toString().padStart(5, '0')}.jpg`}
+                          src={product.image_url || `/images/item/${product.id.toString().padStart(5, '0')}.jpg`}
                           alt={product.name}
                           fill
                           className="rounded-lg object-fill"

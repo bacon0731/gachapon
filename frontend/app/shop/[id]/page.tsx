@@ -453,13 +453,13 @@ export default function ProductDetailPage() {
               {/* Image Section */}
               <div className="relative aspect-square bg-neutral-100 dark:bg-neutral-800">
                 <div className="w-full h-full flex items-center justify-center text-white/20 group-hover:scale-105 transition-transform duration-500">
-                    <Image 
-                      src={`/images/item/${product.id.toString().padStart(5, '0')}.jpg`} 
-                      alt={product.name}
-                      fill
-                      className="object-cover"
-                      unoptimized
-                    />
+                  <Image
+                    src={product.image_url || `/images/item/${product.id.toString().padStart(5, '0')}.jpg`}
+                    alt={product.name}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
                 </div>
                 
                 {/* Sold Out Overlay */}
