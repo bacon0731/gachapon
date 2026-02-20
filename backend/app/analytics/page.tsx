@@ -16,12 +16,11 @@ interface Admin {
   id: number
   username: string
   nickname: string
-  email: string | null
   role_id: number
   status: 'active' | 'inactive'
   last_login_at: string | null
   created_at: string
-  role?: Role // Joined data
+  role?: Role
 }
 
 export default function AdminsPage() {

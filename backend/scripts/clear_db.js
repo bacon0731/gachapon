@@ -11,44 +11,10 @@ if (!connectionString) {
 const sql = `
 DO $$
 DECLARE
-  v_admin_email text := NULL;
-  v_admin_id uuid;
   v_table text;
   v_seq text;
   v_role_id bigint;
 BEGIN
-  IF v_admin_email IS NOT NULL THEN
-    SELECT id INTO v_admin_id FROM auth.users WHERE email = v_admin_email LIMIT 1;
-  END IF;
-  IF v_admin_id IS NULL THEN
-    IF to_regclass('auth.users') IS NOT NULL THEN
-      SELECT id INTO v_admin_id FROM auth.users ORDER BY created_at NULLS LAST LIMIT 1;
-    END IF;
-  END IF;
-  IF v_admin_id IS NULL THEN
-    RAISE EXCEPTION 'NO_AUTH_USER';
-  END IF;
-
-  IF to_regclass('public.users') IS NOT NULL THEN
-    PERFORM 1 FROM public.users WHERE id = v_admin_id;
-    IF NOT FOUND THEN
-      BEGIN
-        INSERT INTO public.users (id, role, status, tokens, created_at)
-        VALUES (v_admin_id, 'super_admin', 'active', 0, NOW());
-      EXCEPTION WHEN others THEN
-        BEGIN
-          INSERT INTO public.users (id) VALUES (v_admin_id);
-        EXCEPTION WHEN others THEN NULL;
-        END;
-    ELSE
-      BEGIN
-        UPDATE public.users SET role='super_admin', status='active', tokens=0 WHERE id=v_admin_id;
-      EXCEPTION WHEN undefined_column THEN
-        UPDATE public.users SET status='active' WHERE id=v_admin_id;
-      END;
-    END IF;
-  END IF;
-
   IF to_regclass('public.roles') IS NOT NULL THEN
     SELECT id INTO v_role_id FROM public.roles WHERE name='super_admin' LIMIT 1;
     IF v_role_id IS NULL THEN
@@ -62,7 +28,7 @@ BEGIN
     PERFORM 1 FROM public.admins WHERE username='superadmin';
     IF NOT FOUND THEN
       INSERT INTO public.admins (username, email, password_hash, role_id, status, created_at)
-      VALUES ('superadmin','admin@example.com','superadmin123',v_role_id,'active',NOW());
+      VALUES ('superadmin',NULL,'superadmin123',v_role_id,'active',NOW());
     ELSE
       UPDATE public.admins SET role_id=v_role_id, status='active' WHERE username='superadmin';
     END IF;
@@ -70,10 +36,10 @@ BEGIN
   END IF;
 
   IF to_regclass('auth.identities') IS NOT NULL THEN
-    EXECUTE format('DELETE FROM auth.identities WHERE user_id <> %L', v_admin_id::text);
+    EXECUTE 'DELETE FROM auth.identities';
   END IF;
   IF to_regclass('auth.users') IS NOT NULL THEN
-    EXECUTE format('DELETE FROM auth.users WHERE id <> %L', v_admin_id::text);
+    EXECUTE 'DELETE FROM auth.users';
   END IF;
 
   IF to_regclass('public.draw_records') IS NOT NULL THEN EXECUTE 'DELETE FROM public.draw_records'; END IF;
@@ -103,10 +69,10 @@ BEGIN
   IF to_regclass('public.recharge_records') IS NOT NULL THEN EXECUTE 'DELETE FROM public.recharge_records'; END IF;
 
   IF to_regclass('public.profiles') IS NOT NULL THEN
-    EXECUTE format('DELETE FROM public.profiles WHERE id <> %L', v_admin_id::text);
+    EXECUTE 'DELETE FROM public.profiles';
   END IF;
   IF to_regclass('public.users') IS NOT NULL THEN
-    EXECUTE format('DELETE FROM public.users WHERE id <> %L', v_admin_id::text);
+    EXECUTE 'DELETE FROM public.users';
   END IF;
 
   FOR v_seq IN
@@ -138,4 +104,3 @@ async function main() {
 }
 
 main()
-

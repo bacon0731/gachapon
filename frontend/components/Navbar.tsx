@@ -156,6 +156,7 @@ function NavbarInner() {
     if (pathname === '/shop') return '全部商品';
     if (pathname === '/market') return '自由市集';
     if (pathname === '/news') return '最新情報';
+    if (pathname.startsWith('/fairness')) return '公平性驗證';
     if (pathname === '/check-in') return '每日簽到';
     if (pathname.endsWith('/select')) return '選擇籤號';
     if (pathname.endsWith('/confirm')) return '確認購買';

@@ -7,7 +7,6 @@ interface AdminUser {
   id: string
   username: string
   nickname: string
-  email: string | null
   role: string
 }
 
@@ -64,7 +63,6 @@ export function AdminProvider({ children }: { children: ReactNode }) {
             id: admin.id.toString(),
             username: admin.username,
             nickname: admin.nickname || '',
-            email: admin.email,
             role: admin.role?.name || 'admin',
           })
           setIsAuthenticated(true)
@@ -120,7 +118,6 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         id: admin.id.toString(),
         username: admin.username,
         nickname: admin.nickname || '',
-        email: admin.email,
         role: admin.role?.name || 'admin',
       })
       setIsAuthenticated(true)
