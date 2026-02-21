@@ -430,11 +430,9 @@ export default function ProductDetailPage() {
           ? validPrizes.reduce((acc, prize) => acc + (prize.total || 0), 0)
           : 0);
 
-  const isSoldOut = typeof totalRemaining === 'number' && totalRemaining <= 0;
-
   const fairnessHref = `/fairness/${product.id}`;
   const isSoldOut =
-    ((typeof totalRemaining === 'number' && totalRemaining <= 0) || product.status === 'ended');
+    (typeof totalRemaining === 'number' && totalRemaining <= 0) || product.status === 'ended';
 
   const handleGoToFairness = () => {
     if (!isAuthenticated) {
