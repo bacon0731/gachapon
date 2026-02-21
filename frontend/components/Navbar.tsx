@@ -466,7 +466,7 @@ function NavbarInner() {
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-[57px]">
             {/* 左：Logo + 標語 / 返回按鈕 */}
-            <div className="flex items-center gap-2 md:gap-4 flex-none min-w-0">
+            <div className="flex items-center gap-2 md:gap-8 flex-none min-w-0">
               {showTitle ? (
                 <div className="flex items-center w-full md:hidden overflow-hidden">
                   {showBackButton && (
@@ -497,12 +497,14 @@ function NavbarInner() {
               
               <Link href="/" className={cn("flex items-center group", !showLogo && "hidden md:flex")}>
                 <div className="flex items-center gap-1.5 transition-transform group-hover:scale-105">
-                  <span className="text-[20px] font-[900] tracking-tight text-neutral-900 dark:text-white leading-none">
-                    GACHA
-                  </span>
-                  <span className="inline-flex items-center px-2 py-[2px] rounded-full text-[10px] font-[900] bg-primary/10 text-primary leading-[2]">
-                    ONLINE
-                  </span>
+                  <Image
+                    src="/images/logo.svg"
+                    alt="GACHA ONLINE"
+                    width={112}
+                    height={28}
+                    className="h-11 w-auto"
+                    priority
+                  />
                 </div>
               </Link>
               <div className="hidden md:flex items-center gap-3 lg:gap-5">
