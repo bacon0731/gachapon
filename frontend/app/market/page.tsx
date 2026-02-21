@@ -502,11 +502,7 @@ export default function MarketplacePage() {
         <div className="max-w-7xl mx-auto px-2 relative">
           <div className="flex items-center gap-3 h-[57px]">
             <span className="text-[18px] font-black text-neutral-900 dark:text-white">
-              {trimmedQuery ? (
-                <>搜尋「{trimmedQuery}」的結果</>
-              ) : (
-                '交易所'
-              )}
+              交易所
             </span>
             <form
               onSubmit={(e) => {
@@ -596,6 +592,7 @@ export default function MarketplacePage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 md:pt-6 pb-10">
+        {!trimmedQuery && (
         <div className="md:hidden mb-3 space-y-2">
           <div className="flex items-center gap-2 overflow-x-auto overscroll-x-contain touch-pan-x scrollbar-hide pb-1 border-b border-neutral-100 dark:border-neutral-800">
             {primaryTabs.map((tab) => (
@@ -652,6 +649,7 @@ export default function MarketplacePage() {
             </div>
           </div>
         </div>
+        )}
         {trimmedQuery && (
           <div className="md:hidden flex items-baseline justify-between mb-2 px-1">
             <span className="text-[14px] font-black text-neutral-900 dark:text-white tracking-tight">
