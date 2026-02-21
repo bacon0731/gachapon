@@ -23,6 +23,15 @@ interface TicketSelectionFlowProps {
   onRefreshProduct?: () => void;
 }
 
+interface DrawResult {
+  grade: string;
+  name: string;
+  isOpened: boolean;
+  image_url: string;
+  is_last_one: boolean;
+  ticket_number: number;
+}
+
 interface PlayIchibanResult {
   grade: string;
   name: string;
@@ -59,6 +68,7 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
   const [supabase] = useState(() => createClient());
   const { user, refreshProfile } = useAuth();
   const tearSoundRef = useRef<HTMLAudioElement | null>(null);
+  const resultSoundRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -94,24 +104,11 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
   const [showPrizeDetails, setShowPrizeDetails] = useState(false);
   const [showLastOneCelebration, setShowLastOneCelebration] = useState(false);
   const [showAPrizePopup, setShowAPrizePopup] = useState(false);
-  const [drawnResults, setDrawnResults] = useState<{
-    grade: string;
-    name: string;
-    isOpened: boolean;
-    image_url: string;
-    is_last_one: boolean;
-    ticket_number: number;
-  }[]>([]);
+  const [drawnResults, setDrawnResults] = useState<DrawResult[]>([]);
+  const [aPrizePopupPrize, setAPrizePopupPrize] = useState<DrawResult | null>(null);
   
   // Full results for Last One winner
-  const [fullResults, setFullResults] = useState<{
-    grade: string;
-    name: string;
-    isOpened: boolean;
-    image_url: string;
-    is_last_one: boolean;
-    ticket_number: number;
-  }[]>([]);
+  const [fullResults, setFullResults] = useState<DrawResult[]>([]);
   const [isFetchingFullResults, setIsFetchingFullResults] = useState(false);
   const [hasTriggeredAutoResults, setHasTriggeredAutoResults] = useState(false);
   const [totalTicketsCount, setTotalTicketsCount] = useState<number>(80);
@@ -119,10 +116,27 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
   const [blindboxPhase, setBlindboxPhase] = useState<'opening' | 'revealed'>('opening');
 
   useEffect(() => {
-    if (!showAPrizePopup) return;
-    const timer = setTimeout(() => setShowAPrizePopup(false), 3000);
-    return () => clearTimeout(timer);
-  }, [showAPrizePopup]);
+    if (typeof window === 'undefined') return;
+    const audio = new Audio('/audio/getpopup.mp3');
+    audio.preload = 'auto';
+    resultSoundRef.current = audio;
+
+    return () => {
+      if (resultSoundRef.current) {
+        resultSoundRef.current.pause();
+        resultSoundRef.current.src = '';
+        resultSoundRef.current.load();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!showLastOneCelebration && !showAPrizePopup) return;
+    const audio = resultSoundRef.current;
+    if (!audio) return;
+    audio.currentTime = 0;
+    void audio.play().catch(() => undefined);
+  }, [showLastOneCelebration, showAPrizePopup]);
 
   useEffect(() => {
     if (!product || product.type !== 'blindbox') return;
@@ -268,26 +282,48 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
     if (!product) return;
     const remaining = Math.max(totalTicketsCount - soldTickets.length, 0);
     const isEnded = product.status === 'ended' || remaining <= 0;
+    if (!isEnded || hasTriggeredAutoResults) return;
+
     const hasLocalResults = drawnResults.length > 0;
-    if (
-      isEnded &&
-      !hasLocalResults &&
-      !hasTriggeredAutoResults &&
-      !showResultModal &&
-      !isFetchingFullResults
-    ) {
-      setHasTriggeredAutoResults(true);
-      handleShowFullResults();
+    const isStandalone = !onClose;
+
+    if (!isStandalone && hasLocalResults) return;
+
+    setHasTriggeredAutoResults(true);
+
+    onRefreshProduct?.();
+
+    if (!isStandalone && onClose) {
+      onClose();
+      return;
     }
+
+    if (product.type === 'blindbox' && product.id) {
+      router.push(`/blindbox/${product.id}`);
+      return;
+    }
+
+    if (params?.id) {
+      router.push(`/shop/${params.id}`);
+      return;
+    }
+
+    if (product.id) {
+      router.push(`/shop/${product.id}`);
+      return;
+    }
+
+    router.push('/shop');
   }, [
     product,
     totalTicketsCount,
     soldTickets.length,
     drawnResults.length,
     hasTriggeredAutoResults,
-    showResultModal,
-    isFetchingFullResults,
-    handleShowFullResults,
+    onRefreshProduct,
+    onClose,
+    router,
+    params?.id,
   ]);
 
   const toggleTicket = (num: number) => {
@@ -379,14 +415,45 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
       
       if (error) throw error;
       
-      const results = (data as unknown as PlayIchibanResult[]).map((r) => ({
+      const baseResults = (data as unknown as PlayIchibanResult[]).map((r) => ({
         grade: r.grade,
         name: r.name,
-        isOpened: r.is_last_one ? true : false, // Last One starts as 'visually opened' but hidden content
+        isOpened: r.is_last_one ? true : false,
         image_url: r.image_url,
         is_last_one: r.is_last_one,
         ticket_number: r.ticket_number
       }));
+
+      let results = baseResults;
+
+      try {
+        if (results.some(r => !r.image_url)) {
+          const { data: prizeRows } = await supabase
+            .from('product_prizes')
+            .select('level, name, image_url')
+            .eq('product_id', product.id);
+
+          if (prizeRows && prizeRows.length > 0) {
+            const imageMap = new Map<string, string>();
+            for (const p of prizeRows) {
+              if (!p.image_url) continue;
+              const key = `${(p.level || '').trim()}|${(p.name || '').trim()}`;
+              if (!imageMap.has(key)) {
+                imageMap.set(key, p.image_url);
+              }
+            }
+
+            results = results.map(r => {
+              if (r.image_url) return r;
+              const key = `${(r.grade || '').trim()}|${(r.name || '').trim()}`;
+              const mapped = imageMap.get(key);
+              return mapped ? { ...r, image_url: mapped } : r;
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to enrich prize images', e);
+      }
       setDrawnResults(results);
       setSoldTickets(prev => {
         const merged = new Set(prev);
@@ -476,16 +543,28 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
   const handleOpenAll = () => {
     playTearSound();
     setDrawnResults(prev => {
-      const hasNewAPrize = prev.some(r => {
-        if (r.is_last_one) return false;
-        if (r.isOpened) return false;
-        const g = (r.grade || '').toString().toUpperCase();
-        return g === 'A' || g === 'A賞' || g.includes('A賞');
+      let newAPrize: DrawResult | null = null;
+
+      const updated = prev.map(r => {
+        if (r.is_last_one) {
+          return r;
+        }
+        if (!r.isOpened && !newAPrize) {
+          const g = (r.grade || '').toString().toUpperCase();
+          const isAPrize = g === 'A' || g === 'A賞' || g.includes('A賞');
+          if (isAPrize) {
+            newAPrize = r;
+          }
+        }
+        return { ...r, isOpened: true };
       });
-      if (hasNewAPrize) {
+
+      if (newAPrize) {
+        setAPrizePopupPrize(newAPrize);
         setShowAPrizePopup(true);
       }
-      return prev.map(r => r.is_last_one ? r : { ...r, isOpened: true });
+
+      return updated;
     });
   };
 
@@ -497,6 +576,7 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
     setShowLastOneCelebration(false);
     setShowResultModal(false);
     setShowAPrizePopup(false);
+    setAPrizePopupPrize(null);
     setBlindboxPhase('opening');
   };
 
@@ -546,27 +626,88 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
       <div className="fixed inset-0 z-[2000] bg-white flex flex-col items-center justify-center p-6">
         <AnimatePresence>
           {showLastOneCelebration && (
-            <LastOneCelebrationModal onClose={() => setShowLastOneCelebration(false)} />
+            <LastOneCelebrationModal
+              prize={drawnResults.find(r => r.is_last_one) || null}
+              onClose={() => setShowLastOneCelebration(false)}
+            />
           )}
         </AnimatePresence>
 
         <AnimatePresence>
-          {showAPrizePopup && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="fixed inset-0 z-[2500] flex items-center justify-center px-4"
-            >
-              <div className="bg-black/80 text-white rounded-3xl px-8 py-5 text-center shadow-xl border border-yellow-400/60 flex flex-col items-center justify-center gap-1">
-                <div className="text-xl font-black tracking-widest">
-                  出「A賞」
+          {showAPrizePopup && aPrizePopupPrize && (
+            <div className="fixed inset-0 z-[2500] flex items-center justify-center px-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                className="relative w-full max-w-sm"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="relative w-full overflow-hidden bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-3xl shadow-modal flex flex-col items-center text-center p-6">
+                  <div className="text-base font-black text-neutral-900 dark:text-white mb-4 tracking-tight">
+                    恭喜！真的很玄！
+                  </div>
+
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                      className="w-32 h-32 sm:w-40 sm:h-40 rounded-2xl overflow-hidden bg-neutral-100 dark:bg-neutral-800 mb-3 flex items-center justify-center"
+                    >
+                    <Image
+                      src={aPrizePopupPrize.image_url || '/images/item.png'}
+                      alt={aPrizePopupPrize.name}
+                      width={160}
+                      height={160}
+                      className="w-full h-full object-cover"
+                      unoptimized
+                    />
+                  </motion.div>
+
+                  <div className="mb-2">
+                    <span className="inline-flex items-center px-3 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-xs font-black text-neutral-700 dark:text-neutral-200 tracking-tight">
+                      {aPrizePopupPrize.grade || 'A賞'}
+                    </span>
+                  </div>
+
+                  <div className="mb-6 w-full px-2">
+                    <p
+                      className="text-neutral-900 dark:text-white font-bold text-[16px] leading-snug"
+                      style={{
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        wordBreak: 'break-word',
+                        lineHeight: '1.25rem',
+                      }}
+                    >
+                      {aPrizePopupPrize.name}
+                    </p>
+                  </div>
+
+                  <div className="w-full mt-2">
+                    <Button
+                      onClick={() => {
+                        setShowAPrizePopup(false);
+                        setAPrizePopupPrize(null);
+                      }}
+                      size="lg"
+                      className="w-full rounded-[8px] h-[40px] px-6 text-[15px] font-semibold bg-primary hover:bg-primary/90 shadow-xl shadow-primary/20 text-white"
+                    >
+                      確定
+                    </Button>
+                  </div>
                 </div>
-                <div className="text-lg font-black">
-                  那就真的很玄了喔！
-                </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            </div>
           )}
         </AnimatePresence>
 
@@ -667,31 +808,94 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
     const isFinished = ticketsRemaining <= 0 || product.status === 'ended';
     const showResultsButton = hasLastOne || isFinished;
 
+    const lastOnePrize = drawnResults.find(r => r.is_last_one) || null;
+
     return (
       <div className="fixed inset-0 z-[2000] bg-neutral-900 flex flex-col items-center justify-center p-3 pb-safe overflow-hidden pt-1 md:pt-12">
         <AnimatePresence>
-          {showLastOneCelebration && (
-            <LastOneCelebrationModal onClose={() => setShowLastOneCelebration(false)} />
+          {showLastOneCelebration && lastOnePrize && (
+            <LastOneCelebrationModal
+              prize={lastOnePrize}
+              onClose={() => setShowLastOneCelebration(false)}
+            />
           )}
         </AnimatePresence>
 
         <AnimatePresence>
-          {showAPrizePopup && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="fixed inset-0 z-[2500] flex items-center justify-center px-4"
-            >
-              <div className="bg-black/80 text-white rounded-3xl px-8 py-5 text-center shadow-xl border border-yellow-400/60 flex flex-col items-center justify-center gap-1">
-                <div className="text-xl font-black tracking-widest">
-                  出「A賞」
+          {showAPrizePopup && aPrizePopupPrize && (
+            <div className="fixed inset-0 z-[2500] flex items-center justify-center px-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                className="relative w-full max-w-sm"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="relative w-full overflow-hidden bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-3xl shadow-modal flex flex-col items-center text-center p-6">
+                  <div className="text-base font-black text-neutral-900 dark:text-white mb-4 tracking-tight">
+                    恭喜！真的很玄！
+                  </div>
+
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                      className="w-32 h-32 sm:w-40 sm:h-40 rounded-2xl overflow-hidden bg-neutral-100 dark:bg-neutral-800 mb-3 flex items-center justify-center"
+                    >
+                    <Image
+                      src={aPrizePopupPrize.image_url || '/images/item.png'}
+                      alt={aPrizePopupPrize.name}
+                      width={160}
+                      height={160}
+                      className="w-full h-full object-cover"
+                      unoptimized
+                    />
+                  </motion.div>
+
+                  <div className="mb-2">
+                    <span className="inline-flex items-center px-3 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-xs font-black text-neutral-700 dark:text-neutral-200 tracking-tight">
+                      {aPrizePopupPrize.grade || 'A賞'}
+                    </span>
+                  </div>
+
+                  <div className="mb-6 w-full px-2">
+                    <p
+                      className="text-neutral-900 dark:text-white font-bold text-[16px] leading-snug"
+                      style={{
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        wordBreak: 'break-word',
+                        lineHeight: '1.25rem',
+                      }}
+                    >
+                      {aPrizePopupPrize.name}
+                    </p>
+                  </div>
+
+                  <div className="w-full mt-2">
+                    <Button
+                      onClick={() => {
+                        setShowAPrizePopup(false);
+                        setAPrizePopupPrize(null);
+                      }}
+                      size="lg"
+                      className="w-full rounded-[8px] h-[40px] px-6 text-[15px] font-semibold bg-primary hover:bg-primary/90 shadow-xl shadow-primary/20 text-white"
+                    >
+                      確定
+                    </Button>
+                  </div>
                 </div>
-                <div className="text-lg font-black">
-                  那就真的很玄了喔！
-                </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            </div>
           )}
         </AnimatePresence>
 
@@ -754,6 +958,7 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
                           const g = (target.grade || '').toString().toUpperCase();
                           const isAPrize = g === 'A' || g === 'A賞' || g.includes('A賞');
                           if (isAPrize) {
+                            setAPrizePopupPrize(target);
                             setShowAPrizePopup(true);
                           }
                         }

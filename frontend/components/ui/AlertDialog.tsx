@@ -60,7 +60,6 @@ export function AlertProvider({ children }: { children: ReactNode }) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={alert.type !== 'confirm' ? hideAlert : undefined}
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             />
 
@@ -108,7 +107,7 @@ export function AlertProvider({ children }: { children: ReactNode }) {
                 {alert.type === 'confirm' && (
                   <button
                     onClick={handleCancel}
-                    className="flex-1 py-0 h-[40px] px-6 rounded-[2px] text-[15px] font-semibold text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-all active:scale-95 border border-transparent hover:border-neutral-200 dark:hover:border-neutral-700"
+                    className="flex-1 py-0 h-[40px] px-6 rounded-[8px] text-[15px] font-semibold text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-all active:scale-95 border border-transparent hover:border-neutral-200 dark:hover:border-neutral-700"
                   >
                     {alert.cancelText || '取消'}
                   </button>
@@ -117,7 +116,7 @@ export function AlertProvider({ children }: { children: ReactNode }) {
                   onClick={handleConfirm}
                   size="lg"
                   className={cn(
-                    "flex-1 rounded-[2px] h-[40px] px-6 text-[15px] font-semibold",
+                    "flex-1 rounded-[8px] h-[40px] px-6 text-[15px] font-semibold",
                     (alert.type === 'error' || alert.variant === 'danger')
                       ? "bg-accent-red hover:bg-accent-red/90 shadow-xl shadow-accent-red/20 text-white" 
                       : "bg-primary hover:bg-primary/90 shadow-xl shadow-primary/20 text-white"

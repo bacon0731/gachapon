@@ -328,7 +328,7 @@ export default function Home() {
     <div className="min-h-screen bg-[#F5F5F5] dark:bg-neutral-950 pb-24 transition-colors">
       <div className="max-w-7xl mx-auto px-0 pt-0 sm:pt-4 md:hidden">
         <div className="px-2">
-          <div className="rounded-[8px] overflow-hidden">
+          <div className="rounded-none overflow-visible">
             <WinningMarquee />
           </div>
         </div>

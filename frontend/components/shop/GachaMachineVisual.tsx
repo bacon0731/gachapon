@@ -12,6 +12,7 @@ interface GachaMachineVisualProps {
   onHoleClick?: () => void;
   onLoaded?: () => void;
   isSoldOut?: boolean;
+  pushSoundMode?: 'manual' | 'auto';
 }
 
 const EGG_IMAGES = ['/images/gacha/begg.png', '/images/gacha/gegg.png', '/images/gacha/pegg.png'];
@@ -27,34 +28,6 @@ interface Egg {
   angle: number;
   angularVelocity: number;
 }
-
-const usePushSound = () => {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const audio = new Audio('/audio/gachapush.mp3');
-    audio.preload = 'auto';
-    audioRef.current = audio;
-
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = '';
-        audioRef.current.load();
-      }
-    };
-  }, []);
-
-  const play = () => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    audio.currentTime = 0;
-    void audio.play().catch(() => {});
-  };
-
-  return play;
-};
 
 const useDropSound = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -93,6 +66,7 @@ export function GachaMachineVisual({
   onHoleClick,
   onLoaded,
   isSoldOut = false,
+  pushSoundMode = 'auto',
 }: GachaMachineVisualProps) {
   const createInitialEggs = (): Egg[] => {
     const count = 15;
@@ -171,7 +145,33 @@ export function GachaMachineVisual({
     return eggs;
   };
 
-  const playPushSound = usePushSound();
+  const manualPushSoundRef = useRef<HTMLAudioElement | null>(null);
+  const autoPushSoundRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const manual = new Audio('/audio/gachapush.mp3');
+    manual.preload = 'auto';
+    manualPushSoundRef.current = manual;
+
+    const auto = new Audio('/audio/gacha.mp3');
+    auto.preload = 'auto';
+    autoPushSoundRef.current = auto;
+
+    return () => {
+      if (manualPushSoundRef.current) {
+        manualPushSoundRef.current.pause();
+        manualPushSoundRef.current.src = '';
+        manualPushSoundRef.current.load();
+      }
+      if (autoPushSoundRef.current) {
+        autoPushSoundRef.current.pause();
+        autoPushSoundRef.current.src = '';
+        autoPushSoundRef.current.load();
+      }
+    };
+  }, []);
   const playDropSound = useDropSound();
   const [eggs, setEggs] = useState<Egg[]>(() => createInitialEggs());
   const eggsRef = useRef<Egg[]>(eggs);
@@ -212,7 +212,13 @@ export function GachaMachineVisual({
 
   useEffect(() => {
     applyShakeImpulseRef.current = () => {
-      playPushSound();
+      if (pushSoundMode === 'auto') {
+        const audio = autoPushSoundRef.current;
+        if (audio) {
+          audio.currentTime = 0;
+          void audio.play().catch(() => {});
+        }
+      }
       lastShakeTimeRef.current = performance.now() / 1000;
       const next = eggsRef.current.map((egg) => {
         const angle = Math.random() * Math.PI * 2;
@@ -226,14 +232,14 @@ export function GachaMachineVisual({
       eggsRef.current = next;
       setEggs(next);
     };
-  }, [playPushSound]);
+  }, [pushSoundMode]);
 
   useEffect(() => {
     const timeouts: number[] = [];
 
     if (isShaking && !prevIsShaking.current && applyShakeImpulseRef.current) {
       const repeats = Math.max(1, Math.floor(shakeRepeats));
-      const baseInterval = 1000;
+      const baseInterval = pushSoundMode === 'manual' ? 0 : 1000;
       const jitter = 0;
       for (let i = 0; i < repeats; i += 1) {
         const offset = (Math.random() - 0.5) * jitter;
@@ -252,7 +258,7 @@ export function GachaMachineVisual({
     return () => {
       timeouts.forEach((id) => window.clearTimeout(id));
     };
-  }, [isShaking, shakeRepeats]);
+  }, [isShaking, shakeRepeats, pushSoundMode]);
 
   useEffect(() => {
     if (isDropping && !prevIsDropping.current) {
@@ -523,6 +529,11 @@ export function GachaMachineVisual({
           zIndex: 20,
         }}
         onClick={() => {
+          const audio = manualPushSoundRef.current;
+          if (audio) {
+            audio.currentTime = 0;
+            void audio.play().catch(() => {});
+          }
           if (onPush) onPush();
         }}
       />

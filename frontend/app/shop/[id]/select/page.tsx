@@ -48,7 +48,6 @@ export default function SelectTicketPage() {
         >
           <TicketSelectionFlow
             isModal={isDesktop}
-            onClose={() => router.back()}
           />
         </div>
       </div>

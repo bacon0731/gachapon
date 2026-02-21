@@ -485,21 +485,27 @@ export default function ProductDetailPage() {
                   </div>
                 )}
                 
-                {/* Status Badges & Action Buttons */}
-                <div className="absolute top-4 left-4 right-4 z-10 flex items-start justify-between pointer-events-none">
-                  <div className="flex flex-col gap-1.5">
-                    {product.is_hot && <ProductBadge type="hot" />}
-                  </div>
-                  <div>
-                    <ProductBadge type={product.type} />
-                  </div>
+                {/* Status Badges */}
+                <div className="absolute top-0 right-0 z-10 flex flex-col items-end pointer-events-none">
+                  {product.is_hot && (
+                    <div className="h-6 px-2 inline-flex items-center rounded-tr-lg rounded-bl-lg bg-[#EE4D2D] text-white text-[11px] font-black border border-white/10 leading-none transform origin-top-right scale-150">
+                      熱門
+                    </div>
+                  )}
                 </div>
               </div>
               
               {/* Content Section */}
               <div className="p-3 sm:p-6 space-y-2 sm:space-y-5">
-                <h1 className="text-lg sm:text-2xl font-black text-neutral-900 dark:text-neutral-50 leading-tight tracking-tight">
-                  {product.name}
+                <h1 className="text-lg sm:text-2xl font-black text-neutral-900 dark:text-neutral-50 leading-tight tracking-tight flex items-start gap-4">
+                  {product.type && (
+                    <span className="inline-block transform origin-left scale-[1.35] mt-[3px]">
+                      <ProductBadge type={product.type as 'ichiban' | 'blindbox' | 'gacha' | 'custom'} />
+                    </span>
+                  )}
+                  <span className="flex-1">
+                    {product.name}
+                  </span>
                 </h1>
                 
                 <div className="hidden lg:flex items-end justify-between gap-2 pb-5 border-b border-neutral-50 dark:border-neutral-800">

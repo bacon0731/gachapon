@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Database } from '@/types/database.types';
 import { GachaMachineVisual } from './GachaMachineVisual';
 import { GachaCollectionList } from './GachaCollectionList';
-import { GachaResultModal } from './GachaResultModal';
+import { GachaResultModal } from '@/components/shop/GachaResultModal';
 import { Prize } from '@/components/GachaMachine';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -55,15 +55,18 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
   const [isMachineLoaded, setIsMachineLoaded] = useState(false);
   const [isEggBoxImageMode, setIsEggBoxImageMode] = useState(false);
   const [collectionRefreshKey, setCollectionRefreshKey] = useState(0);
+  const [pushSoundMode, setPushSoundMode] = useState<'manual' | 'auto'>('auto');
 
   const isSoldOut = product.status === 'ended' || product.remaining === 0;
 
   const handlePush = () => {
     if (machineState !== 'idle') return;
+    setPushSoundMode('manual');
     setShakeRepeats(1);
     setMachineState('shaking');
     setTimeout(() => {
       setMachineState('idle');
+      setPushSoundMode('auto');
     }, 200);
   };
 
@@ -110,7 +113,7 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
       }
 
       const rawResults = data as unknown as PlayGachaResult[];
-      const results = rawResults.map((item, index) => ({
+      let results = rawResults.map((item, index) => ({
         id: item.ticket_number !== undefined ? String(item.ticket_number) : `${product.id}-${index}`,
         name: item.name,
         rarity: item.grade,
@@ -119,6 +122,24 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
         is_last_one: item.is_last_one,
         ticket_number: item.ticket_number
       }));
+
+      if (results.some(r => !r.image_url) && prizes.length > 0) {
+        const imageMap = new Map<string, string>();
+        for (const p of prizes) {
+          if (!p.image_url) continue;
+          const key = `${(p.level || '').trim()}|${(p.name || '').trim()}`;
+          if (!imageMap.has(key)) {
+            imageMap.set(key, p.image_url);
+          }
+        }
+
+        results = results.map(r => {
+          if (r.image_url) return r;
+          const key = `${(r.grade || '').trim()}|${(r.name || '').trim()}`;
+          const mapped = imageMap.get(key);
+          return mapped ? { ...r, image_url: mapped } : r;
+        });
+      }
 
       setWonPrizes(results);
       runGachaAnimation();
@@ -133,7 +154,8 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
   };
 
   const runTrialAnimation = () => {
-    setShakeRepeats(3);
+    setPushSoundMode('auto');
+    setShakeRepeats(2);
     setMachineState('shaking');
     setTimeout(() => {
       setMachineState('dropping');
@@ -141,7 +163,7 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
         setMachineState('waiting');
         setHasPendingResult(true);
       }, 800);
-    }, 3000);
+    }, 2000);
   };
 
   const runGachaAnimation = () => {
@@ -258,6 +280,7 @@ export function GachaProductDetail({ product, prizes }: GachaProductDetailProps)
                   onHoleClick={handleHoleClick}
                   onLoaded={() => setIsMachineLoaded(true)}
                   isSoldOut={isSoldOut}
+                  pushSoundMode={pushSoundMode}
                 />
                 <div
                   className="absolute left-1/2 -translate-x-1/2"

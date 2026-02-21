@@ -1,105 +1,105 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { PartyPopper } from 'lucide-react';
+import Image from 'next/image';
+import { cn } from '@/lib/utils';
+import Button from '@/components/ui/Button';
+
+interface LastOneCelebrationModalPrize {
+  name: string;
+  grade?: string;
+  image_url?: string;
+}
 
 interface LastOneCelebrationModalProps {
   onClose: () => void;
+  prize?: LastOneCelebrationModalPrize | null;
 }
 
-export function LastOneCelebrationModal({ onClose }: LastOneCelebrationModalProps) {
-  const [timeLeft, setTimeLeft] = useState(3);
-
-  useEffect(() => {
-    if (timeLeft === 0) {
-      onClose();
-    }
-  }, [timeLeft, onClose]);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 0) {
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
+export function LastOneCelebrationModal({ onClose, prize }: LastOneCelebrationModalProps) {
+  const activePrize = prize || null;
+  const activeGrade = activePrize?.grade || '最後賞';
 
   return (
     <div className="fixed inset-0 z-[3000] flex items-center justify-center p-4">
-      {/* Backdrop */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
       />
 
-      {/* Content */}
       <motion.div
-        initial={{ scale: 0.5, opacity: 0, y: 50 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.5, opacity: 0, y: 50 }}
-        className="relative z-10 w-full max-w-sm"
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+        className="relative w-full max-w-sm"
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="relative bg-gradient-to-br from-neutral-900 to-neutral-800 border border-yellow-500/50 rounded-3xl p-8 text-center shadow-[0_0_50px_rgba(234,179,8,0.3)] overflow-hidden">
-          {/* Animated Background Effects */}
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute top-0 left-1/4 w-32 h-32 bg-yellow-500/20 rounded-full blur-3xl animate-pulse" />
-            <div className="absolute bottom-0 right-1/4 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl animate-pulse delay-700" />
-          </div>
+        <div
+          className={cn(
+            'relative w-full overflow-hidden bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-3xl shadow-modal',
+            'flex flex-col items-center text-center p-6'
+          )}
+        >
+          <h3 className="text-base font-black text-neutral-900 dark:text-white mb-4 tracking-tight">
+            恭喜獲得最後賞
+          </h3>
 
-          {/* Icon/Animation */}
-          <motion.div
-            initial={{ scale: 0, rotate: -180 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ type: "spring", damping: 12 }}
-            className="w-24 h-24 mx-auto mb-6 bg-yellow-500/20 rounded-full flex items-center justify-center relative"
-          >
-            <div className="absolute inset-0 rounded-full border-2 border-yellow-500/50 animate-[spin_4s_linear_infinite]" />
-            <PartyPopper className="w-12 h-12 text-yellow-500" />
-          </motion.div>
+          {activePrize && (
+            <>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                className="w-32 h-32 sm:w-40 sm:h-40 rounded-2xl overflow-hidden bg-neutral-100 dark:bg-neutral-800 mb-3 flex items-center justify-center"
+              >
+                <Image
+                  src={activePrize.image_url || '/images/item.png'}
+                  alt={activePrize.name}
+                  width={160}
+                  height={160}
+                  className="w-full h-full object-cover"
+                  unoptimized
+                />
+              </motion.div>
 
-          {/* Text */}
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="text-2xl font-black text-white mb-2"
-          >
-            恭喜獲得最後賞！
-          </motion.h2>
-          
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="text-yellow-500/80 font-bold text-sm mb-6"
-          >
-            Last One Prize Get!
-          </motion.p>
+              <div className="mb-2">
+                <span className="inline-flex items-center px-3 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-xs font-black text-neutral-700 dark:text-neutral-200 tracking-tight">
+                  {activeGrade}
+                </span>
+              </div>
 
-          {/* Timer */}
-          <div className="w-full bg-neutral-800 rounded-full h-1 overflow-hidden">
-            <motion.div
-              initial={{ width: "100%" }}
-              animate={{ width: "0%" }}
-              transition={{ duration: 3, ease: "linear" }}
-              className="h-full bg-yellow-500"
-            />
+              <div className="mb-6 w-full px-2">
+                <p
+                  className="text-neutral-900 dark:text-white font-bold text-[16px] leading-snug"
+                  style={{
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    wordBreak: 'break-word',
+                    lineHeight: '1.25rem',
+                  }}
+                >
+                  {activePrize.name}
+                </p>
+              </div>
+            </>
+          )}
+
+          <div className="w-full mt-2">
+            <Button
+              onClick={onClose}
+              size="lg"
+              className="w-full rounded-[8px] h-[40px] px-6 text-[15px] font-semibold bg-primary hover:bg-primary/90 shadow-xl shadow-primary/20 text-white"
+            >
+              確定
+            </Button>
           </div>
         </div>
       </motion.div>
-
-      {/* Confetti/Fireworks (CSS only for simplicity) */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-         {/* We can add particle effects here if needed, but the main modal is flashy enough */}
-      </div>
     </div>
   );
 }

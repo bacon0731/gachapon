@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { CalendarCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAlert } from '@/components/ui/AlertDialog';
 
 export default function FloatingCheckIn() {
   return (
@@ -18,16 +19,23 @@ function FloatingCheckInInner() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const activeTab = searchParams.get('tab');
+  const { showAlert } = useAlert();
 
-  // Logic matches Navbar.tsx's isSecondaryPage
   const isSecondaryPage = (pathname !== '/' && pathname !== '/shop' && pathname !== '/news' && pathname !== '/profile' && pathname !== '/check-in') || (pathname === '/profile' && !!activeTab);
 
-  // Hide on check-in page itself or secondary pages on mobile
   if (pathname === '/check-in' || (isSecondaryPage)) return null;
 
   return (
     <Link
       href="/check-in"
+      onClick={(event) => {
+        event.preventDefault();
+        showAlert({
+          title: '開發中',
+          message: '頁面開發中',
+          type: 'info',
+        });
+      }}
       className={cn(
         "fixed right-0 top-1/2 -translate-y-1/2 z-40 transition-all duration-300 group",
         "flex flex-col items-center justify-center",

@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase/client';
 import { ArrowLeft, Search, Bell, LogOut, User as UserIcon, ChevronDown, X, History, Flame, Truck, Sparkles, Clock, Heart, CheckCircle2, Sun, Moon, Share2, Copy } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useToast } from '@/components/ui/Toast';
+import { useAlert } from '@/components/ui/AlertDialog';
 
 export default function Navbar() {
   return (
@@ -26,6 +27,7 @@ function NavbarInner() {
   const { user, logout, isLoading, isAuthenticated } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { showToast } = useToast();
+  const { showAlert } = useAlert();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false); // Mobile full screen
@@ -484,8 +486,9 @@ function NavbarInner() {
                     </button>
                   )}
                   <span className={cn(
-                    "md:hidden text-[20px] font-black tracking-tight text-neutral-900 dark:text-white truncate text-left px-2 min-w-0 max-w-[60vw] sm:max-w-[70vw] flex-1",
-                    !showBackButton && "ml-0" // Adjust margin if no back button
+                    "md:hidden font-black tracking-tight text-neutral-900 dark:text-white truncate text-left px-1.5 min-w-0 max-w-[68vw] sm:max-w-[72vw] flex-1",
+                    isProductDetailPage ? "text-[18px]" : "text-[20px]",
+                    !showBackButton && "ml-0"
                   )}>
                     {(productName && (isProductDetailPage || isNewsDetailPage)) ? productName : getPageTitle()}
                   </span>
@@ -494,10 +497,10 @@ function NavbarInner() {
               
               <Link href="/" className={cn("flex items-center group", !showLogo && "hidden md:flex")}>
                 <div className="flex items-center gap-1.5 transition-transform group-hover:scale-105">
-                  <span className="text-[20px] font-black tracking-tight text-neutral-900 dark:text-white leading-none">
+                  <span className="text-[20px] font-[900] tracking-tight text-neutral-900 dark:text-white leading-none">
                     GACHA
                   </span>
-                  <span className="inline-flex items-center px-2 py-[2px] rounded-full text-[10px] font-black bg-primary/10 text-primary leading-[2]">
+                  <span className="inline-flex items-center px-2 py-[2px] rounded-full text-[10px] font-[900] bg-primary/10 text-primary leading-[2]">
                     ONLINE
                   </span>
                 </div>
@@ -539,6 +542,14 @@ function NavbarInner() {
                       ? "text-primary"
                       : "text-neutral-600 dark:text-neutral-400 hover:text-primary"
                   )}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    showAlert({
+                      title: '開發中',
+                      message: '頁面開發中',
+                      type: 'info',
+                    });
+                  }}
                 >
                   <span>開箱</span>
                   {pathname === '/unboxing' && (
@@ -548,17 +559,11 @@ function NavbarInner() {
               </div>
             </div>
             
-            {(
-              pathname === '/' ||
-              pathname === '/shop' ||
-              pathname === '/market' ||
-              pathname === '/unboxing'
-            ) && (
+            {!['/login', '/register', '/forgot-password'].includes(pathname) && (
               <div
                 ref={searchContainerRef}
                 className={cn(
-                  "flex-1 w-full md:max-w-[280px] lg:max-w-[400px] mx-2 transition-all duration-300 relative",
-                  (pathname === '/' || pathname === '/shop') && "hidden md:block"
+                  "flex-1 w-full md:max-w-[280px] lg:max-w-[400px] mx-2 transition-all duration-300 relative hidden md:block"
                 )}
               >
                 <form
@@ -670,7 +675,7 @@ function NavbarInner() {
             )}
 
             <div className="flex items-center gap-0.5 lg:gap-2 shrink-0">
-              {!isSearchPage && (
+              {!isSearchPage && !isProductDetailPage && (
                 <button 
                   className="md:hidden p-2 rounded-xl text-neutral-600 dark:text-neutral-400 active:scale-95 transition-transform"
                   onClick={() => {
@@ -699,13 +704,13 @@ function NavbarInner() {
 
               {/* Product Page Mobile Actions */}
               {isProductDetailPage && (
-                <div className="flex items-center gap-0 md:hidden">
-                  <button className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-xl text-neutral-600 dark:text-neutral-400 transition-colors">
+                <div className="flex items-center gap-0.5 md:hidden">
+                  <button className="p-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-xl text-neutral-600 dark:text-neutral-400 transition-colors">
                     <Share2 className="w-5 h-5 stroke-[2]" />
                   </button>
                   <button 
                     onClick={handleFollowToggle}
-                    className={cn("p-2 rounded-xl transition-colors", isProductFollowed ? "text-accent-red" : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800")}
+                    className={cn("p-1.5 rounded-xl transition-colors", isProductFollowed ? "text-accent-red" : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800")}
                   >
                     <Heart className={cn("w-5 h-5 stroke-[2]", isProductFollowed && "fill-current")} />
                   </button>
@@ -925,7 +930,7 @@ function NavbarInner() {
                   </div>
                 </div>
               ) : (
-                !['/login', '/register', '/forgot-password'].includes(pathname) && (
+                !['/login', '/register', '/forgot-password'].includes(pathname) && !isProductDetailPage && (
                   <>
                     {/* Mobile login button: 細膠囊線框 */}
                     <Link

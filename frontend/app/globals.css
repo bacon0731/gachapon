@@ -43,4 +43,9 @@ body {
   .custom-scrollbar::-webkit-scrollbar-thumb {
     @apply bg-neutral-200 rounded-full hover:bg-neutral-300 transition-colors;
   }
+  @media (max-width: 768px) {
+    .font-black {
+      font-weight: 400;
+    }
+  }
 }

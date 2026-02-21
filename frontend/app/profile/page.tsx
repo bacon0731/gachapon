@@ -322,8 +322,15 @@ function ProfileContent() {
     recipientAddress: ''
   });
 
-  // Handle Tab Change
   const handleTabChange = (tab: TabType) => {
+    if (tab === 'check-in') {
+      showAlert({
+        title: '開發中',
+        message: '頁面開發中',
+        type: 'info',
+      });
+      return;
+    }
     setActiveTab(tab);
     setIsMobileDetailOpen(true);
     router.push(`/profile?tab=${tab}`, { scroll: false });

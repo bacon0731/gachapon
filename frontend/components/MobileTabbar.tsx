@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { useAlert } from '@/components/ui/AlertDialog';
 
 export default function MobileTabbar() {
   return (
@@ -49,7 +50,8 @@ function MobileTabbarInner() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const activeTab = searchParams.get('tab');
- 
+  const { showAlert } = useAlert();
+
   const mainTabPaths = ['/', '/shop', '/news', '/market', '/profile', '/check-in'];
   const isMainTabPath = mainTabPaths.includes(pathname);
   const isSecondaryPage = !isMainTabPath || (pathname === '/profile' && !!activeTab);
@@ -68,10 +70,20 @@ function MobileTabbarInner() {
     { name: '會員', href: '/profile', icon: User },
   ];
 
+  const handleTabClick = (event: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (href === '/unboxing' || href === '/check-in') {
+      event.preventDefault();
+      showAlert({
+        title: '開發中',
+        message: '頁面開發中',
+        type: 'info',
+      });
+    }
+  };
+
   return (
     <div className="fixed bottom-0 left-0 right-0 md:hidden z-50 pointer-events-none">
       <div className="relative h-16 w-full flex items-end pointer-events-auto">
-        {/* Main Background Bar */}
         <div className="absolute bottom-0 left-0 right-0 h-[56px] bg-white dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-800 transition-colors" />
 
         <div className="relative w-full grid grid-cols-5 px-2 pb-safe pb-[env(safe-area-inset-bottom)] h-[56px]">
@@ -85,6 +97,7 @@ function MobileTabbarInner() {
                   <Link
                     href={tab.href}
                     className="flex flex-col items-center justify-end h-full w-full pb-1.5 relative"
+                    onClick={(event) => handleTabClick(event, tab.href)}
                   >
                     <motion.div
                       whileTap={{ scale: 0.9 }}
@@ -101,7 +114,7 @@ function MobileTabbarInner() {
                       <div className="flex items-center justify-center w-8 h-8">
                         <Icon
                           size={22}
-                          strokeWidth={2}
+                          strokeWidth={1.6}
                           className="text-white"
                         />
                       </div>
@@ -124,6 +137,7 @@ function MobileTabbarInner() {
                 key={tab.href}
                 href={tab.href}
                 className="flex flex-col items-center justify-end pb-1.5 gap-0 h-full relative"
+                onClick={(event) => handleTabClick(event, tab.href)}
               >
                 <motion.div
                   whileTap={{ scale: 0.85 }}
@@ -137,7 +151,7 @@ function MobileTabbarInner() {
                   >
                     <Icon
                       size={22}
-                      strokeWidth={2}
+                      strokeWidth={1.6}
                       className={cn(
                         "transition-colors duration-300",
                         isActive ? "text-primary" : "text-neutral-400 dark:text-neutral-500"
