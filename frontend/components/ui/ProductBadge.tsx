@@ -55,7 +55,7 @@ export default function ProductBadge({ type, className, icon = false }: ProductB
 
   return (
     <span className={cn(
-      "h-5 px-2 md:px-3 text-[11px] md:text-[12px] font-black text-white rounded-lg shadow-lg uppercase tracking-wider flex items-center gap-1 backdrop-blur-sm bg-opacity-90",
+      "h-4 px-1 text-[8px] font-medium text-white rounded-[4px] shadow-lg uppercase tracking-wider flex items-center gap-1 backdrop-blur-sm bg-opacity-90",
       style.color,
       style.shadow,
       className

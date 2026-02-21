@@ -19,6 +19,7 @@ import { PurchaseConfirmationModal } from '@/components/shop/PurchaseConfirmatio
 import GachaMachine, { Prize } from '@/components/GachaMachine';
 import { PrizeResultModal } from '@/components/shop/PrizeResultModal';
 import { TicketSelectionFlow } from '@/components/shop/TicketSelectionFlow';
+import { useAlert } from '@/components/ui/AlertDialog';
 import { GachaProductDetail } from '@/components/shop/GachaProductDetail';
 
 export default function ProductDetailPage() {
@@ -26,6 +27,7 @@ export default function ProductDetailPage() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
   const { showToast } = useToast();
+  const { showAlert } = useAlert();
   const [supabase] = useState(() => createClient());
 
   const [product, setProduct] = useState<Database['public']['Tables']['products']['Row'] | null>(null);
@@ -431,11 +433,18 @@ export default function ProductDetailPage() {
   const isSoldOut = typeof totalRemaining === 'number' && totalRemaining <= 0;
 
   const fairnessHref = `/fairness/${product.id}`;
+  const isSoldOut =
+    ((typeof totalRemaining === 'number' && totalRemaining <= 0) || product.status === 'ended');
 
   const handleGoToFairness = () => {
     if (!isAuthenticated) {
-      showToast('請先登入後再使用公平性驗證功能', 'error');
-      router.push('/login');
+      showAlert({
+        title: '提示',
+        message: '請先登入會員',
+        type: 'info',
+        confirmText: '前往登入',
+        onConfirm: () => router.push(`/login?redirect=${encodeURIComponent(fairnessHref)}`),
+      });
       return;
     }
     router.push(fairnessHref);

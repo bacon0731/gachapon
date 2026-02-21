@@ -9,10 +9,10 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#3B82F6', // 主題藍
-          dark: '#2563EB',
-          light: '#60A5FA',
-          soft: '#EFF6FF',
+          DEFAULT: '#EE4D2D',
+          dark: '#D9441F',
+          light: '#FF7043',
+          soft: '#FFF4EF',
         },
         accent: {
           red: '#DC2626',   // 獎項/價格紅
@@ -45,7 +45,7 @@ module.exports = {
         'modal': '0 20px 70px -15px rgba(0, 0, 0, 0.15)',
       },
       fontFamily: {
-        sans: ['Chiron GoRound TC', 'sans-serif'],
+        sans: ['system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'sans-serif'],
         amount: ['Tilt Warp', 'sans-serif'],
       },
       lineHeight: {

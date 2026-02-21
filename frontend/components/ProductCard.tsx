@@ -1,11 +1,6 @@
 
 import Link from 'next/link';
-import { Heart } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { cn } from '@/lib/utils';
 import ProductBadge, { ProductType } from './ui/ProductBadge';
-import { createClient } from '@/lib/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 import Image from 'next/image';
 
 const ITEM_IMAGES = [
@@ -71,69 +66,19 @@ export default function ProductCard(props: ProductCardProps) {
     type,
     status,
   } = props;
-  const [isFollowed, setIsFollowed] = useState(false);
-  const { user } = useAuth();
-  const [supabase] = useState(() => createClient());
-
-  useEffect(() => {
-    if (!user) return;
-    
-    const checkFollowStatus = async () => {
-      const { count } = await supabase
-        .from('product_follows')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('product_id', id);
-      
-      setIsFollowed(!!count);
-    };
-
-    checkFollowStatus();
-  }, [user, id, supabase]);
-
-  const handleFollow = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (!user) {
-      // Optional: Redirect to login or show toast
-      return;
-    }
-
-    // Optimistic update
-    const newStatus = !isFollowed;
-    setIsFollowed(newStatus);
-
-    try {
-      if (newStatus) {
-        const { error } = await supabase
-          .from('product_follows')
-          .insert({ user_id: user.id, product_id: id });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('product_follows')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('product_id', id);
-        if (error) throw error;
-      }
-    } catch (error) {
-      console.error('Error toggling follow:', error);
-      // Revert on error
-      setIsFollowed(!newStatus);
-    }
-  };
-
   const href = type === 'blindbox' ? `/blindbox/${id}` : `/shop/${id}`;
   const fallbackImage = getItemImageForId(id);
   const displayImage = image || fallbackImage;
+  const drawnCount = typeof total === 'number' && typeof remaining === 'number' && total > 0
+    ? Math.max(total - remaining, 0)
+    : null;
 
   return (
     <Link href={href} className="group block h-full">
-      <div className="relative h-full flex flex-col bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200/80 dark:border-neutral-800/80 overflow-hidden transition-all duration-200">
-        <div className="relative aspect-square overflow-hidden bg-neutral-100 dark:bg-neutral-800">
-          <div className="w-full h-full flex items-center justify-center text-white/20 group-hover:scale-[1.03] transition-transform duration-500 relative">
+      <div className="relative h-full flex flex-col bg-white dark:bg-neutral-900 rounded-[8px] border border-neutral-100 dark:border-neutral-800 overflow-hidden transition-transform duration-300">
+        {/* Image Container */}
+        <div className="relative aspect-square overflow-hidden bg-neutral-100 dark:bg-neutral-800 rounded-t-[8px]">
+          <div className="w-full h-full flex items-center justify-center text-white/20 group-hover:scale-105 transition-transform duration-500 relative">
             <Image 
               src={displayImage}
               alt={name}
@@ -144,12 +89,6 @@ export default function ProductCard(props: ProductCardProps) {
           </div>
           
           <div className="absolute top-0 left-0 z-10 flex flex-col pointer-events-none">
-            {isHot && (
-              <ProductBadge
-                type="hot"
-                className="h-6 rounded-2xl rounded-tr-none rounded-bl-none text-[11px]"
-              />
-            )}
             {isNew && !isHot && (
               <ProductBadge
                 type="new"
@@ -159,69 +98,62 @@ export default function ProductCard(props: ProductCardProps) {
           </div>
           
           <div className="absolute top-0 right-0 z-10 flex flex-col items-end pointer-events-none">
-            {typeof remaining === 'number' && typeof total === 'number' && total > 0 && (
-              <div className="h-6 px-2 inline-flex items-center rounded-2xl rounded-tl-none rounded-br-none bg-black/80 text-white text-[11px] font-black border border-white/10 shadow-sm leading-none">
-                {remaining}/{total}
+            {isHot && (
+              <div className="h-6 px-2 inline-flex items-center rounded-tr-lg rounded-bl-lg bg-[#EE4D2D] text-white text-[11px] font-black border border-white/10 leading-none">
+                熱門
               </div>
             )}
           </div>
 
           {((typeof remaining === 'number' && remaining <= 0) || status === 'ended') && (
-            <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/50 backdrop-blur-[1px]">
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/60 rounded-[8px]">
               <Image 
                 src="/images/sale.svg" 
                 alt="完抽" 
                 width={96}
                 height={96}
-                className="w-20 h-auto transform scale-105"
+                className="w-24 h-auto transform scale-110"
                 unoptimized
               />
             </div>
           )}
         </div>
 
-          <div className="flex flex-col flex-1 px-1.5 pt-1.5 pb-2 md:px-2">
-          <div className="mb-1.5 min-h-[2.8rem]">
-            <div className="text-[14px] leading-snug font-semibold text-neutral-900 dark:text-white tracking-[0.02em] line-clamp-2">
+        {/* Content */}
+        <div className="flex flex-col flex-1 p-2 md:pt-2 md:-mt-0.5">
+          <div className="mb-1 min-h-[2.75rem]">
+            <h3 className="text-[13px] font-normal text-neutral-900 dark:text-white line-clamp-2 leading-snug group-hover:text-primary transition-colors tracking-tight">
               {type && (
-                <span className="inline-block align-middle mr-1.5 mb-[0.4rem]">
-                  <ProductBadge
-                    type={type}
-                    className="inline-flex align-middle px-1 py-0 text-[10px] h-4 rounded-[4px]"
-                  />
-                </span>
+                <ProductBadge
+                  type={type}
+                  className="inline-flex align-middle mr-1 relative -top-[0.1rem]"
+                />
               )}
               <span className="inline">
                 {name}
               </span>
-            </div>
+            </h3>
           </div>
           
-          <div className="mt-auto pt-2 border-t border-neutral-50 dark:border-neutral-800">
+          <div className="mt-auto pt-2 border-t border-neutral-100 dark:border-neutral-800">
             <div className="flex items-end justify-between gap-1">
               <div className="flex flex-col">
                 <div className="flex items-center gap-1">
-                  <div className="flex items-center justify-center w-3.5 h-3.5 rounded-full bg-accent-yellow shadow-sm">
+                  <div className="flex items-center justify-center w-3.5 h-3.5 rounded-full bg-accent-yellow">
                     <span className="text-[10px] text-white font-black leading-none">G</span>
                   </div>
                   <div className="flex items-baseline gap-0.5">
-                    <span className="text-[24px] leading-none font-black font-amount text-accent-red tracking-tight">{price.toLocaleString()}</span>
+                    <span className="text-[24px] leading-none font-black font-amount text-[#EE4D2D] tracking-tight">{price.toLocaleString()}</span>
                     <span className="text-[11px] font-black text-neutral-400">/抽</span>
                   </div>
                 </div>
               </div>
 
-              <button 
-                onClick={handleFollow}
-                className={cn(
-                  "w-7 h-7 rounded-lg flex items-center justify-center transition-all border border-neutral-200/80 dark:border-neutral-700/80 active:scale-90 bg-white dark:bg-neutral-900",
-                  isFollowed 
-                    ? "bg-accent-red text-white border-accent-red/70" 
-                    : "text-neutral-400 hover:text-accent-red hover:border-accent-red/40"
-                )}
-              >
-                <Heart className={cn("w-4 h-4 stroke-[3]", isFollowed && "fill-current")} />
-              </button>
+              {drawnCount !== null && (
+                <span className="text-[10px] font-medium text-neutral-600">
+                  已抽{drawnCount}
+                </span>
+              )}
             </div>
           </div>
         </div>

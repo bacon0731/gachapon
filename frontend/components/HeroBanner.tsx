@@ -53,7 +53,7 @@ export default function HeroBanner({ banners }: { banners: Banner[] }) {
 
   return (
     <div 
-      className="relative w-full aspect-[1200/400] bg-neutral-100 overflow-hidden rounded-none shadow-none sm:rounded-3xl sm:shadow-card group"
+      className="relative w-full aspect-[3/1] bg-neutral-100 overflow-hidden rounded-none sm:rounded-[8px] group mx-0"
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
@@ -95,13 +95,13 @@ export default function HeroBanner({ banners }: { banners: Banner[] }) {
       </button>
 
       {/* Dots */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3">
+      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-3">
         {banners.map((_, index) => (
           <button
             key={index}
             onClick={() => setCurrent(index)}
             className={`h-1.5 rounded-full transition-all duration-500 ${
-              index === current ? 'w-8 bg-white shadow-lg' : 'w-1.5 bg-white/40 hover:bg-white/60'
+              index === current ? 'w-8 bg-white' : 'w-1.5 bg-white/40 hover:bg-white/60'
             }`}
           />
         ))}
