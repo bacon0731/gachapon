@@ -25,7 +25,7 @@ interface TabItem {
 }
 
 const productTypes = [
-  { id: 'all', name: '全部商品' },
+  { id: 'all', name: '精選' },
   { id: 'ichiban', name: '一番賞' },
   { id: 'blindbox', name: '盒玩' },
   { id: 'gacha', name: '轉蛋' },
@@ -238,6 +238,24 @@ function ShopContent() {
       result = result.filter((p) => hasAdjustedRates(p.id));
     }
 
+    const parsePrice = (val: string) => {
+      if (!val) return null;
+      const raw = val.replace(/\D/g, '');
+      if (!raw) return null;
+      return parseInt(raw, 10);
+    };
+
+    const min = parsePrice(priceMin);
+    const max = parsePrice(priceMax);
+
+    if (min !== null || max !== null) {
+      result = result.filter((p) => {
+        if (min !== null && p.price < min) return false;
+        if (max !== null && p.price > max) return false;
+        return true;
+      });
+    }
+
     if (sortBy === 'price-asc') result.sort((a, b) => a.price - b.price);
     if (sortBy === 'price-desc') result.sort((a, b) => b.price - a.price);
     if (sortBy === 'newest') {
@@ -248,7 +266,7 @@ function ShopContent() {
     }
 
     return result;
-  }, [activeCategory, activeType, searchQuery, sortBy, products, activeLabelTab]);
+  }, [activeCategory, activeType, searchQuery, sortBy, products, activeLabelTab, priceMin, priceMax]);
 
   const handleCategoryChange = (id: string) => {
     const params = new URLSearchParams(searchParams);
@@ -321,7 +339,7 @@ function ShopContent() {
           </div>
         )}
 
-        <div className="md:hidden sticky top-[54px] flex flex-col gap-0 mb-[0.4rem] animate-in fade-in slide-in-from-top-2 z-40 bg-white/95 dark:bg-neutral-950/95 backdrop-blur-sm">
+        <div className="md:hidden sticky top-[57px] flex flex-col gap-0 mb-[0.4rem] animate-in fade-in slide-in-from-top-2 z-40 bg-white/95 dark:bg-neutral-950/95 backdrop-blur-sm">
           {/* 上排：種類 Tabs */}
           <div className="flex items-center">
             <div className="flex-1 overflow-x-auto overscroll-x-contain touch-pan-x scrollbar-hide">
@@ -337,7 +355,7 @@ function ShopContent() {
                       key={`${tab.kind}-${tab.id}`}
                       onClick={() => handleTabClick(tab)}
                       className={cn(
-                        "relative pb-2.5 pt-2.5 text-[16px] font-black whitespace-nowrap text-neutral-700 dark:text-neutral-300",
+                        "relative pb-2.5 pt-2.5 text-[15px] font-black whitespace-nowrap text-neutral-700 dark:text-neutral-300",
                         isActive && "text-primary dark:text-primary"
                       )}
                     >
@@ -451,7 +469,7 @@ function ShopContent() {
         <div className="hidden md:flex flex-col gap-4 sm:gap-6 mb-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
             <h1 className="flex items-baseline gap-4 text-2xl font-black text-neutral-900 dark:text-white tracking-tight">
-              {searchQuery ? `搜尋結果: ${searchQuery}` : '全部商品'}
+              {searchQuery ? `搜尋結果: ${searchQuery}` : '首頁'}
               <span className="text-xs font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
                 <span className="font-amount">{filteredProducts.length.toLocaleString()}</span> 個商品
               </span>
@@ -611,16 +629,16 @@ function ShopContent() {
                       type="text" 
                       value={priceMin}
                       onChange={(e) => handlePriceChange(e.target.value, setPriceMin)}
-                      placeholder="min" 
-                      className="w-full bg-neutral-100 dark:bg-neutral-800 rounded-xl px-3 py-2 text-center font-bold font-amount focus:outline-none focus:ring-2 focus:ring-primary/20" 
+                      placeholder="1" 
+                      className="w-full bg-neutral-100 dark:bg-neutral-800 rounded-xl px-3 py-2 text-center font-black font-amount focus:outline-none focus:ring-2 focus:ring-primary/20" 
                     />
                     <span className="font-bold">-</span>
                     <input 
                       type="text" 
                       value={priceMax}
                       onChange={(e) => handlePriceChange(e.target.value, setPriceMax)}
-                      placeholder="max" 
-                      className="w-full bg-neutral-100 dark:bg-neutral-800 rounded-xl px-3 py-2 text-center font-bold font-amount focus:outline-none focus:ring-2 focus:ring-primary/20" 
+                      placeholder="999,999" 
+                      className="w-full bg-neutral-100 dark:bg-neutral-800 rounded-xl px-3 py-2 text-center font-black font-amount focus:outline-none focus:ring-2 focus:ring-primary/20" 
                     />
                   </div>
                   <button className="w-full py-3 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-xs font-black uppercase tracking-widest hover:bg-primary dark:hover:bg-primary hover:text-white dark:hover:text-white transition-colors">

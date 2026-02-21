@@ -3,7 +3,7 @@
 import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { Home, Newspaper, User, Gift, Box } from 'lucide-react';
+import { Home, Video, User, Gift, Box } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -49,9 +49,10 @@ function MobileTabbarInner() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const activeTab = searchParams.get('tab');
-
-  // Logic matches Navbar.tsx's isSecondaryPage
-  const isSecondaryPage = (pathname !== '/shop' && pathname !== '/news' && pathname !== '/market' && pathname !== '/profile' && pathname !== '/check-in') || (pathname === '/profile' && !!activeTab);
+ 
+  const mainTabPaths = ['/', '/shop', '/news', '/market', '/profile', '/check-in'];
+  const isMainTabPath = mainTabPaths.includes(pathname);
+  const isSecondaryPage = !isMainTabPath || (pathname === '/profile' && !!activeTab);
 
   const { theme } = useTheme();
 
@@ -61,7 +62,7 @@ function MobileTabbarInner() {
 
   const tabs = [
     { name: '首頁', href: '/', icon: Home },
-    { name: '情報', href: '/news', icon: Newspaper },
+    { name: '開箱', href: '/unboxing', icon: Video },
     { name: '交易所', href: '/market', icon: Box, isCenter: true },
     { name: '任務', href: '/check-in', icon: Gift },
     { name: '會員', href: '/profile', icon: User },
@@ -83,7 +84,7 @@ function MobileTabbarInner() {
                 <div key={tab.href} className="relative h-full flex items-center justify-center">
                   <Link
                     href={tab.href}
-                    className="flex flex-col items-center justify-end h-full w-full pb-1 relative"
+                    className="flex flex-col items-center justify-end h-full w-full pb-1.5 relative"
                   >
                     <motion.div
                       whileTap={{ scale: 0.9 }}
@@ -105,10 +106,12 @@ function MobileTabbarInner() {
                         />
                       </div>
                     </motion.div>
-                    <span className={cn(
-                      "text-[11px] font-black transition-all duration-300",
-                      isActive ? "text-primary" : "text-neutral-400 opacity-80 dark:text-neutral-500"
-                    )}>
+                    <span
+                      className={cn(
+                        "text-[11px] font-black transition-colors duration-300",
+                        isActive ? "text-primary" : "text-neutral-400 dark:text-neutral-500"
+                      )}
+                    >
                       {tab.name}
                     </span>
                   </Link>
@@ -124,15 +127,12 @@ function MobileTabbarInner() {
               >
                 <motion.div
                   whileTap={{ scale: 0.85 }}
-                  animate={{
-                    scale: isActive ? 1.1 : 1,
-                  }}
                   className="relative z-10 flex items-center justify-center"
                 >
                   <div
                     className={cn(
-                      "flex items-center justify-center rounded-2xl transition-colors duration-300",
-                      isActive ? "w-9 h-9 bg-primary/10" : "w-8 h-8"
+                      "flex items-center justify-center rounded-2xl transition-colors duration-300 w-8 h-8",
+                      isActive ? "bg-primary/10" : ""
                     )}
                   >
                     <Icon

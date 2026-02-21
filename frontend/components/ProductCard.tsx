@@ -122,7 +122,7 @@ export default function ProductCard(props: ProductCardProps) {
         {/* Content */}
         <div className="flex flex-col flex-1 p-2 md:pt-2 md:-mt-0.5">
           <div className="mb-1 min-h-[2.75rem]">
-            <h3 className="text-[13px] font-normal text-neutral-900 dark:text-white line-clamp-2 leading-snug group-hover:text-primary transition-colors tracking-tight">
+            <h3 className="text-[14px] font-normal text-neutral-900 dark:text-white line-clamp-2 leading-[1.25] group-hover:text-primary transition-colors tracking-tight">
               {type && (
                 <ProductBadge
                   type={type}

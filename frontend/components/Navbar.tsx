@@ -14,7 +14,7 @@ import { useToast } from '@/components/ui/Toast';
 
 export default function Navbar() {
   return (
-    <Suspense fallback={<div className="h-[3.25rem] bg-white border-b border-neutral-100 sticky top-0 z-50" />}>
+    <Suspense fallback={<div className="h-[57px] bg-white border-b border-neutral-100 sticky top-0 z-50" />}>
       <NavbarInner />
     </Suspense>
   );
@@ -33,11 +33,13 @@ function NavbarInner() {
   const [productName, setProductName] = useState<string | null>(null);
   const [isProductFollowed, setIsProductFollowed] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const desktopSearchInputRef = useRef<HTMLInputElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const pathname = usePathname();
   const [supabase] = useState(() => createClient());
+  const trimmedQuery = query.trim();
 
   // Check if we just logged in
   const isLoginRedirect = searchParams.get('login_success') === 'true';
@@ -57,15 +59,27 @@ function NavbarInner() {
   const activeTab = searchParams.get('tab');
   
   // Define page types
-  const isHomePage = pathname === '/shop';
-  const isMainTab = pathname === '/shop' || pathname === '/news' || pathname === '/ranking' || pathname === '/check-in' || (pathname === '/profile' && !activeTab);
+  const isHomePage = pathname === '/' || pathname === '/shop';
+  const isMainTab =
+    pathname === '/' ||
+    pathname === '/shop' ||
+    pathname === '/market' ||
+    pathname === '/news' ||
+    pathname === '/ranking' ||
+    pathname === '/check-in' ||
+    (pathname === '/profile' && !activeTab);
   const isInnerPage = !isHomePage && !isMainTab;
   const isShopProductDetailPage = /^\/shop\/\d+$/.test(pathname);
   const isBlindboxDetailPage = /^\/blindbox\/\d+$/.test(pathname);
   const isProductDetailPage = isShopProductDetailPage || isBlindboxDetailPage;
   const isNewsDetailPage = /^\/news\/[^/]+$/.test(pathname);
 
-  const showMobileThemeToggle = pathname === '/shop' || pathname === '/news' || pathname === '/ranking';
+  const showMobileThemeToggle =
+    pathname === '/' ||
+    pathname === '/shop' ||
+    pathname === '/market' ||
+    pathname === '/news' ||
+    pathname === '/ranking';
 
   const isTicketSelectionPage = pathname.endsWith('/select');
 
@@ -153,9 +167,9 @@ function NavbarInner() {
 
   // 獲取頁面名稱
   const getPageTitle = () => {
-    if (pathname === '/shop') return '全部商品';
-    if (pathname === '/market') return '自由市集';
-    if (pathname === '/news') return '最新情報';
+    if (pathname === '/' || pathname === '/shop') return '首頁';
+    if (pathname === '/market') return '交易所';
+    if (pathname === '/unboxing') return '開箱';
     if (pathname === '/ranking') return '排行榜';
     if (pathname.startsWith('/fairness')) return '公平性驗證';
     if (pathname === '/check-in') return '每日簽到';
@@ -169,6 +183,7 @@ function NavbarInner() {
     if (pathname === '/privacy') return '隱私權政策';
     if (pathname === '/return-policy') return '退換貨資訊';
     if (pathname === '/news') return '最新情報';
+    if (pathname === '/unboxing') return '開箱';
     if (pathname === '/check-in') return '每日簽到';
     
     if (pathname === '/profile') {
@@ -389,33 +404,26 @@ function NavbarInner() {
       setQuery('');
       setIsSearchOpen(false);
       setIsDesktopSearchOpen(false);
-      // Let the effect handle the URL update or force it if needed, 
-      // but usually setting query is enough. 
-      // However, for explicit clear, we might want immediate action.
-      // But the effect will handle it in 500ms. 
-      // If user clicks 'X', they expect instant clear.
-      // So we should keep immediate navigation in handleSearch for explicit actions.
       if (pathname === '/market') {
         router.push('/market');
       } else {
-        router.push('/shop');
+        router.push('/search');
       }
       return;
     }
-    
-    // Save history
-    const newHistory = [trimmedQ, ...searchHistory.filter(h => h !== trimmedQ)].slice(0, 5);
+
+    const newHistory = [trimmedQ, ...searchHistory.filter((h) => h !== trimmedQ)].slice(0, 5);
     setSearchHistory(newHistory);
     localStorage.setItem('searchHistory', JSON.stringify(newHistory));
-    
+
     setQuery(trimmedQ);
     setIsSearchOpen(false);
     setIsDesktopSearchOpen(false);
-    
+
     if (pathname === '/market') {
       router.push(`/market?search=${encodeURIComponent(trimmedQ)}`);
     } else {
-      router.push(`/shop?search=${encodeURIComponent(trimmedQ)}`);
+      router.push(`/search?q=${encodeURIComponent(trimmedQ)}`);
     }
   };
 
@@ -428,10 +436,6 @@ function NavbarInner() {
   // ];
 
   const isSearchPage = pathname === '/search';
-
-  if (isSearchPage) {
-    return null;
-  }
 
   const clearHistory = () => {
     setSearchHistory([]);
@@ -450,14 +454,19 @@ function NavbarInner() {
       <nav className={cn(
         "bg-white dark:bg-neutral-900 border-b border-neutral-100 dark:border-neutral-800 top-0 z-50 transition-colors",
         isProductDetailPage ? "fixed left-0 right-0 md:sticky" : "sticky",
-        ((pathname === '/profile' && !activeTab) || isTicketSelectionPage) && "hidden md:block"
+        (
+          (pathname === '/profile' && !activeTab) ||
+          isTicketSelectionPage ||
+          isSearchPage ||
+          pathname === '/market'
+        ) && "hidden md:block"
       )}>
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-[3.25rem]">
+          <div className="flex items-center justify-between h-[57px]">
             {/* 左：Logo + 標語 / 返回按鈕 */}
             <div className="flex items-center gap-2 md:gap-4 flex-none min-w-0">
               {showTitle ? (
-                <div className="flex items-center w-full md:w-auto overflow-hidden">
+                <div className="flex items-center w-full md:hidden overflow-hidden">
                   {showBackButton && (
                     <button 
                       onClick={() => {
@@ -494,18 +503,64 @@ function NavbarInner() {
                 </div>
               </Link>
               <div className="hidden md:flex items-center gap-3 lg:gap-5">
-                <Link href="/shop" className="text-[15px] lg:text-[16px] font-black text-neutral-600 dark:text-neutral-400 hover:text-primary transition-colors">全部商品</Link>
-                <Link href="/market" className="text-[15px] lg:text-[16px] font-black text-neutral-600 dark:text-neutral-400 hover:text-primary transition-colors flex items-center gap-1">
-                  自由市集
-                  <span className="bg-gradient-to-r from-violet-600 to-blue-600 text-white text-[9px] px-1.5 py-0.5 rounded-full shadow-sm">NEW</span>
+                <Link
+                  href="/"
+                  className={cn(
+                    "relative flex items-center h-9 text-[15px] lg:text-[16px] font-black transition-colors",
+                    pathname === '/' || pathname === '/shop'
+                      ? "text-primary"
+                      : "text-neutral-600 dark:text-neutral-400 hover:text-primary"
+                  )}
+                >
+                  <span>回首頁</span>
+                  {(pathname === '/' || pathname === '/shop') && (
+                    <span className="absolute inset-x-0 -bottom-1 h-1 rounded-full bg-primary" />
+                  )}
                 </Link>
-                <Link href="/news" className="text-[15px] lg:text-[16px] font-black text-neutral-600 dark:text-neutral-400 hover:text-primary transition-colors">最新情報</Link>
+                <Link
+                  href="/market"
+                  className={cn(
+                    "relative flex items-center h-9 text-[15px] lg:text-[16px] font-black transition-colors",
+                    pathname === '/market'
+                      ? "text-primary"
+                      : "text-neutral-600 dark:text-neutral-400 hover:text-primary"
+                  )}
+                >
+                  <span>交易所</span>
+                  {pathname === '/market' && (
+                    <span className="absolute inset-x-0 -bottom-1 h-1 rounded-full bg-primary" />
+                  )}
+                </Link>
+                <Link
+                  href="/unboxing"
+                  className={cn(
+                    "relative flex items-center h-9 text-[15px] lg:text-[16px] font-black transition-colors",
+                    pathname === '/unboxing'
+                      ? "text-primary"
+                      : "text-neutral-600 dark:text-neutral-400 hover:text-primary"
+                  )}
+                >
+                  <span>開箱</span>
+                  {pathname === '/unboxing' && (
+                    <span className="absolute inset-x-0 -bottom-1 h-1 rounded-full bg-primary" />
+                  )}
+                </Link>
               </div>
             </div>
             
-            {/* Search Bar - 桌機搜尋輸入框，只在 /shop /market 顯示 */}
-            {(pathname === '/shop' || pathname === '/market') && (
-              <div ref={searchContainerRef} className="flex-1 w-full md:max-w-[280px] lg:max-w-[400px] mx-2 transition-all duration-300 relative">
+            {(
+              pathname === '/' ||
+              pathname === '/shop' ||
+              pathname === '/market' ||
+              pathname === '/unboxing'
+            ) && (
+              <div
+                ref={searchContainerRef}
+                className={cn(
+                  "flex-1 w-full md:max-w-[280px] lg:max-w-[400px] mx-2 transition-all duration-300 relative",
+                  (pathname === '/' || pathname === '/shop') && "hidden md:block"
+                )}
+              >
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
@@ -517,29 +572,45 @@ function NavbarInner() {
                       <Search className="w-3.5 h-3.5 stroke-[2]" />
                     </div>
                     <input
+                      ref={desktopSearchInputRef}
                       value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      onFocus={() => setIsDesktopSearchOpen(true)}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setQuery(value);
+                        if (value.trim()) {
+                          setIsDesktopSearchOpen(false);
+                        } else {
+                          setIsDesktopSearchOpen(true);
+                        }
+                      }}
+                      onFocus={() => {
+                        if (!trimmedQuery) {
+                          setIsDesktopSearchOpen(true);
+                        }
+                      }}
                       placeholder={pathname === '/market' ? "搜尋自由市集商品..." : "搜尋商品..."}
                       className="w-full h-11 md:h-9 pl-9 pr-8 bg-neutral-100 dark:bg-neutral-800 border-none rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 text-[13px] font-bold transition-all placeholder:text-neutral-400 dark:text-white dark:placeholder:text-neutral-500"
                     />
-                    {query && (
-                      <button
-                        type="button"
-                        onClick={() => {
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (query.trim()) {
                           setQuery('');
                           handleSearch('');
-                        }}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    )}
+                        } else {
+                          setIsDesktopSearchOpen(false);
+                          desktopSearchInputRef.current?.blur();
+                        }
+                      }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </form>
 
-                {/* Search Dropdown */}
-                {isDesktopSearchOpen && (
+                {/* Search Dropdown：桌機行為與手機相似，僅在無輸入時顯示提示 */}
+                {isDesktopSearchOpen && !trimmedQuery && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-neutral-900 rounded-2xl shadow-modal border border-neutral-100 dark:border-neutral-800 p-4 z-50 animate-in fade-in zoom-in-95 duration-200">
                     {/* Hot Searches */}
                     <div className="mb-4">
@@ -598,13 +669,17 @@ function NavbarInner() {
               </div>
             )}
 
-            {/* 右：搜尋圖標 + 夜間模式 + 通知/登入 */}
             <div className="flex items-center gap-0.5 lg:gap-2 shrink-0">
-              {/* Mobile Search Button → 獨立搜尋頁（搜尋頁本身不顯示） */}
               {!isSearchPage && (
                 <button 
                   className="md:hidden p-2 rounded-xl text-neutral-600 dark:text-neutral-400 active:scale-95 transition-transform"
-                  onClick={() => router.push('/search')}
+                  onClick={() => {
+                    if (isHomePage) {
+                      router.push('/search?focus=1');
+                    } else {
+                      setIsSearchOpen(true);
+                    }
+                  }}
                 >
                   <Search className="w-5 h-5 stroke-[2]" />
                 </button>

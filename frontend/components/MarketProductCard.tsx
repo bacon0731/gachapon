@@ -102,7 +102,7 @@ export default function MarketProductCard({
              </p>
           )}
           
-          <h3 className="text-base font-black text-neutral-900 dark:text-white line-clamp-2 mb-1 min-h-[3rem] leading-tight group-hover:text-primary transition-colors tracking-tight">
+          <h3 className="text-base font-black text-neutral-900 dark:text-white line-clamp-2 mb-1 min-h-[3rem] leading-[1.25] group-hover:text-primary transition-colors tracking-tight">
             {name}
           </h3>
           

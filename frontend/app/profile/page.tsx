@@ -276,13 +276,6 @@ function ProfileContent() {
   const searchParams = useSearchParams();
   const [supabase] = useState(() => createClient());
 
-  // Redirect if not logged in
-  useEffect(() => {
-    if (!isAuthLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, isAuthLoading, router]);
-
   const [activeTab, setActiveTab] = useState<TabType>('warehouse');
   const [activeWarehouseTab, setActiveWarehouseTab] = useState<'all' | 'dismantled'>('all');
   const [activeMarketTab, setActiveMarketTab] = useState<'listing' | 'sold'>('listing');
@@ -939,13 +932,16 @@ function ProfileContent() {
     });
   };
 
-  if (isAuthLoading || !user) {
+  if (isAuthLoading) {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
+
+  const isGuest = !user;
+  const loginHref = '/login?redirect=%2Fprofile';
 
   const navItems = [
     { id: 'warehouse', label: '我的倉庫', icon: Box, color: 'text-primary' },
@@ -960,6 +956,23 @@ function ProfileContent() {
   ];
 
   const renderTabContent = () => {
+    if (!user) {
+      return (
+        <div className="h-full flex flex-col items-center justify-center p-8 text-center bg-neutral-50/60 dark:bg-neutral-900/60">
+          <div className="mb-4">
+            <User className="w-10 h-10 text-neutral-300" />
+          </div>
+          <p className="text-base font-black text-neutral-600 dark:text-neutral-200 mb-2">登入後可查看會員專屬內容</p>
+          <p className="text-sm text-neutral-400 mb-6">倉庫、抽獎紀錄、配送訂單與儲值紀錄等資料僅對已登入會員顯示</p>
+          <Link
+            href={loginHref}
+            className="inline-flex items-center justify-center px-6 h-11 rounded-full bg-primary text-white text-sm font-black shadow-lg shadow-primary/30 active:scale-95 transition-transform"
+          >
+            前往登入
+          </Link>
+        </div>
+      );
+    }
     // Determine if we should show a full page skeleton (e.g., initial load or non-warehouse tabs)
     // For warehouse tab, we want to keep the header visible during sub-tab switches
     if (isLoadingData && activeTab !== 'warehouse') {
@@ -2476,37 +2489,65 @@ function ProfileContent() {
             {/* User Info + Settings Icon */}
             <div className="flex items-center justify-between px-0 mb-3">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-full overflow-hidden border-2 border-white dark:border-neutral-800 shadow-soft relative">
-                  <Image 
-                    src={user.avatar_url || 'https://github.com/shadcn.png'} 
-                    alt={user.name || 'User'} 
-                    fill
-                    className="object-cover"
-                    unoptimized
-                  />
-                </div>
-                <div>
+                {isGuest ? (
+                  <div className="w-11 h-11 rounded-full border-2 border-white dark:border-neutral-800 shadow-soft bg-neutral-200 dark:bg-neutral-800 flex items-center justify-center">
+                    <User className="w-6 h-6 text-neutral-500 dark:text-neutral-400" />
+                  </div>
+                ) : (
+                  <div className="w-11 h-11 rounded-full overflow-hidden border-2 border-white dark:border-neutral-800 shadow-soft relative">
+                    <Image 
+                      src={user.avatar_url || 'https://github.com/shadcn.png'} 
+                      alt={user.name || 'User'} 
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                  </div>
+                )}
+                <div className={cn("flex flex-col", isGuest ? "justify-center" : "")}>
                   <div className="flex items-center gap-1.5">
-                    <h2 className="text-base font-black text-neutral-900 dark:text-white leading-tight">{user.name}</h2>
-                    <CheckCircle2 className="w-3.5 h-3.5 text-accent-emerald" />
+                    {isGuest ? (
+                      <Link
+                        href={loginHref}
+                        className="text-base font-black text-primary underline decoration-dotted underline-offset-2"
+                      >
+                        登入後顯示
+                      </Link>
+                    ) : (
+                      <>
+                        <h2 className="text-base font-black text-neutral-900 dark:text-white leading-tight">{user.name}</h2>
+                        <CheckCircle2 className="w-3.5 h-3.5 text-accent-emerald" />
+                      </>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2 mt-1.5" onClick={() => {
-                    if (user.invite_code) {
-                      navigator.clipboard.writeText(user.invite_code);
-                      toast.success('邀請碼已複製');
-                    }
-                  }}>
-                    <div className="flex items-center gap-1.5 bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded-lg active:scale-95 transition-transform cursor-pointer">
-                      <span className="text-[13px] font-black text-neutral-400">邀請碼：</span>
-                      <span className="text-[13px] font-mono font-black text-primary">{user.invite_code || '-'}</span>
-                      <Copy className="w-3.5 h-3.5 text-neutral-400" />
+                  {!isGuest && (
+                    <div
+                      className="flex items-center gap-2 mt-1.5"
+                      onClick={() => {
+                        if (user.invite_code) {
+                          navigator.clipboard.writeText(user.invite_code);
+                          toast.success('邀請碼已複製');
+                        }
+                      }}
+                    >
+                      <div className="flex items-center gap-1.5 bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded-lg active:scale-95 transition-transform cursor-pointer">
+                        <span className="text-[13px] font-black text-neutral-400">邀請碼：</span>
+                        <span className="text-[13px] font-mono font-black text-primary">{user.invite_code || '-'}</span>
+                        <Copy className="w-3.5 h-3.5 text-neutral-400" />
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <button 
-                  onClick={() => handleTabChange('settings')}
+                  onClick={() => {
+                    if (isGuest) {
+                      router.push(loginHref);
+                      return;
+                    }
+                    handleTabChange('settings');
+                  }}
                   className="w-9 h-9 rounded-full bg-white dark:bg-neutral-900 shadow-soft flex items-center justify-center text-neutral-400 hover:text-primary transition-colors border border-neutral-100 dark:border-neutral-800"
                 >
                   <Settings className="w-4.5 h-4.5" />
@@ -2523,7 +2564,16 @@ function ProfileContent() {
                     <Wallet className="w-3.5 h-3.5" />
                     <span className="text-[14px] font-black uppercase tracking-widest">代幣餘額</span>
                   </div>
-                  <button onClick={() => handleTabChange('topup-history')} className="flex items-center gap-0.5 text-[14px] font-black bg-white/20 px-2 py-0.5 rounded-full hover:bg-white/30 transition-colors">
+                  <button 
+                    onClick={() => {
+                      if (isGuest) {
+                        router.push(loginHref);
+                        return;
+                      }
+                      handleTabChange('topup-history');
+                    }} 
+                    className="flex items-center gap-0.5 text-[14px] font-black bg-white/20 px-2 py-0.5 rounded-full hover:bg-white/30 transition-colors"
+                  >
                     儲值紀錄 <ChevronRight className="w-2.5 h-2.5" />
                   </button>
                 </div>
@@ -2532,9 +2582,23 @@ function ProfileContent() {
                     <div className="w-6 h-6 rounded-full bg-accent-yellow flex items-center justify-center shadow-inner">
                       <span className="text-xs text-white font-black leading-none">G</span>
                     </div>
-                    <span className="text-2xl font-black font-amount tracking-tighter leading-none">{user.points.toLocaleString()}</span>
+                    {isGuest ? (
+                      <Link
+                        href={loginHref}
+                        className="text-sm font-black text-white underline decoration-dotted underline-offset-2"
+                      >
+                        登入後顯示
+                      </Link>
+                    ) : (
+                      <span className="text-2xl font-black font-amount tracking-tighter leading-none">
+                        {user.points.toLocaleString()}
+                      </span>
+                    )}
                   </div>
-                  <Link href="/topup" className="bg-accent-yellow text-white px-3 h-9 rounded-xl flex items-center justify-center shadow-lg shadow-accent-yellow/30 hover:scale-105 active:scale-95 transition-all text-sm font-black">
+                  <Link
+                    href={isGuest ? loginHref : '/topup'}
+                    className="bg-accent-yellow text-neutral-800 px-3 h-9 rounded-xl flex items-center justify-center shadow-lg shadow-accent-yellow/30 hover:scale-105 active:scale-95 transition-all text-sm font-black"
+                  >
                     <span>儲值</span>
                   </Link>
                 </div>
@@ -2544,7 +2608,17 @@ function ProfileContent() {
             {/* Main Menu List */}
             <div className="mx-0 bg-white dark:bg-neutral-900 rounded-2xl shadow-card border border-neutral-100 dark:border-neutral-800 overflow-hidden divide-y divide-neutral-50 dark:divide-neutral-800">
               {navItems.filter(item => item.id !== 'topup-history' && item.id !== 'settings').map((item) => (
-                <button key={item.id} onClick={() => handleTabChange(item.id as TabType)} className="w-full flex items-center justify-between p-3 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors group">
+                <button 
+                  key={item.id} 
+                  onClick={() => {
+                    if (isGuest) {
+                      router.push(loginHref);
+                      return;
+                    }
+                    handleTabChange(item.id as TabType);
+                  }} 
+                  className="w-full flex items-center justify-between p-3 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors group"
+                >
                   <div className="flex items-center gap-2.5">
                     <div className={cn("w-8 h-8 rounded-xl bg-neutral-50 dark:bg-neutral-800 flex items-center justify-center group-hover:scale-110 transition-transform", item.color)}>
                       <item.icon className="w-4 h-4 stroke-[2.5]" />
@@ -2565,7 +2639,7 @@ function ProfileContent() {
                 { id: 'privacy', label: '隱私權政策', icon: Shield, color: 'text-neutral-400', href: '/privacy' },
                 { id: 'return-policy', label: '退換貨資訊', icon: RefreshCcw, color: 'text-neutral-400', href: '/return-policy' },
               ].map((item) => (
-                <Link key={item.id} href={item.href} className="w-full flex items-center justify-between p-2.5 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors group">
+                <Link key={item.id} href={item.href} className="w-full flex items-center justify-between p-3 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors group">
                   <div className="flex items-center gap-2.5">
                     <div className={cn("w-7 h-7 rounded-lg bg-neutral-50 dark:bg-neutral-800 flex items-center justify-center group-hover:scale-110 transition-transform", item.color)}>
                       <item.icon className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -2578,20 +2652,22 @@ function ProfileContent() {
             </div>
 
             {/* Logout Button */}
-            <div className="mx-0">
-              <button 
-                onClick={handleLogout} 
-                className="w-full flex items-center justify-between p-2.5 bg-white dark:bg-neutral-900 rounded-2xl hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors group border border-neutral-100 dark:border-neutral-800 shadow-card"
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-neutral-50 dark:bg-neutral-800 flex items-center justify-center group-hover:scale-110 transition-transform text-neutral-400">
-                    <LogOut className="w-3.5 h-3.5 stroke-[2.5]" />
+            {!isGuest && (
+              <div className="mx-0">
+                <button 
+                  onClick={handleLogout} 
+                  className="w-full flex items-center justify-between p-2.5 bg-white dark:bg-neutral-900 rounded-2xl hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors group border border-neutral-100 dark:border-neutral-800 shadow-card"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-neutral-50 dark:bg-neutral-800 flex items-center justify-center group-hover:scale-110 transition-transform text-neutral-400">
+                      <LogOut className="w-3.5 h-3.5 stroke-[2.5]" />
+                    </div>
+                    <span className="text-[13px] font-bold text-neutral-500">登出</span>
                   </div>
-                  <span className="text-[13px] font-bold text-neutral-500">登出</span>
-                </div>
-                <ChevronRight className="w-3.5 h-3.5 text-neutral-200" />
-              </button>
-            </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-neutral-200" />
+                </button>
+              </div>
+            )}
 
             {/* Mobile Footer Copyright */}
             <div className="py-6 text-center">
@@ -2615,34 +2691,62 @@ function ProfileContent() {
               <div className="flex flex-col gap-2.5">
                   <div className="flex items-center gap-2.5">
                     <div className="relative flex-shrink-0">
-                      <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-xl overflow-hidden border-2 border-neutral-50 dark:border-neutral-800 shadow-soft p-0.5 bg-white dark:bg-neutral-800">
-                        <Image 
-                          src={user.avatar_url || 'https://github.com/shadcn.png'} 
-                          alt={user.name || 'User'} 
-                          fill 
-                          className="rounded-[8px] object-cover" 
-                          unoptimized
-                        />
-                      </div>
-                      <div className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-accent-emerald border-2 border-white dark:border-neutral-900 rounded-full shadow-sm" />
+                      {isGuest ? (
+                        <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-xl border-2 border-neutral-50 dark:border-neutral-800 shadow-soft bg-neutral-200 dark:bg-neutral-800 flex items-center justify-center">
+                          <User className="w-5 h-5 text-neutral-500 dark:text-neutral-400" />
+                        </div>
+                      ) : (
+                        <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-xl overflow-hidden border-2 border-neutral-50 dark:border-neutral-800 shadow-soft p-0.5 bg-white dark:bg-neutral-800">
+                          <Image 
+                            src={user.avatar_url || 'https://github.com/shadcn.png'} 
+                            alt={user.name || 'User'} 
+                            fill 
+                            className="rounded-[8px] object-cover" 
+                            unoptimized
+                          />
+                        </div>
+                      )}
+                      {!isGuest && (
+                        <div className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-accent-emerald border-2 border-white dark:border-neutral-900 rounded-full shadow-sm" />
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <h2 className="text-sm lg:text-base font-black text-neutral-900 dark:text-white truncate tracking-tight">{user.name}</h2>
-                        <CheckCircle2 className="w-3 h-3 text-accent-emerald flex-shrink-0" />
+                        {isGuest ? (
+                          <Link
+                            href={loginHref}
+                            className="text-sm lg:text-base font-black text-primary truncate tracking-tight underline decoration-dotted underline-offset-2"
+                          >
+                            登入後顯示
+                          </Link>
+                        ) : (
+                          <>
+                            <h2 className="text-sm lg:text-base font-black text-neutral-900 dark:text-white truncate tracking-tight">
+                              {user.name}
+                            </h2>
+                            <CheckCircle2 className="w-3 h-3 text-accent-emerald flex-shrink-0" />
+                          </>
+                        )}
                       </div>
-                      <div className="flex items-center gap-2 mt-0.5">
-                         <div className="flex items-center gap-1.5 cursor-pointer group/invite" onClick={() => {
-                           if (user.invite_code) {
-                             navigator.clipboard.writeText(user.invite_code);
-                             toast.success('邀請碼已複製');
-                           }
-                        }}>
-                          <span className="text-[13px] font-black text-neutral-400 uppercase tracking-wider">邀請碼</span>
-                          <span className="text-[13px] font-mono font-black text-primary group-hover/invite:text-primary/80 transition-colors">{user.invite_code || '-'}</span>
-                          <Copy className="w-3.5 h-3.5 text-neutral-300 group-hover/invite:text-primary transition-colors" />
+                      {!isGuest && (
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <div
+                            className="flex items-center gap-1.5 cursor-pointer group/invite"
+                            onClick={() => {
+                              if (user.invite_code) {
+                                navigator.clipboard.writeText(user.invite_code);
+                                toast.success('邀請碼已複製');
+                              }
+                            }}
+                          >
+                            <span className="text-[13px] font-black text-neutral-400 uppercase tracking-wider">邀請碼</span>
+                            <span className="text-[13px] font-mono font-black text-primary group-hover/invite:text-primary/80 transition-colors">
+                              {user.invite_code || '-'}
+                            </span>
+                            <Copy className="w-3.5 h-3.5 text-neutral-300 group-hover/invite:text-primary transition-colors" />
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                   
@@ -2651,9 +2755,25 @@ function ProfileContent() {
                       <div className="flex items-center justify-center w-6 h-6 rounded-full bg-accent-yellow shadow-sm">
                         <span className="text-[13px] text-white font-black leading-none">G</span>
                       </div>
-                      <span className="text-lg font-black text-accent-red font-amount leading-none tracking-tighter">{user.points.toLocaleString()}</span>
+                      {isGuest ? (
+                        <Link
+                          href={loginHref}
+                          className="text-[13px] font-black text-primary underline decoration-dotted underline-offset-2"
+                        >
+                          登入後顯示
+                        </Link>
+                      ) : (
+                        <span className="text-lg font-black text-accent-red font-amount leading-none tracking-tighter">
+                          {user.points.toLocaleString()}
+                        </span>
+                      )}
                     </div>
-                    <Link href="/topup" className="text-[13px] font-black text-primary hover:text-primary/80 transition-colors uppercase tracking-widest bg-white dark:bg-neutral-800 px-2 py-1 rounded border border-primary/10 shadow-sm">儲值</Link>
+                    <Link
+                      href={isGuest ? loginHref : '/topup'}
+                      className="text-[13px] font-black text-primary hover:text-primary/80 transition-colors uppercase tracking-widest bg-white dark:bg-neutral-800 px-2 py-1 rounded border border-primary/10 shadow-sm"
+                    >
+                      儲值
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -2663,7 +2783,13 @@ function ProfileContent() {
                 {navItems.map((item) => (
                   <button 
                     key={item.id} 
-                    onClick={() => handleTabChange(item.id as TabType)} 
+                    onClick={() => {
+                      if (isGuest) {
+                        router.push(loginHref);
+                        return;
+                      }
+                      handleTabChange(item.id as TabType);
+                    }} 
                     className={cn(
                       "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-black transition-all group text-left", 
                       activeTab === item.id ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white"
