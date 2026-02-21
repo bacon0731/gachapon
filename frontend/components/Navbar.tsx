@@ -476,6 +476,8 @@ function NavbarInner() {
                           router.push('/shop');
                         } else if (pathname === '/profile' && activeTab) {
                           router.push('/profile');
+                        } else if (isProductDetailPage) {
+                          router.push('/shop');
                         } else {
                           router.back();
                         }

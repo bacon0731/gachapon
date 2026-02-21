@@ -50,27 +50,10 @@ export default function BlindboxDetailPage() {
   const bgVideoRef = useRef<HTMLVideoElement | null>(null);
   const [isVideoMuted, setIsVideoMuted] = useState(false);
   const openingVideoRef = useRef<HTMLVideoElement | null>(null);
-  const resultSoundRef = useRef<HTMLAudioElement | null>(null);
-  const [isResultSoundPrimed, setIsResultSoundPrimed] = useState(false);
   const [isMediaReady, setIsMediaReady] = useState(false);
   const [isEggBoxImageMode, setIsEggBoxImageMode] = useState(false);
 
   const isSoldOut = !!product && (product.status === 'ended' || product.remaining === 0);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const resultAudio = new Audio('/audio/getpopup.mp3');
-    resultAudio.preload = 'auto';
-    resultSoundRef.current = resultAudio;
-
-    return () => {
-      if (resultSoundRef.current) {
-        resultSoundRef.current.pause();
-        resultSoundRef.current.src = '';
-        resultSoundRef.current.load();
-      }
-    };
-  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -106,23 +89,6 @@ export default function BlindboxDetailPage() {
       });
     };
   }, [bgVideos]);
-
-  const primeResultSound = async () => {
-    if (isResultSoundPrimed) return;
-    const audio = resultSoundRef.current;
-    if (!audio) return;
-    try {
-      const originalVolume = audio.volume;
-      audio.volume = 0;
-      await audio.play();
-      audio.pause();
-      audio.currentTime = 0;
-      audio.volume = originalVolume;
-      setIsResultSoundPrimed(true);
-    } catch {
-      // ignore
-    }
-  };
 
   useEffect(() => {
     const el = bgVideoRef.current;
@@ -231,7 +197,6 @@ export default function BlindboxDetailPage() {
 
   const handlePlay = () => {
     if (!product) return;
-    void primeResultSound();
     setIsPurchaseModalOpen(true);
   };
 
@@ -243,7 +208,6 @@ export default function BlindboxDetailPage() {
   };
 
   const handleTrial = () => {
-    void primeResultSound();
     if (prizes.length > 0) {
       const index = Math.floor(Math.random() * prizes.length);
       const sample = prizes[index];
