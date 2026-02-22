@@ -237,10 +237,11 @@ export default function ProductsPage() {
       
       // 轉換種類名稱
       const typeMap: Record<string, string> = {
-        'ichiban': '一番賞',
-        'blindbox': '盲盒',
-        'gacha': '轉蛋',
-        'custom': '自製'
+        ichiban: '一番賞',
+        blindbox: '盲盒',
+        gacha: '轉蛋',
+        card: '抽卡',
+        custom: '自製'
       }
       const typeName = typeMap[product.type || 'ichiban'] || '一番賞'
 
@@ -697,6 +698,7 @@ export default function ProductsPage() {
                   { value: 'ichiban', label: '一番賞' },
                   { value: 'blindbox', label: '盲盒' },
                   { value: 'gacha', label: '轉蛋' },
+                  { value: 'card', label: '抽卡' },
                   { value: 'custom', label: '自製賞' }
                 ]
               },
@@ -750,6 +752,7 @@ export default function ProductsPage() {
                   ichiban: '一番賞',
                   blindbox: '盲盒',
                   gacha: '轉蛋',
+                  card: '抽卡',
                   custom: '自製賞'
                 } as const)[selectedType] || '一番賞',
                 color: 'primary' as const,
@@ -924,16 +927,22 @@ export default function ProductsPage() {
                       {visibleColumns.type && (
                         <td className={`${getDensityClasses()} text-sm text-neutral-700 whitespace-nowrap`}>
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            product.type === 'ichiban' ? 'bg-blue-100 text-blue-700' :
-                            product.type === 'blindbox' ? 'bg-purple-100 text-purple-700' :
-                            product.type === 'gacha' ? 'bg-orange-100 text-orange-700' :
-                            'bg-gray-100 text-gray-700'
+                            product.type === 'ichiban'
+                              ? 'bg-blue-100 text-blue-700'
+                              : product.type === 'blindbox'
+                              ? 'bg-purple-100 text-purple-700'
+                              : product.type === 'gacha'
+                              ? 'bg-orange-100 text-orange-700'
+                              : product.type === 'card'
+                              ? 'bg-emerald-100 text-emerald-700'
+                              : 'bg-gray-100 text-gray-700'
                           }`}>
                             {{
-                              'ichiban': '一番賞',
-                              'blindbox': '盲盒',
-                              'gacha': '轉蛋',
-                              'custom': '自製'
+                              ichiban: '一番賞',
+                              blindbox: '盲盒',
+                              gacha: '轉蛋',
+                              card: '抽卡',
+                              custom: '自製'
                             }[product.type || 'ichiban'] || '一番賞'}
                           </span>
                         </td>

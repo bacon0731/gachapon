@@ -304,16 +304,16 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
     }
 
     if (params?.id) {
-      router.push(`/shop/${params.id}`);
+      router.push(`/item/${params.id}`);
       return;
     }
 
     if (product.id) {
-      router.push(`/shop/${product.id}`);
+      router.push(`/item/${product.id}`);
       return;
     }
 
-    router.push('/shop');
+    router.push('/');
   }, [
     product,
     totalTicketsCount,
@@ -594,16 +594,16 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
     }
 
     if (params?.id) {
-      router.push(`/shop/${params.id}`);
+      router.push(`/item/${params.id}`);
       return;
     }
 
     if (product?.id) {
-      router.push(`/shop/${product.id}`);
+      router.push(`/item/${product.id}`);
       return;
     }
 
-    router.push('/shop');
+    router.push('/');
   };
 
   // If we are showing results, render the result flow (New: Inline, Old: Modal)
@@ -1055,7 +1055,7 @@ export function TicketSelectionFlow({ isModal = false, onClose, onRefreshProduct
             }
 
             if (params?.id) {
-              router.push(`/shop/${params.id}`);
+              router.push(`/item/${params.id}`);
             } else {
               router.back();
             }

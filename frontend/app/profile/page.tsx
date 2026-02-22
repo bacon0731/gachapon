@@ -117,14 +117,25 @@ interface FollowedProduct {
   status: 'selling' | 'soldout' | 'coming_soon';
 }
 
-const MAJOR_LEVELS = ['SP賞', 'S賞', 'A賞', 'B賞', 'C賞', 'LAST ONE', '最後賞'];
+const MAJOR_LEVELS = ['SP賞', 'S賞', 'A賞', 'B賞', 'C賞', 'SP', 'S', 'A', 'B', 'C', 'LAST ONE', '最後賞'];
 
 const isMajorGrade = (grade: string | undefined | null) => {
   if (!grade) return false;
   const trimmed = grade.trim();
+  if (!trimmed) return false;
   const upper = trimmed.toUpperCase();
   if (upper === 'LAST ONE' || trimmed === '最後賞') return true;
-  return MAJOR_LEVELS.includes(trimmed) || MAJOR_LEVELS.includes(upper);
+  if (MAJOR_LEVELS.includes(trimmed) || MAJOR_LEVELS.includes(upper)) return true;
+  let base = trimmed;
+  const prizeIndex = base.indexOf('賞');
+  if (prizeIndex !== -1) {
+    base = base.slice(0, prizeIndex);
+  }
+  if (base.includes(' ')) {
+    base = base.split(' ')[0];
+  }
+  const baseUpper = base.toUpperCase();
+  return MAJOR_LEVELS.includes(baseUpper);
 };
 
 interface Coupon {
@@ -999,7 +1010,7 @@ function ProfileContent() {
         );
       case 'warehouse':
         return (
-          <div className="p-3 lg:p-8">
+          <div className="-mx-2 -mt-6 md:mx-0 md:mt-0 pt-0 pb-4 lg:p-8">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 lg:mb-8">
               <div className="hidden md:block">
                 <h3 className="text-3xl font-black text-neutral-900 dark:text-white tracking-tight">我的倉庫</h3>
@@ -1054,10 +1065,10 @@ function ProfileContent() {
                            重選
                          </button>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-1 justify-end ml-3">
                          <button 
                            onClick={handleDismantleClick} 
-                           className="bg-accent-red text-white px-3 py-2 rounded-xl shadow-lg shadow-accent-red/20 text-xs font-black"
+                           className="flex-1 bg-accent-red text-white px-3 h-[44px] rounded-xl text-xs font-black"
                          >
                            分解
                          </button>
@@ -1068,7 +1079,7 @@ function ProfileContent() {
                            return (
                              <button
                                onClick={() => handleSellClick(item)}
-                               className="bg-accent-yellow text-white px-3 py-2 rounded-xl shadow-lg shadow-accent-yellow/20 text-xs font-black"
+                              className="flex-1 bg-accent-yellow text-white px-3 h-[44px] rounded-xl text-xs font-black"
                              >
                                上架
                              </button>
@@ -1076,7 +1087,7 @@ function ProfileContent() {
                          })()}
                          <button 
                            onClick={() => setShowDeliveryModal(true)} 
-                           className="bg-primary text-white px-3 py-2 rounded-xl shadow-lg shadow-primary/20 text-xs font-black"
+                           className="flex-1 bg-primary text-white px-3 h-[44px] rounded-xl text-xs font-black"
                          >
                            配送
                          </button>
@@ -1088,18 +1099,38 @@ function ProfileContent() {
             </div>
 
             {/* Sub-tabs */}
-            <div className="flex items-center gap-2 mb-6 overflow-x-auto no-scrollbar">
+            <div className="flex items-center gap-2 mb-4 overflow-x-auto no-scrollbar border-b border-neutral-100 dark:border-neutral-800 px-0 md:px-2">
               <button 
                 onClick={() => setActiveWarehouseTab('all')}
-                className={cn("px-4 py-2 rounded-xl text-sm font-black transition-all whitespace-nowrap", activeWarehouseTab === 'all' ? "bg-neutral-900 text-white shadow-lg shadow-neutral-900/20 dark:bg-white dark:text-neutral-900" : "bg-white text-neutral-400 hover:bg-neutral-50 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700")}
+                className="relative flex-shrink-0 px-3 py-1.5 text-[14px] font-black whitespace-nowrap"
               >
-                全部獎項 ({warehouseItems.length})
+                <span
+                  className={cn(
+                    "transition-colors",
+                    activeWarehouseTab === 'all' ? "text-primary" : "text-neutral-500 dark:text-neutral-400"
+                  )}
+                >
+                  全部獎項 ({warehouseItems.length})
+                </span>
+                {activeWarehouseTab === 'all' && (
+                  <span className="absolute inset-x-1 -bottom-1 h-1 rounded-full bg-primary" />
+                )}
               </button>
               <button 
                 onClick={() => setActiveWarehouseTab('dismantled')}
-                className={cn("px-4 py-2 rounded-xl text-sm font-black transition-all whitespace-nowrap", activeWarehouseTab === 'dismantled' ? "bg-neutral-900 text-white shadow-lg shadow-neutral-900/20 dark:bg-white dark:text-neutral-900" : "bg-white text-neutral-400 hover:bg-neutral-50 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700")}
+                className="relative flex-shrink-0 px-3 py-1.5 text-[14px] font-black whitespace-nowrap"
               >
-                已分解 ({dismantledItems.length})
+                <span
+                  className={cn(
+                    "transition-colors",
+                    activeWarehouseTab === 'dismantled' ? "text-primary" : "text-neutral-500 dark:text-neutral-400"
+                  )}
+                >
+                  已分解 ({dismantledItems.length})
+                </span>
+                {activeWarehouseTab === 'dismantled' && (
+                  <span className="absolute inset-x-1 -bottom-1 h-1 rounded-full bg-primary" />
+                )}
               </button>
             </div>
 
@@ -1125,42 +1156,58 @@ function ProfileContent() {
                   </div>
                 ) : (
                   <>
-                    {/* Mobile Grid */}
-                    <div className="md:hidden grid grid-cols-2 gap-3">
+                    {/* Mobile List */}
+                    <div className="md:hidden divide-y divide-neutral-100 dark:divide-neutral-800 border-t border-b border-neutral-100 dark:border-neutral-800">
                       {warehouseItems.map((item) => {
                         const isSelected = selectedForDelivery.includes(item.id);
                         return (
-                          <div 
-                            key={item.id} 
+                          <div
+                            key={item.id}
                             onClick={() => toggleDeliverySelection(item.id)}
-                            className={cn("bg-white dark:bg-neutral-900 rounded-2xl border shadow-sm relative overflow-hidden transition-all active:scale-95", isSelected ? "border-accent-emerald ring-2 ring-accent-emerald/20" : "border-neutral-100 dark:border-neutral-800")}
+                            className={cn(
+                              "flex items-center gap-1 pl-3 pr-4 py-2 active:bg-neutral-50 dark:active:bg-neutral-800/70 transition-all",
+                              isSelected && "bg-accent-emerald/5"
+                            )}
                           >
-                            <div className="aspect-square bg-[#28324E] relative">
-                              <Image 
-                                src={item.image || '/images/item.png'} 
-                                alt={item.name} 
-                                fill 
-                                className="object-cover" 
+                            <div className="flex flex-col items-center justify-center w-12 flex-shrink-0">
+                              <span className="px-1.5 py-0.5 bg-accent-red text-white text-[10px] font-black rounded-md uppercase">
+                                {item.grade}
+                              </span>
+                            </div>
+                            <div className="relative w-14 h-14 rounded-xl bg-[#28324E] overflow-hidden flex-shrink-0">
+                              <Image
+                                src={item.image || '/images/item.png'}
+                                alt={item.name}
+                                fill
+                                className="object-cover"
                                 unoptimized
                               />
-                              <div 
-                                className="absolute top-2 right-2 z-10"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleDeliverySelection(item.id);
-                                }}
-                              >
-                                 <div className={cn("w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all bg-white", isSelected ? "border-accent-emerald bg-accent-emerald" : "border-neutral-200")}>
-                                  {isSelected && <CheckCircle2 className="w-3 h-3 text-white" />}
-                                </div>
-                              </div>
-                              <div className="absolute bottom-2 left-2">
-                                <span className="px-2 py-0.5 bg-accent-red text-white text-[10px] font-black rounded-md uppercase">{item.grade}</span>
-                              </div>
                             </div>
-                            <div className="p-3">
-                              <h4 className="text-[13px] font-black text-neutral-900 dark:text-white leading-tight line-clamp-2 min-h-[2.5em]">{item.name}</h4>
-                              <p className="text-[10px] text-neutral-400 font-bold mt-1 truncate">{item.series}</p>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-[13px] font-black text-neutral-900 dark:text-white leading-snug line-clamp-2">
+                                {item.name}
+                              </h4>
+                              <p className="text-[11px] text-neutral-400 font-bold mt-0.5 truncate">
+                                {item.series}
+                              </p>
+                            </div>
+                            <div
+                              className="ml-2"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleDeliverySelection(item.id);
+                              }}
+                            >
+                              <div
+                                className={cn(
+                                  "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all bg-white dark:bg-neutral-900",
+                                  isSelected
+                                    ? "border-accent-emerald bg-accent-emerald"
+                                    : "border-neutral-200 dark:border-neutral-700"
+                                )}
+                              >
+                                {isSelected && <CheckCircle2 className="w-3 h-3 text-white" />}
+                              </div>
                             </div>
                           </div>
                         );
@@ -2686,7 +2733,7 @@ function ProfileContent() {
 
           {/* 2. Mobile Detail View (Only shown on mobile when a tab is active) */}
           <div className={cn("md:hidden col-span-1", !isMobileDetailOpen && "hidden")}>
-            <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-card border border-neutral-100 dark:border-neutral-800 min-h-[500px] overflow-hidden">
+          <div className="bg-white dark:bg-neutral-900 min-h-[500px] overflow-hidden">
               {renderTabContent()}
             </div>
           </div>

@@ -21,6 +21,27 @@ interface JoinedDrawRecord {
   products: { name: string } | null;
 }
 
+const MAJOR_LEVELS = ['SP賞', 'S賞', 'A賞', 'B賞', 'C賞', 'SP', 'S', 'A', 'B', 'C', 'LAST ONE', '最後賞'];
+
+const isMajorPrize = (level: string | null | undefined) => {
+  if (!level) return false;
+  const trimmed = level.trim();
+  if (!trimmed) return false;
+  const upper = trimmed.toUpperCase();
+  if (upper === 'LAST ONE' || trimmed === '最後賞') return true;
+  if (MAJOR_LEVELS.includes(trimmed) || MAJOR_LEVELS.includes(upper)) return true;
+  let base = trimmed;
+  const prizeIndex = base.indexOf('賞');
+  if (prizeIndex !== -1) {
+    base = base.slice(0, prizeIndex);
+  }
+  if (base.includes(' ')) {
+    base = base.split(' ')[0];
+  }
+  const baseUpper = base.toUpperCase();
+  return MAJOR_LEVELS.includes(baseUpper);
+};
+
 export default function WinningMarquee() {
   const [records, setRecords] = useState<WinningRecord[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -51,14 +72,7 @@ export default function WinningMarquee() {
             prize_level: item.prize_level,
             prize_name: item.prize_name || '未知獎項'
           }))
-          .filter((item) => {
-            if (!item.prize_level || !item.prize_name) return false;
-            const raw = item.prize_level;
-            const normalized = raw.replace('賞', '').trim().toUpperCase();
-            if (!normalized) return false;
-            if (normalized === 'LAST ONE' || normalized === '最後' || normalized === 'LO') return true;
-            return ['SS', 'SP', 'S', 'A'].includes(normalized);
-          });
+          .filter((item) => Boolean(item.prize_level && item.prize_name && isMajorPrize(item.prize_level)));
         setRecords(formatted);
       } else if (error) {
         console.error('Error fetching winning records:', error);

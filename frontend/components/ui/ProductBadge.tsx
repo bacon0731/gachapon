@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 import { Flame, Box, Dna, Gift, Star } from 'lucide-react';
 
-export type ProductType = 'ichiban' | 'blindbox' | 'gacha' | 'custom';
+export type ProductType = 'ichiban' | 'blindbox' | 'gacha' | 'card' | 'custom';
 export type BadgeType = ProductType | 'hot' | 'new';
 
 interface ProductBadgeProps {
@@ -28,6 +28,12 @@ export default function ProductBadge({ type, className, icon = false }: ProductB
       text: '轉蛋',
       color: 'bg-orange-500',
       shadow: 'shadow-orange-500/20',
+      icon: Dna,
+    },
+    card: {
+      text: '抽卡',
+      color: 'bg-amber-500',
+      shadow: 'shadow-amber-500/20',
       icon: Dna,
     },
     custom: {

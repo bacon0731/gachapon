@@ -1,7 +1,7 @@
 -- 1. Update Type Constraint to include 'custom'
 ALTER TABLE products DROP CONSTRAINT IF EXISTS products_type_check;
 ALTER TABLE products ADD CONSTRAINT products_type_check 
-CHECK (type IN ('ichiban', 'blindbox', 'gacha', 'custom'));
+CHECK (type IN ('ichiban', 'blindbox', 'gacha', 'card', 'custom'));
 
 -- 2. Create Product Tags (Junction Table)
 CREATE TABLE IF NOT EXISTS product_tags (
@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS product_tags (
 
 -- 3. Enable RLS
 ALTER TABLE product_tags ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Enable all access for all users" ON product_tags;
 
 CREATE POLICY "Enable all access for all users"
 ON product_tags

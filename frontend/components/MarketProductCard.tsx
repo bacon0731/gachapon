@@ -64,49 +64,39 @@ export default function MarketProductCard({
       onClick={onClick}
       className="group block h-full cursor-pointer"
     >
-      <div className="relative h-full flex flex-col bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-800 overflow-hidden hover:shadow-card hover:-translate-y-1 transition-all duration-300">
-        {/* Image Container */}
-        <div className="relative aspect-square overflow-hidden bg-neutral-100 dark:bg-neutral-800 rounded-t-2xl">
+      <div className="relative h-full flex flex-col bg-white dark:bg-neutral-900 rounded-[8px] border border-neutral-100 dark:border-neutral-800 overflow-hidden transition-transform duration-300">
+        <div className="relative aspect-square overflow-hidden bg-neutral-100 dark:bg-neutral-800 rounded-t-[8px]">
           <div className="w-full h-full flex items-center justify-center text-white/20 group-hover:scale-105 transition-transform duration-500 relative">
             <Image 
               src={image || getItemImageForId(id)} 
               alt={name}
               fill
-              className="object-fill"
+              className="object-cover"
               unoptimized
             />
           </div>
-          
-          {/* Status Badges */}
-          <div className="absolute top-2 left-2 right-2 z-10 flex items-start justify-between pointer-events-none">
-            <div className="flex flex-col gap-1.5">
-               {grade && (
-                 <div className="px-2 py-1 rounded-lg bg-black/50 backdrop-blur-md text-white text-[10px] font-black border border-white/10 shadow-sm">
-                   {grade}賞
-                 </div>
-               )}
-            </div>
-            {isUserOwned && (
-              <div className="px-2 py-1 rounded-lg bg-primary/90 backdrop-blur-md text-white text-[10px] font-black border border-white/10 shadow-sm">
-                個人
-              </div>
-            )}
-          </div>
         </div>
 
-        {/* Content */}
-        <div className="flex flex-col flex-1 p-2">
-          {series && (
-             <p className="text-[10px] font-bold text-neutral-400 mb-0.5 line-clamp-1">
-               {series}
-             </p>
-          )}
+        <div className="flex flex-col flex-1 p-2 md:pt-2 md:-mt-0.5">
+          <div className="mb-1 min-h-[2.75rem]">
+            {series && (
+              <p className="text-[11px] font-medium text-neutral-400 mb-0.5 line-clamp-1">
+                {series}
+              </p>
+            )}
+            <h3 className="text-[14px] font-normal text-neutral-900 dark:text-white line-clamp-2 leading-[1.25] group-hover:text-primary transition-colors tracking-tight">
+              {grade && (
+                <span className="inline-flex align-middle mr-1 relative -top-[0.1rem] h-4 px-1 text-[8px] font-medium text-white rounded-[4px] shadow-lg uppercase tracking-wider flex items-center gap-1 backdrop-blur-sm bg-opacity-90 bg-accent-red">
+                  {grade}賞
+                </span>
+              )}
+              <span className="inline">
+                {name}
+              </span>
+            </h3>
+          </div>
           
-          <h3 className="text-base font-black text-neutral-900 dark:text-white line-clamp-2 mb-1 min-h-[3rem] leading-[1.25] group-hover:text-primary transition-colors tracking-tight">
-            {name}
-          </h3>
-          
-          <div className="mt-auto pt-2 border-t border-neutral-50 dark:border-neutral-800">
+          <div className="mt-auto pt-2 border-t border-neutral-100 dark:border-neutral-800">
             <div className="flex items-end justify-between gap-1">
               <div className="flex flex-col">
                 <div className="flex items-center gap-1">
@@ -114,13 +104,11 @@ export default function MarketProductCard({
                     <span className="text-[10px] text-white font-black leading-none">G</span>
                   </div>
                   <div className="flex items-baseline gap-0.5">
-                    <span className="text-[28px] leading-none font-black font-amount text-accent-red tracking-tight">{price.toLocaleString()}</span>
+                    <span className="text-[24px] leading-none font-black font-amount text-[#EE4D2D] tracking-tight">{price.toLocaleString()}</span>
                     <span className="text-[11px] font-black text-neutral-400">/個</span>
                   </div>
                 </div>
               </div>
-
-              
             </div>
           </div>
         </div>

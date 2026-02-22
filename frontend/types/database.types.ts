@@ -126,7 +126,7 @@ export interface Database {
           txid_hash: string | null
           seed: string | null
           ended_at: string | null
-          type: 'ichiban' | 'blindbox' | 'gacha' | 'custom'
+          type: 'ichiban' | 'blindbox' | 'gacha' | 'card' | 'custom'
         }
         Insert: {
           id?: number
@@ -147,7 +147,7 @@ export interface Database {
           txid_hash?: string | null
           seed?: string | null
           ended_at?: string | null
-          type?: 'ichiban' | 'blindbox' | 'gacha' | 'custom'
+          type?: 'ichiban' | 'blindbox' | 'gacha' | 'card' | 'custom'
         }
         Update: {
           id?: number
@@ -168,7 +168,7 @@ export interface Database {
           txid_hash?: string | null
           seed?: string | null
           ended_at?: string | null
-          type?: 'ichiban' | 'blindbox' | 'gacha' | 'custom'
+          type?: 'ichiban' | 'blindbox' | 'gacha' | 'card' | 'custom'
         }
       }
       product_tags: {

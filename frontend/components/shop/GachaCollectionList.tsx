@@ -134,7 +134,7 @@ export function GachaCollectionList({ productId, prizes, refreshKey }: GachaColl
         {/* Not Logged In Overlay */}
           {!user && (
             <div className="absolute inset-0 z-20 backdrop-blur-[2px] bg-white/60 dark:bg-neutral-950/60 flex items-center justify-center">
-              <Link href={`/login?redirect=/shop/${productId}`}>
+              <Link href={`/login?redirect=/item/${productId}`}>
                 <Button size="lg" className="shadow-xl">
                   登入查看收集狀況
                 </Button>

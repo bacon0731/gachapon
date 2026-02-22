@@ -442,6 +442,7 @@ export default function NewProductPage() {
                   <option value="ichiban">一番賞</option>
                   <option value="blindbox">盒玩 (盲盒)</option>
                   <option value="gacha">轉蛋</option>
+                  <option value="card">抽卡</option>
                   <option value="custom">自製賞</option>
                 </select>
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">

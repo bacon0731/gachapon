@@ -94,9 +94,11 @@ export default function Home() {
     | 'gacha'
     | 'card'
     | 'custom'
-    | 'limited'
+    | 'horseYearSale'
     | 'valentine'
-    | 'afterNewYear';
+    | 'yearEndLimited'
+    | 'animeZone'
+    | 'digital3C';
 
   const [activePrimaryTab, setActivePrimaryTab] = useState<PrimaryTabId>('all');
   const [activeSecondaryTab, setActiveSecondaryTab] = useState<string>('all');
@@ -112,10 +114,20 @@ export default function Home() {
     { id: 'gacha', label: '轉蛋' },
     { id: 'card', label: '抽卡' },
     { id: 'custom', label: '自製賞' },
-    { id: 'limited', label: '限時優惠' },
+    { id: 'horseYearSale', label: '馬年大促銷' },
     { id: 'valentine', label: '情人節限定' },
-    { id: 'afterNewYear', label: '年後特價' },
+    { id: 'yearEndLimited', label: '年末出清【限時】' },
+    { id: 'animeZone', label: '人氣動漫專區' },
+    { id: 'digital3C', label: '3C 數位大賞' },
   ];
+
+  const menuCategoryMap: Partial<Record<PrimaryTabId, string>> = {
+    horseYearSale: '馬年大促銷',
+    valentine: '情人節限定',
+    yearEndLimited: '年末出清【限時】',
+    animeZone: '人氣動漫專區',
+    digital3C: '3C 數位大賞',
+  };
 
   const secondaryTabsByPrimary: Record<PrimaryTabId, { id: string; label: string }[]> = {
     all: [
@@ -173,29 +185,30 @@ export default function Home() {
       { id: 'kw-fan', label: '同人作品' },
       { id: 'kw-event', label: '活動合作' },
     ],
-    limited: [
+    horseYearSale: [
       { id: 'all', label: '全部' },
       { id: 'hot', label: '熱門' },
       { id: 'new', label: '最新' },
-      { id: 'kw-today', label: '今日限定' },
-      { id: 'kw-weekend', label: '週末優惠' },
-      { id: 'kw-flash', label: '閃購時段' },
     ],
     valentine: [
       { id: 'all', label: '全部' },
       { id: 'hot', label: '熱門' },
       { id: 'new', label: '最新' },
-      { id: 'kw-couple', label: '情侶組合' },
-      { id: 'kw-choco', label: '巧克力主題' },
-      { id: 'kw-pink', label: '粉色系列' },
     ],
-    afterNewYear: [
+    yearEndLimited: [
       { id: 'all', label: '全部' },
       { id: 'hot', label: '熱門' },
       { id: 'new', label: '最新' },
-      { id: 'kw-clearing', label: '清倉出清' },
-      { id: 'kw-bonus', label: '加碼贈品' },
-      { id: 'kw-return', label: '開工回饋' },
+    ],
+    animeZone: [
+      { id: 'all', label: '全部' },
+      { id: 'hot', label: '熱門' },
+      { id: 'new', label: '最新' },
+    ],
+    digital3C: [
+      { id: 'all', label: '全部' },
+      { id: 'hot', label: '熱門' },
+      { id: 'new', label: '最新' },
     ],
   };
 
@@ -210,8 +223,9 @@ export default function Home() {
           return true;
         }
 
-        if (activePrimaryTab === 'limited' || activePrimaryTab === 'valentine' || activePrimaryTab === 'afterNewYear') {
-          return true;
+        const menuName = menuCategoryMap[activePrimaryTab];
+        if (menuName) {
+          return product.category === menuName;
         }
 
         if (activePrimaryTab === 'card') {
@@ -476,7 +490,7 @@ export default function Home() {
                       >
                         <span className="truncate">{tab.label}</span>
                       </button>
-                      {(tab.id === 'custom' || tab.id === 'afterNewYear') && (
+                      {(tab.id === 'custom' || tab.id === 'digital3C') && (
                         <div className="mt-2 mb-1 border-t border-dashed border-neutral-200 dark:border-neutral-700" />
                       )}
                     </div>
@@ -485,9 +499,6 @@ export default function Home() {
 
                 <div>
                   <div className="flex items-center gap-3 mb-3 lg:mb-4 px-1">
-                    <div className="w-4 h-4 flex items-center justify-center rounded-full bg-accent-yellow/20 text-accent-yellow">
-                      <span className="text-xs font-bold font-amount">$</span>
-                    </div>
                     <h2 className="text-[12px] lg:text-sm font-black text-neutral-900 dark:text-white uppercase tracking-widest">
                       價格區間
                     </h2>
@@ -498,7 +509,7 @@ export default function Home() {
                         type="text"
                         value={priceMin}
                         onChange={(e) => handlePriceChange(e.target.value, setPriceMin)}
-                        placeholder="1"
+                        placeholder="最小"
                         className="w-full bg-neutral-100 dark:bg-neutral-800 rounded-xl px-3 py-2 text-center font-black font-amount focus:outline-none focus:ring-2 focus:ring-primary/20"
                       />
                       <span className="font-bold">-</span>
@@ -506,7 +517,7 @@ export default function Home() {
                         type="text"
                         value={priceMax}
                         onChange={(e) => handlePriceChange(e.target.value, setPriceMax)}
-                        placeholder="999,999"
+                        placeholder="最大"
                         className="w-full bg-neutral-100 dark:bg-neutral-800 rounded-xl px-3 py-2 text-center font-black font-amount focus:outline-none focus:ring-2 focus:ring-primary/20"
                       />
                     </div>

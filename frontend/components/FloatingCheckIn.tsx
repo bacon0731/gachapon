@@ -21,7 +21,7 @@ function FloatingCheckInInner() {
   const activeTab = searchParams.get('tab');
   const { showAlert } = useAlert();
 
-  const isSecondaryPage = (pathname !== '/' && pathname !== '/shop' && pathname !== '/news' && pathname !== '/profile' && pathname !== '/check-in') || (pathname === '/profile' && !!activeTab);
+  const isSecondaryPage = (pathname !== '/' && pathname !== '/news' && pathname !== '/profile' && pathname !== '/check-in') || (pathname === '/profile' && !!activeTab);
 
   if (pathname === '/check-in' || (isSecondaryPage)) return null;
 

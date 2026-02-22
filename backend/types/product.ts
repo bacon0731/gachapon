@@ -13,7 +13,7 @@ export interface Product {
   name: string
   category: string
   categoryId?: string // FK to categories table
-  type?: 'ichiban' | 'blindbox' | 'gacha' | 'custom'
+  type?: 'ichiban' | 'blindbox' | 'gacha' | 'card' | 'custom'
   categories?: {
     name: string
   }

@@ -1,56 +1,22 @@
 'use client';
 
-import Image from 'next/image';
-import { useRouter } from 'next/navigation';
-import { TicketSelectionFlow } from '@/components/shop/TicketSelectionFlow';
-import { useMediaQuery } from '@/hooks/use-media-query';
-import { cn } from '@/lib/utils';
+import { useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 
-export default function SelectTicketPage() {
-  const isDesktop = useMediaQuery('(min-width: 768px)');
+export default function LegacyShopSelectRedirectPage() {
+  const params = useParams();
   const router = useRouter();
 
+  useEffect(() => {
+    if (!params?.id) return;
+    router.replace(`/item/${params.id}/select`);
+  }, [params, router]);
+
   return (
-    <div className="min-h-screen relative bg-neutral-900 flex items-center justify-center md:fixed md:inset-0 md:z-[100]">
-      {/* Page Background (Desktop only) */}
-      {isDesktop && (
-        <div className="absolute inset-0 z-0 overflow-hidden">
-          <Image 
-            src="/images/gacha_bg.png" 
-            alt="" 
-            fill
-            className="object-cover filter brightness-[0.85] blur-[3px] scale-105"
-            unoptimized
-          />
-          <div className="absolute inset-0 bg-neutral-900/50" />
-        </div>
-      )}
-
-      {/* Content */}
-      <div className={cn(
-        "relative z-10 w-full",
-        isDesktop ? "px-4 flex items-center justify-center h-screen" : "min-h-screen"
-      )}>
-        {/* Modal Backdrop for Desktop */}
-        {isDesktop && (
-          <div 
-            className="absolute inset-0 bg-black/50" 
-            onClick={() => router.back()}
-          />
-        )}
-
-        {/* Ticket Flow Component */}
-        <div
-          className={cn(
-            "transition-all duration-300",
-            isDesktop ? "relative z-20 w-full max-w-[640px]" : "w-full min-h-screen"
-          )}
-        >
-          <TicketSelectionFlow
-            isModal={isDesktop}
-          />
-        </div>
-      </div>
+    <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-950">
+      <p className="text-sm font-black text-neutral-400 uppercase tracking-widest">
+        正在為您重新導向至選號頁面...
+      </p>
     </div>
   );
 }

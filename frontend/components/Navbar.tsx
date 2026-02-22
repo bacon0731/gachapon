@@ -61,24 +61,24 @@ function NavbarInner() {
   const activeTab = searchParams.get('tab');
   
   // Define page types
-  const isHomePage = pathname === '/' || pathname === '/shop';
+  const isHomePage = pathname === '/';
   const isMainTab =
     pathname === '/' ||
-    pathname === '/shop' ||
     pathname === '/market' ||
     pathname === '/news' ||
     pathname === '/ranking' ||
     pathname === '/check-in' ||
     (pathname === '/profile' && !activeTab);
   const isInnerPage = !isHomePage && !isMainTab;
-  const isShopProductDetailPage = /^\/shop\/\d+$/.test(pathname);
+  const isItemDetailPage = /^\/item\/\d+$/.test(pathname);
   const isBlindboxDetailPage = /^\/blindbox\/\d+$/.test(pathname);
-  const isProductDetailPage = isShopProductDetailPage || isBlindboxDetailPage;
+  const isGachaDetailPage = /^\/gacha\/\d+$/.test(pathname);
+  const isCardDetailPage = /^\/card\/\d+$/.test(pathname);
+  const isProductDetailPage = isItemDetailPage || isBlindboxDetailPage || isGachaDetailPage || isCardDetailPage;
   const isNewsDetailPage = /^\/news\/[^/]+$/.test(pathname);
 
   const showMobileThemeToggle =
     pathname === '/' ||
-    pathname === '/shop' ||
     pathname === '/market' ||
     pathname === '/news' ||
     pathname === '/ranking';
@@ -87,7 +87,7 @@ function NavbarInner() {
 
   useEffect(() => {
     if (isProductDetailPage) {
-      const match = pathname.match(/^(?:\/shop|\/blindbox)\/(\d+)$/);
+      const match = pathname.match(/^\/(?:item|blindbox|gacha|card)\/(\d+)$/);
       if (match) {
         const productId = match[1];
         
@@ -149,7 +149,7 @@ function NavbarInner() {
       return;
     }
     
-    const match = pathname.match(/^(?:\/shop|\/blindbox)\/(\d+)$/);
+    const match = pathname.match(/^\/(?:item|blindbox|gacha|card)\/(\d+)$/);
     if (!match) return;
     const productId = match[1];
 
@@ -164,12 +164,12 @@ function NavbarInner() {
   
   // Control visibility based on page type
   const showBackButton = isInnerPage;
-  const showTitle = !isHomePage && pathname !== '/shop';
-  const showLogo = isHomePage || pathname === '/shop';
+  const showTitle = !isHomePage;
+  const showLogo = isHomePage;
 
   // 獲取頁面名稱
   const getPageTitle = () => {
-    if (pathname === '/' || pathname === '/shop') return '首頁';
+    if (pathname === '/') return '首頁';
     if (pathname === '/market') return '交易所';
     if (pathname === '/unboxing') return '開箱';
     if (pathname === '/ranking') return '排行榜';
@@ -177,7 +177,7 @@ function NavbarInner() {
     if (pathname === '/check-in') return '每日簽到';
     if (pathname.endsWith('/select')) return '選擇籤號';
     if (pathname.endsWith('/confirm')) return '確認購買';
-    if (pathname.startsWith('/shop/')) return '商品詳情';
+    if (pathname.startsWith('/item/') || pathname.startsWith('/blindbox/') || pathname.startsWith('/gacha/') || pathname.startsWith('/card/')) return '商品詳情';
     if (pathname === '/topup') return '儲值代幣';
     if (pathname === '/faq') return '常見問題';
     if (pathname === '/about') return '關於我們';
@@ -375,8 +375,8 @@ function NavbarInner() {
 
   // Debounce search effect
   useEffect(() => {
-    // Only trigger on shop or market pages
-    if (pathname !== '/shop' && pathname !== '/market') return;
+    // Only trigger on market page
+    if (pathname !== '/market') return;
 
     const timer = setTimeout(() => {
       const trimmedQ = query.trim();
@@ -386,13 +386,10 @@ function NavbarInner() {
       if (trimmedQ === currentSearch) return;
 
       if (trimmedQ) {
-        const url = pathname === '/market' 
-          ? `/market?search=${encodeURIComponent(trimmedQ)}`
-          : `/shop?search=${encodeURIComponent(trimmedQ)}`;
+        const url = `/market?search=${encodeURIComponent(trimmedQ)}`;
         router.replace(url);
       } else {
-        const url = pathname === '/market' ? '/market' : '/shop';
-        router.replace(url);
+        router.replace('/market');
       }
     }, 500);
 
@@ -473,11 +470,11 @@ function NavbarInner() {
                     <button 
                       onClick={() => {
                         if (['/login', '/register', '/forgot-password'].includes(pathname)) {
-                          router.push('/shop');
+                          router.push('/');
                         } else if (pathname === '/profile' && activeTab) {
                           router.push('/profile');
                         } else if (isProductDetailPage) {
-                          router.push('/shop');
+                          router.push('/');
                         } else {
                           router.back();
                         }
@@ -514,13 +511,13 @@ function NavbarInner() {
                   href="/"
                   className={cn(
                     "relative flex items-center h-9 text-[15px] lg:text-[16px] font-black transition-colors",
-                    pathname === '/' || pathname === '/shop'
+                    pathname === '/'
                       ? "text-primary"
                       : "text-neutral-600 dark:text-neutral-400 hover:text-primary"
                   )}
                 >
                   <span>回首頁</span>
-                  {(pathname === '/' || pathname === '/shop') && (
+                  {pathname === '/' && (
                     <span className="absolute inset-x-0 -bottom-1 h-1 rounded-full bg-primary" />
                   )}
                 </Link>

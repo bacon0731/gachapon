@@ -66,7 +66,14 @@ export default function ProductCard(props: ProductCardProps) {
     type,
     status,
   } = props;
-  const href = type === 'blindbox' ? `/blindbox/${id}` : `/shop/${id}`;
+  const href =
+    type === 'blindbox'
+      ? `/blindbox/${id}`
+      : type === 'gacha'
+        ? `/gacha/${id}`
+        : type === 'card'
+          ? `/card/${id}`
+          : `/item/${id}`;
   const fallbackImage = getItemImageForId(id);
   const displayImage = image || fallbackImage;
   const drawnCount = typeof total === 'number' && typeof remaining === 'number' && total > 0

@@ -15,7 +15,7 @@ export function EmptyState({
   title = '暫無資料',
   description = '目前沒有任何資料顯示',
   actionLabel = '去逛逛',
-  actionLink = '/shop',
+  actionLink = '/',
   onAction,
 }: EmptyStateProps) {
   return (

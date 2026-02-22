@@ -52,7 +52,7 @@ function MobileTabbarInner() {
   const activeTab = searchParams.get('tab');
   const { showAlert } = useAlert();
 
-  const mainTabPaths = ['/', '/shop', '/news', '/market', '/profile', '/check-in'];
+  const mainTabPaths = ['/', '/news', '/market', '/profile', '/check-in'];
   const isMainTabPath = mainTabPaths.includes(pathname);
   const isSecondaryPage = !isMainTabPath || (pathname === '/profile' && !!activeTab);
 

@@ -16,7 +16,7 @@ SET session_replication_role = 'origin';
 
 -- 4. Update product type constraint to include 'custom'
 ALTER TABLE products DROP CONSTRAINT IF EXISTS products_type_check;
-ALTER TABLE products ADD CONSTRAINT products_type_check CHECK (type IN ('ichiban', 'blindbox', 'gacha', 'custom'));
+ALTER TABLE products ADD CONSTRAINT products_type_check CHECK (type IN ('ichiban', 'blindbox', 'gacha', 'card', 'custom'));
 
 -- 4.1 Ensure columns for公平性驗證存在
 ALTER TABLE products ADD COLUMN IF NOT EXISTS txid_hash TEXT;
@@ -375,9 +375,9 @@ SELECT id, '常規', '伊布', '/images/item/10016.jpg', 12, 11, 20.0 FROM produ
 -- Banners
 -- ==========================================
 INSERT INTO banners (name, image_url, link_url, sort_order, is_active) VALUES
-('新春特輯：海賊王一番賞', '/images/banner/1bankuji-brand_banner_pink_0321.jpg', '/shop', 1, true),
-('自製賞大放送：iPhone 16等你拿', '/images/banner/7DB_banner_1002-429_0614.jpg', '/shop', 2, true),
-('盲盒新品上市', '/images/banner/kimetsu_kuji.jpg', '/shop', 3, true);
+('新春特輯：海賊王一番賞', '/images/banner/1bankuji-brand_banner_pink_0321.jpg', '/', 1, true),
+('自製賞大放送：iPhone 16等你拿', '/images/banner/7DB_banner_1002-429_0614.jpg', '/', 2, true),
+('盲盒新品上市', '/images/banner/kimetsu_kuji.jpg', '/', 3, true);
 
 -- ==========================================
 -- Generate Seed & Seed Hash for active products (dev / demo only)

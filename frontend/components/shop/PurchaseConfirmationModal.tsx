@@ -79,7 +79,7 @@ export function PurchaseConfirmationModal({
         message: '請先登入會員',
         type: 'info',
         confirmText: '前往登入',
-        onConfirm: () => router.push(`/auth/login?redirect=/shop/${product.id}`)
+        onConfirm: () => router.push(`/auth/login?redirect=/item/${product.id}`)
       });
       return;
     }

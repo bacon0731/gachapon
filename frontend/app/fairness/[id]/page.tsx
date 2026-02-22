@@ -339,7 +339,7 @@ async function verifyDraw(seed: string, nonce: number, expectedHash: string) {
             <div className="bg-white dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 rounded-xl p-3 sm:p-4 space-y-3 sm:space-y-4">
               <div className="flex items-center gap-3 sm:gap-4">
                 <Link
-                  href={product ? `/shop/${product.id}` : '/'}
+                  href={product ? `/item/${product.id}` : '/'}
                   className="hidden sm:flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-200 transition-colors"
                 >
                   <ChevronLeft className="w-4 h-4" />

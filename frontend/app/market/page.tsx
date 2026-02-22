@@ -8,10 +8,8 @@ import {
   ShoppingCart,
   Info,
   X,
-  ChevronDown,
   Search,
   History,
-  SlidersHorizontal,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -89,10 +87,7 @@ export default function MarketplacePage() {
     | 'blindbox'
     | 'gacha'
     | 'card'
-    | 'custom'
-    | 'limited'
-    | 'valentine'
-    | 'afterNewYear';
+    | 'custom';
 
   const [activePrimaryTab, setActivePrimaryTab] = useState<PrimaryTabId>('all');
   const [activeSecondaryTab, setActiveSecondaryTab] = useState<string>('all');
@@ -105,9 +100,6 @@ export default function MarketplacePage() {
     { id: 'gacha', label: '轉蛋' },
     { id: 'card', label: '抽卡' },
     { id: 'custom', label: '自製賞' },
-    { id: 'limited', label: '限時優惠' },
-    { id: 'valentine', label: '情人節限定' },
-    { id: 'afterNewYear', label: '年後特價' },
   ];
 
   const secondaryTabsByPrimary: Record<PrimaryTabId, { id: string; label: string }[]> = {
@@ -165,30 +157,6 @@ export default function MarketplacePage() {
       { id: 'kw-lab', label: '實驗款' },
       { id: 'kw-fan', label: '同人作品' },
       { id: 'kw-event', label: '活動合作' },
-    ],
-    limited: [
-      { id: 'all', label: '全部' },
-      { id: 'hot', label: '熱門' },
-      { id: 'new', label: '最新' },
-      { id: 'kw-today', label: '今日限定' },
-      { id: 'kw-weekend', label: '週末優惠' },
-      { id: 'kw-flash', label: '閃購時段' },
-    ],
-    valentine: [
-      { id: 'all', label: '全部' },
-      { id: 'hot', label: '熱門' },
-      { id: 'new', label: '最新' },
-      { id: 'kw-couple', label: '情侶組合' },
-      { id: 'kw-choco', label: '巧克力主題' },
-      { id: 'kw-pink', label: '粉色系列' },
-    ],
-    afterNewYear: [
-      { id: 'all', label: '全部' },
-      { id: 'hot', label: '熱門' },
-      { id: 'new', label: '最新' },
-      { id: 'kw-clearing', label: '清倉出清' },
-      { id: 'kw-bonus', label: '加碼贈品' },
-      { id: 'kw-return', label: '開工回饋' },
     ],
   };
 
@@ -384,19 +352,12 @@ export default function MarketplacePage() {
   };
 
   const productTypes = [
-    { id: 'all', name: '全部獎項' },
+    { id: 'all', name: '精選' },
     { id: 'ichiban', name: '一番賞' },
-    { id: 'blindbox', name: '盒玩' },
+    { id: 'blindbox', name: '盲盒' },
     { id: 'gacha', name: '轉蛋' },
+    { id: 'card', name: '抽卡' },
     { id: 'custom', name: '自製賞' },
-  ];
-
-  const levels = [
-    { id: 'SP', name: 'SP賞' },
-    { id: 'A', name: 'A賞' },
-    { id: 'B', name: 'B賞' },
-    { id: 'C', name: 'C賞' },
-    { id: 'Last One', name: 'Last One' },
   ];
 
   useEffect(() => {
@@ -497,7 +458,7 @@ export default function MarketplacePage() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 pb-20 transition-colors">
+    <div className="min-h-screen bg-[#F5F5F5] dark:bg-neutral-950 pb-24 transition-colors">
       <div className="sticky top-0 z-40 bg-white dark:bg-neutral-900 border-b border-neutral-100 dark:border-neutral-800 md:hidden">
         <div className="max-w-7xl mx-auto px-2 relative">
           <div className="flex items-center gap-3 h-[57px]">
@@ -593,62 +554,114 @@ export default function MarketplacePage() {
 
       <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 md:pt-6 pb-10">
         {!trimmedQuery && (
-        <div className="md:hidden mb-3 space-y-2">
-          <div className="flex items-center gap-2 overflow-x-auto overscroll-x-contain touch-pan-x scrollbar-hide pb-1 border-b border-neutral-100 dark:border-neutral-800">
-            {primaryTabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActivePrimaryTab(tab.id)}
-                className="relative flex-shrink-0 px-3 py-1.5 text-[15px] font-black whitespace-nowrap"
-              >
-                <span
-                  className={cn(
-                    "transition-colors",
-                    activePrimaryTab === tab.id ? "text-primary" : "text-neutral-500"
-                  )}
-                >
-                  {tab.label}
-                </span>
-                {activePrimaryTab === tab.id && (
-                  <span className="absolute inset-x-1 -bottom-1 h-1 rounded-full bg-primary" />
-                )}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-1.5 pb-1">
-            <div className="flex-1 overflow-x-auto overscroll-x-contain touch-pan-x scrollbar-hide">
-              <div className="flex items-center gap-1.5">
-                {secondaryTabsByPrimary[activePrimaryTab].map((tab) => (
+          <div className="md:hidden sticky top-[57px] z-40 bg-white dark:bg-neutral-900 border-b border-neutral-100 dark:border-neutral-800 -mx-2">
+            <div className="max-w-7xl mx-auto px-2 py-2 space-y-2">
+              <div className="flex items-center gap-2 overflow-x-auto overscroll-x-contain touch-pan-x scrollbar-hide pb-1 border-b border-neutral-100 dark:border-neutral-800">
+                {primaryTabs.map((tab) => (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveSecondaryTab(tab.id)}
-                    className={cn(
-                      "px-3 py-1 rounded-full text-[12px] font-black whitespace-nowrap transition-colors",
-                      activeSecondaryTab === tab.id
-                        ? "bg-primary text-white"
-                        : "bg-neutral-100 text-neutral-600"
-                    )}
+                    onClick={() => {
+                      setActivePrimaryTab(tab.id);
+                      setActiveType(tab.id);
+                    }}
+                    className="relative flex-shrink-0 px-3 py-1.5 text-[15px] font-black whitespace-nowrap"
                   >
-                    {tab.label}
+                    <span
+                      className={cn(
+                        "transition-colors",
+                        activePrimaryTab === tab.id ? "text-primary" : "text-neutral-500"
+                      )}
+                    >
+                      {tab.label}
+                    </span>
+                    {activePrimaryTab === tab.id && (
+                      <span className="absolute inset-x-1 -bottom-1 h-1 rounded-full bg-primary" />
+                    )}
                   </button>
                 ))}
               </div>
-            </div>
-            <div className="relative shrink-0">
-              <button
-                type="button"
-                onClick={() => setIsSortOpen((prev) => !prev)}
-                className={cn(
-                  "flex items-center justify-center w-8 h-8 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white/95 dark:bg-neutral-900 text-neutral-500 dark:text-neutral-400 active:scale-95 transition-all",
-                  isSortOpen && "border-primary bg-primary/5 text-primary"
-                )}
-              >
-                <SlidersHorizontal className="w-4 h-4 stroke-[2.25]" />
-              </button>
+
+              <div className="flex items-center gap-1.5 pb-1">
+                <div className="flex-1 overflow-x-auto overscroll-x-contain touch-pan-x scrollbar-hide">
+                  <div className="flex items-center gap-1.5">
+                    {secondaryTabsByPrimary[activePrimaryTab].map((tab) => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveSecondaryTab(tab.id)}
+                        className={cn(
+                          "px-3 py-1 rounded-full text-[12px] font-black whitespace-nowrap transition-colors",
+                          activeSecondaryTab === tab.id
+                            ? "bg-primary text-white"
+                            : "bg-neutral-100 text-neutral-600"
+                        )}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="relative flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setIsSortOpen((prev) => !prev)}
+                    className={cn(
+                      "ml-1 mr-1 p-1.5 rounded-full active:scale-95 transition-all",
+                      !isSortOpen
+                        ? "text-neutral-500 hover:text-primary hover:bg-primary/5"
+                        : "text-primary bg-primary/5"
+                    )}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      className="w-4 h-4"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M4 4h16" />
+                      <path d="M6 12h12" />
+                      <path d="M10 20h4" />
+                    </svg>
+                  </button>
+                  {isSortOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-30"
+                        onClick={() => setIsSortOpen(false)}
+                      />
+                      <div className="absolute right-0 mt-2 w-44 bg-white dark:bg-neutral-900 rounded-lg shadow-modal border border-neutral-100 dark:border-neutral-800 py-2 z-40">
+                        {[
+                          { id: 'newest' as const, label: '最新上架' },
+                          { id: 'price_asc' as const, label: '價格：低到高' },
+                          { id: 'price_desc' as const, label: '價格：高到低' },
+                        ].map((opt) => (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => {
+                              setSortBy(opt.id);
+                              setIsSortOpen(false);
+                            }}
+                            className={cn(
+                              "w-full text-left px-4 py-2.5 text-[13px] font-black transition-colors",
+                              sortBy === opt.id
+                                ? "bg-primary/5 text-primary"
+                                : "text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white"
+                            )}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
         )}
         {trimmedQuery && (
           <div className="md:hidden flex items-baseline justify-between mb-2 px-1">
@@ -660,7 +673,52 @@ export default function MarketplacePage() {
             </span>
           </div>
         )}
-        <div className="flex flex-col md:flex-row gap-4 lg:gap-6 items-start">
+
+        {/* Mobile Product Grid - align spacing與首頁一致：外層px-2、列表自己不再加一層px-2 */}
+        <section className="md:hidden px-0 pt-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-4">
+            {isLoading ? (
+              Array.from({ length: 10 }).map((_, index) => (
+                <div key={index} className="h-[280px]">
+                  <ProductCardSkeleton />
+                </div>
+              ))
+            ) : loadError ? (
+              <div className="col-span-full">
+                <EmptyState 
+                  title="無法載入市集資料" 
+                  description={loadError}
+                  actionLabel="重試"
+                  onAction={() => fetchListings()}
+                />
+              </div>
+            ) : filteredListings.length > 0 ? (
+              filteredListings.map((item) => (
+                <MarketProductCard 
+                  key={item.id} 
+                  id={item.id}
+                  name={item.product_prizes.name}
+                  image={item.product_prizes.image_url}
+                  price={item.price}
+                  grade={item.product_prizes.level}
+                  series={item.products.name}
+                  productId={item.products.id}
+                  isUserOwned={user?.id === item.seller_id}
+                  onClick={() => setSelectedListing(item)}
+                />
+              ))
+            ) : (
+              <div className="col-span-full">
+                <EmptyState 
+                  title="找不到獎項" 
+                  description="試試看調整篩選條件" 
+                />
+              </div>
+            )}
+          </div>
+        </section>
+
+        <div className="hidden md:flex md:flex-row gap-4 lg:gap-6 items-start">
           {/* Sidebar Filters (Desktop) */}
           <aside className="hidden md:block w-60 flex-shrink-0 sticky top-16">
             <div className="mb-4">
@@ -677,54 +735,29 @@ export default function MarketplacePage() {
             </div>
 
             <div className="bg-white dark:bg-neutral-900 rounded-2xl p-3 shadow-card border border-neutral-100 dark:border-neutral-800 transition-colors space-y-6">
-              {/* Product Type Filter */}
               <div>
-                <div className="space-y-1">
+                <div className="space-y-1 lg:space-y-1">
                   {productTypes.map((type) => (
-                    <button
-                      key={type.id}
-                      onClick={() => setActiveType(type.id)}
-                      className={cn(
-                        "w-full text-left px-2.5 lg:px-3 py-2 lg:py-2.5 rounded-xl text-[13px] lg:text-sm font-black transition-all flex items-center justify-between group",
-                        activeType === type.id
-                          ? "bg-primary text-white shadow-lg shadow-primary/20"
-                          : "text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white"
+                    <div key={type.id}>
+                      <button
+                        onClick={() => setActiveType(type.id)}
+                        className={cn(
+                          "w-full text-left px-2.5 lg:px-3 py-2 lg:py-2.5 rounded-xl text-[13px] lg:text-sm font-black transition-all flex items-center justify-between group",
+                          activeType === type.id
+                            ? "bg-primary text-white shadow-lg shadow-primary/20"
+                            : "text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white"
+                        )}
+                      >
+                        <span className="truncate">{type.name}</span>
+                      </button>
+                      {type.id === 'custom' && (
+                        <div className="mt-2 mb-1 border-t border-dashed border-neutral-200 dark:border-neutral-700" />
                       )}
-                    >
-                      <span className="truncate">{type.name}</span>
-                      <ChevronDown className={cn(
-                        "w-3.5 h-3.5 lg:w-4 h-4 transition-transform -rotate-90 shrink-0",
-                        activeType === type.id ? "text-white/50" : "text-neutral-300 group-hover:text-neutral-400"
-                      )} />
-                    </button>
+                    </div>
                   ))}
                 </div>
               </div>
 
-              {/* Grade Filter */}
-              <div>
-                <div className="flex items-center gap-3 mb-3 lg:mb-4 px-1">
-                  <h2 className="text-[12px] lg:text-sm font-black text-neutral-900 dark:text-white uppercase tracking-widest">賞別篩選</h2>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {levels.map((level) => (
-                    <button
-                      key={level.id}
-                      onClick={() => setFilterLevel(filterLevel === level.id ? null : level.id)}
-                      className={cn(
-                        "px-2.5 py-1.5 rounded-lg text-xs font-black border transition-all",
-                        filterLevel === level.id
-                          ? "bg-accent-red text-white border-accent-red shadow-md shadow-accent-red/20"
-                          : "bg-white dark:bg-neutral-800 border-neutral-100 dark:border-neutral-700 text-neutral-500 hover:bg-neutral-50"
-                      )}
-                    >
-                      {level.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Price Range */}
               <div>
                 <div className="flex items-center gap-3 mb-3 lg:mb-4 px-1">
                   <h2 className="text-[12px] lg:text-sm font-black text-neutral-900 dark:text-white uppercase tracking-widest">價格區間</h2>
@@ -736,7 +769,7 @@ export default function MarketplacePage() {
                       value={priceMin}
                       onChange={(e) => handlePriceChange(e.target.value, setPriceMin)}
                       placeholder="最小" 
-                      className="w-full bg-neutral-100 dark:bg-neutral-800 rounded-xl px-2.5 py-2 text-center font-bold font-amount focus:outline-none focus:ring-2 focus:ring-primary/20" 
+                      className="w-full bg-neutral-100 dark:bg-neutral-800 rounded-xl px-3 py-2 text-center font-black font-amount focus:outline-none focus:ring-2 focus:ring-primary/20" 
                     />
                     <span className="font-bold">-</span>
                     <input 
@@ -744,7 +777,7 @@ export default function MarketplacePage() {
                       value={priceMax}
                       onChange={(e) => handlePriceChange(e.target.value, setPriceMax)}
                       placeholder="最大" 
-                      className="w-full bg-neutral-100 dark:bg-neutral-800 rounded-xl px-2.5 py-2 text-center font-bold font-amount focus:outline-none focus:ring-2 focus:ring-primary/20" 
+                      className="w-full bg-neutral-100 dark:bg-neutral-800 rounded-xl px-3 py-2 text-center font-black font-amount focus:outline-none focus:ring-2 focus:ring-primary/20" 
                     />
                   </div>
                   <button className="w-full py-3 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-xs font-black uppercase tracking-widest hover:bg-primary dark:hover:bg-primary hover:text-white dark:hover:text-white transition-colors">
@@ -837,13 +870,15 @@ export default function MarketplacePage() {
               </div>
             </div>
             {isLoading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-4">
-                {Array.from({ length: 10 }).map((_, index) => (
-                  <div key={index} className="h-[280px]">
-                    <ProductCardSkeleton />
-                  </div>
-                ))}
-              </div>
+              <section className="px-2 pt-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-4">
+                  {Array.from({ length: 10 }).map((_, index) => (
+                    <div key={index} className="h-[280px]">
+                      <ProductCardSkeleton />
+                    </div>
+                  ))}
+                </div>
+              </section>
             ) : loadError ? (
               <EmptyState 
                 title="無法載入市集資料" 
@@ -852,22 +887,24 @@ export default function MarketplacePage() {
                 onAction={() => fetchListings()}
               />
             ) : filteredListings.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-4">
-                {filteredListings.map((item) => (
-                  <MarketProductCard 
-                    key={item.id} 
-                    id={item.id}
-                    name={item.product_prizes.name}
-                    image={item.product_prizes.image_url}
-                    price={item.price}
-                    grade={item.product_prizes.level}
-                    series={item.products.name}
-                    productId={item.products.id}
-                    isUserOwned={user?.id === item.seller_id}
-                    onClick={() => setSelectedListing(item)}
-                  />
-        ))}
-              </div>
+              <section className="px-2 pt-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-4">
+                  {filteredListings.map((item) => (
+                    <MarketProductCard 
+                      key={item.id} 
+                      id={item.id}
+                      name={item.product_prizes.name}
+                      image={item.product_prizes.image_url}
+                      price={item.price}
+                      grade={item.product_prizes.level}
+                      series={item.products.name}
+                      productId={item.products.id}
+                      isUserOwned={user?.id === item.seller_id}
+                      onClick={() => setSelectedListing(item)}
+                    />
+                  ))}
+                </div>
+              </section>
             ) : (
               <EmptyState 
                 title="找不到獎項" 

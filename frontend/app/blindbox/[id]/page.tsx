@@ -133,7 +133,7 @@ export default function BlindboxDetailPage() {
         }
 
         if (productData.type !== 'blindbox') {
-          router.replace(`/shop/${productId}`);
+          router.replace(`/item/${productId}`);
           return;
         }
 
@@ -356,7 +356,7 @@ export default function BlindboxDetailPage() {
       <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-950">
         <div className="text-center space-y-3">
           <p className="text-sm font-black text-neutral-400 uppercase tracking-widest">找不到此盒玩商品</p>
-          <Button onClick={() => router.push('/shop')} size="sm">
+          <Button onClick={() => router.push('/')} size="sm">
             返回商店
           </Button>
         </div>
@@ -569,17 +569,21 @@ export default function BlindboxDetailPage() {
 
       {isVideoOpen && (
         <div className="fixed inset-0 z-[2100] bg-black opacity-100 pointer-events-auto transition-opacity duration-200">
-          <div className="relative w-full h-full flex items-center justify-center">
-            <video
-              ref={openingVideoRef}
-              src="/videos/blindbox_op.mp4"
-              className="w-full h-full object-cover"
-              preload="auto"
-              muted={isVideoMuted}
-              playsInline
-              onEnded={handleVideoEnd}
-              onError={handleVideoError}
-            />
+          <div className="relative w-full h-full flex items-center justify-center px-4">
+            <div className="w-full max-w-[560px]">
+              <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
+                <video
+                  ref={openingVideoRef}
+                  src="/videos/blindbox_op.mp4"
+                  className="absolute inset-0 w-full h-full object-contain bg-black"
+                  preload="auto"
+                  muted={isVideoMuted}
+                  playsInline
+                  onEnded={handleVideoEnd}
+                  onError={handleVideoError}
+                />
+              </div>
+            </div>
             <button
               type="button"
               className="absolute top-4 left-4 z-10 w-10 h-10 rounded-full bg-black/60 border border-white/30 flex items-center justify-center text-white"
@@ -603,15 +607,13 @@ export default function BlindboxDetailPage() {
                 <Volume2 className="w-5 h-5" />
               )}
             </button>
-            <div className="absolute bottom-0 left-0 right-0 h-16 px-4 border-t border-white/10 bg-black/80 flex items-center justify-center z-10">
-              <button
-                type="button"
-                className="w-full max-w-xs h-11 rounded-full bg-white/90 text-black text-base font-black tracking-[0.2em]"
-                onClick={handleVideoEnd}
-              >
-                跳過
-              </button>
-            </div>
+            <button
+              type="button"
+              className="absolute bottom-4 right-4 z-10 px-5 h-10 rounded-[8px] bg-black/60 border border-white/30 flex items-center justify-center text-white text-sm font-black tracking-[0.25em]"
+              onClick={handleVideoEnd}
+            >
+              SKIP
+            </button>
           </div>
         </div>
       )}
