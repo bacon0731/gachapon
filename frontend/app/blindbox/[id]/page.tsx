@@ -568,22 +568,18 @@ export default function BlindboxDetailPage() {
       )}
 
       {isVideoOpen && (
-        <div className="fixed inset-0 z-[2100] bg-black opacity-100 pointer-events-auto transition-opacity duration-200">
-          <div className="relative w-full h-full flex items-center justify-center px-4">
-            <div className="w-full max-w-[560px]">
-              <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
-                <video
-                  ref={openingVideoRef}
-                  src="/videos/blindbox_op.mp4"
-                  className="absolute inset-0 w-full h-full object-contain bg-black"
-                  preload="auto"
-                  muted={isVideoMuted}
-                  playsInline
-                  onEnded={handleVideoEnd}
-                  onError={handleVideoError}
-                />
-              </div>
-            </div>
+        <div className="fixed inset-0 z-[2100] bg-black pointer-events-auto">
+          <div className="relative w-full h-full">
+            <video
+              ref={openingVideoRef}
+              src="/videos/blindbox_op.mp4"
+              className="w-full h-full object-cover"
+              preload="auto"
+              muted={isVideoMuted}
+              playsInline
+              onEnded={handleVideoEnd}
+              onError={handleVideoError}
+            />
             <button
               type="button"
               className="absolute top-4 left-4 z-10 w-10 h-10 rounded-full bg-black/60 border border-white/30 flex items-center justify-center text-white"
