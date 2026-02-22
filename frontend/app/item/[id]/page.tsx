@@ -10,7 +10,7 @@ import { useToast } from '@/components/ui/Toast';
 import { Share2, Heart, ShieldCheck, Info, Trophy, FileCheck, Copy, AlertTriangle, Loader2 } from 'lucide-react';
 import ProductCard from '@/components/ProductCard';
 import { Modal } from '@/components/ui/Modal';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import ProductBadge from '@/components/ui/ProductBadge';
 import Image from 'next/image';
@@ -19,6 +19,7 @@ import { PurchaseConfirmationModal } from '@/components/shop/PurchaseConfirmatio
 import GachaMachine, { Prize } from '@/components/GachaMachine';
 import { PrizeResultModal } from '@/components/shop/PrizeResultModal';
 import { TicketSelectionFlow } from '@/components/shop/TicketSelectionFlow';
+import { GachaBattleEffect, CardItem as BattleCardItem } from '@/components/card/GachaBattleEffect';
 import { useAlert } from '@/components/ui/AlertDialog';
 import { GachaProductDetail } from '@/components/shop/GachaProductDetail';
 
@@ -210,6 +211,10 @@ export default function ProductDetailPage() {
 
       if (error) throw error;
 
+      if (!data || !Array.isArray(data) || data.length === 0) {
+        throw new Error('購買失敗，商品可能已售完或剩餘數量不足');
+      }
+
       interface PlayGachaResult {
         name: string;
         grade: string;
@@ -257,7 +262,35 @@ export default function ProductDetailPage() {
   const handleGachaContinue = () => {
     setIsGachaOpen(false);
     setWonPrizes([]);
+    fetchData();
   };
+
+  const battleResults: BattleCardItem[] = useMemo(
+    () =>
+      wonPrizes.map(prize => {
+        const raw = (prize.grade || prize.rarity || '').toUpperCase();
+        const rarity: BattleCardItem['rarity'] =
+          raw === 'SSR' || raw.includes('SSR')
+            ? 'SSR'
+            : raw === 'SR' || raw.includes('SR')
+              ? 'SR'
+              : raw === 'R' || raw.includes('R')
+                ? 'R'
+                : 'N';
+
+        let cardFrontImage = '/images/card/00004.png';
+        if (rarity === 'SSR') cardFrontImage = '/images/card/00001.png';
+        else if (rarity === 'SR') cardFrontImage = '/images/card/00002.png';
+        else if (rarity === 'R') cardFrontImage = '/images/card/00003.png';
+
+        return {
+          id: prize.id,
+          rarity,
+          cardFrontImage,
+        };
+      }),
+    [wonPrizes]
+  );
 
   const fetchData = async () => {
     try {
@@ -507,7 +540,7 @@ export default function ProductDetailPage() {
 
                 <div className="pt-2 hidden lg:block">
                   <div className="flex items-center gap-3">
-                    <Button 
+          <Button 
                       onClick={totalRemaining === 0 ? handleShowResults : handleDrawClick}
                       size="lg"
                       className={cn(
@@ -519,7 +552,13 @@ export default function ProductDetailPage() {
                       variant={totalRemaining === 0 ? "secondary" : "danger"}
                       disabled={false}
                     >
-                      {totalRemaining === 0 ? '已完抽 (查看結果)' : (product.type === 'ichiban' ? '立即抽獎' : '立即轉蛋')}
+                      {totalRemaining === 0
+                        ? '已完抽 (查看結果)'
+                        : product.type === 'ichiban'
+                          ? '立即抽獎'
+                          : product.type === 'card'
+                            ? '立即抽卡'
+                            : '立即轉蛋'}
                     </Button>
 
                     <button className="w-[44px] h-[44px] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-400 hover:text-primary hover:border-primary/50 rounded-xl flex items-center justify-center transition-all shadow-sm active:scale-95">
@@ -906,7 +945,13 @@ export default function ProductDetailPage() {
               variant={totalRemaining === 0 ? "secondary" : "danger"}
               disabled={false}
             >
-              {totalRemaining === 0 ? '已完抽 (查看結果)' : (product.type === 'ichiban' ? '立即抽獎' : '立即轉蛋')}
+              {totalRemaining === 0
+                ? '已完抽 (查看結果)'
+                : product.type === 'ichiban'
+                  ? '立即抽獎'
+                  : product.type === 'card'
+                    ? '立即抽卡'
+                    : '立即轉蛋'}
             </Button>
           </div>
         </div>
@@ -940,12 +985,20 @@ export default function ProductDetailPage() {
           />
         )}
 
-        <GachaMachine 
-          isOpen={isGachaOpen}
-          prizes={wonPrizes}
-          onGoToWarehouse={handleGachaComplete}
-          onContinue={handleGachaContinue}
-        />
+        {product.type === 'card' ? (
+          <GachaBattleEffect
+            isOpen={isGachaOpen}
+            pullResults={battleResults}
+            onComplete={handleGachaContinue}
+          />
+        ) : (
+          <GachaMachine 
+            isOpen={isGachaOpen}
+            prizes={wonPrizes}
+            onGoToWarehouse={handleGachaComplete}
+            onContinue={handleGachaContinue}
+          />
+        )}
 
         {isTicketModalOpen && (
           <div className="fixed inset-0 z-[2100] flex items-center justify-center">

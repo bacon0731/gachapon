@@ -352,7 +352,6 @@ SELECT id, '常規', '兔兔', '/images/item/10015.jpg', 10, 9, 20.0 FROM produc
 SELECT id, '常規', '小桃鼠', '/images/item/10015.jpg', 10, 9, 20.0 FROM products WHERE product_code = 'GACHA-001' UNION ALL
 SELECT id, '常規', '栗子饅頭', '/images/item/10015.jpg', 10, 9, 20.0 FROM products WHERE product_code = 'GACHA-001';
 
--- Gacha: Pokemon (Horse Year Sale)
 INSERT INTO products (
   product_code, name, category, category_id, price, status, is_hot, 
   total_count, remaining, image_url, type, major_prizes,
@@ -369,6 +368,23 @@ SELECT id, '常規', '卡比獸', '/images/item/10016.jpg', 12, 11, 20.0 FROM pr
 SELECT id, '常規', '呆呆獸', '/images/item/10016.jpg', 12, 11, 20.0 FROM products WHERE product_code = 'GACHA-002' UNION ALL
 SELECT id, '常規', '可達鴨', '/images/item/10016.jpg', 12, 11, 20.0 FROM products WHERE product_code = 'GACHA-002' UNION ALL
 SELECT id, '常規', '伊布', '/images/item/10016.jpg', 12, 11, 20.0 FROM products WHERE product_code = 'GACHA-002';
+
+-- Card: 自製卡牌賞
+INSERT INTO products (
+  product_code, name, category, category_id, price, status, is_hot, 
+  total_count, remaining, image_url, type, major_prizes,
+  distributor, release_year, release_month
+) VALUES (
+  'CARD-001', '自製卡牌賞：動漫角色收藏卡包', '人氣動漫專區', get_cat_id('人氣動漫專區'), 200, 'active', true,
+  30, 30, '/images/item/10017.jpg', 'card', ARRAY['SSR', 'SR', 'R', 'N'],
+  'Slime Inc.', '2025', '04'
+);
+
+INSERT INTO product_prizes (product_id, level, name, image_url, total, remaining, probability) 
+SELECT id, 'SSR', 'SSR 等級卡', '/images/item/10017.jpg', 1, 1, 3.33 FROM products WHERE product_code = 'CARD-001' UNION ALL
+SELECT id, 'SR', 'SR 等級卡', '/images/item/10017.jpg', 4, 4, 13.34 FROM products WHERE product_code = 'CARD-001' UNION ALL
+SELECT id, 'R', 'R 等級卡', '/images/item/10017.jpg', 10, 10, 33.33 FROM products WHERE product_code = 'CARD-001' UNION ALL
+SELECT id, 'N', 'N 等級卡', '/images/item/10017.jpg', 15, 15, 50.0 FROM products WHERE product_code = 'CARD-001';
 
 
 -- ==========================================
@@ -391,7 +407,7 @@ BEGIN
     SELECT id
     FROM products
     WHERE status IN ('active', 'ended')
-      AND type IN ('ichiban', 'blindbox', 'gacha', 'custom')
+      AND type IN ('ichiban', 'blindbox', 'gacha', 'card', 'custom')
   LOOP
     v_seed := encode(gen_random_bytes(32), 'hex');
 

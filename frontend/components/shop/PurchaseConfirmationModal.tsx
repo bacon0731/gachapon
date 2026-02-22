@@ -2,14 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMediaQuery } from '@/hooks/use-media-query';
 
-import { X, Minus, Plus } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui';
 import { Database } from '@/types/database.types';
 import { cn } from '@/lib/utils';
 import { useAlert } from '@/components/ui/AlertDialog';
-import { useToast } from '@/components/ui/Toast';
 import Image from 'next/image';
 
 interface PurchaseConfirmationModalProps {
@@ -33,7 +32,6 @@ export function PurchaseConfirmationModal({
 }: PurchaseConfirmationModalProps) {
   const [quantity, setQuantity] = useState(1);
   const { showAlert } = useAlert();
-  const { showToast } = useToast();
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const router = useRouter();
   const { user } = useAuth();
@@ -53,12 +51,7 @@ export function PurchaseConfirmationModal({
   }, [isOpen, onClose]);
 
   const maxByRemaining = typeof product.remaining === 'number' ? product.remaining : 0;
-  const maxByPoints = product.price > 0 ? Math.floor(userPoints / product.price) : maxByRemaining;
-  const rawMaxQuantity = Math.min(
-    10,
-    maxByRemaining,
-    maxByPoints > 0 ? maxByPoints : maxByRemaining || 10
-  );
+  const rawMaxQuantity = Math.min(10, maxByRemaining || 10);
   const maxQuantity = Math.max(1, rawMaxQuantity || 1); // 最少顯示 1 抽，避免 UI 壞掉
   const totalPrice = product.price * quantity;
   const isInsufficient = userPoints < totalPrice;
@@ -192,42 +185,34 @@ export function PurchaseConfirmationModal({
                 {/* Quantity Selector */}
                 <div className={cn("bg-neutral-50 dark:bg-neutral-800/50 rounded-xl flex items-center justify-between", isDesktop ? "p-6" : "p-3")}>
                   <span className={cn("font-bold text-neutral-700 dark:text-neutral-300", isDesktop ? "text-[15px]" : "text-[13px]")}>購買數量</span>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     <button
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      disabled={quantity <= 1}
-                      className={cn(
-                        "rounded-full bg-white dark:bg-neutral-800 shadow-sm border border-neutral-200 dark:border-neutral-700 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 transition-all text-neutral-600",
-                        isDesktop ? "w-10 h-10" : "w-8 h-8"
-                      )}
-                    >
-                      <Minus className={cn(isDesktop ? "w-4 h-4" : "w-3.5 h-3.5")} />
-                    </button>
-                    <span
-                      className={cn(
-                        "w-6 text-center font-black text-neutral-900 dark:text-white font-[\"Chiron_GoRound_TC\"]",
-                        isDesktop ? "text-2xl" : "text-lg"
-                      )}
-                    >
-                      {quantity}
-                    </span>
-                    <button
-                      onClick={() => {
-                        if (quantity >= maxQuantity) {
-                          if (!isSoldOut) {
-                            showToast('最後幾個了！快搶快搶！', 'info');
-                          }
-                          return;
-                        }
-                        setQuantity(Math.min(maxQuantity, quantity + 1));
-                      }}
+                      type="button"
+                      onClick={() => setQuantity(1)}
                       disabled={isSoldOut}
                       className={cn(
-                        "rounded-full bg-white dark:bg-neutral-800 shadow-sm border border-neutral-200 dark:border-neutral-700 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 transition-all text-neutral-600",
-                        isDesktop ? "w-10 h-10" : "w-8 h-8"
+                        "min-w-[72px] px-3 h-9 md:h-10 rounded-full text-[13px] md:text-[15px] font-black border transition-all flex items-center justify-center",
+                        quantity === 1
+                          ? "bg-white dark:bg-neutral-900 border-primary text-primary shadow-sm shadow-primary/20"
+                          : "bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-700",
+                        isSoldOut && "opacity-50 cursor-not-allowed"
                       )}
                     >
-                      <Plus className={cn(isDesktop ? "w-4 h-4" : "w-3.5 h-3.5")} />
+                      單抽
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setQuantity(Math.min(10, maxQuantity))}
+                      disabled={isSoldOut || maxQuantity < 10}
+                      className={cn(
+                        "min-w-[84px] px-3 h-9 md:h-10 rounded-full text-[13px] md:text-[15px] font-black border transition-all flex items-center justify-center",
+                        quantity >= 10
+                          ? "bg-primary text-white border-primary shadow-sm shadow-primary/30"
+                          : "bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-700",
+                        (isSoldOut || maxQuantity < 10) && "opacity-50 cursor-not-allowed"
+                      )}
+                    >
+                      十連抽
                     </button>
                   </div>
                 </div>

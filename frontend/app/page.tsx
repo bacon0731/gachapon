@@ -230,6 +230,7 @@ export default function Home() {
 
         if (activePrimaryTab === 'card') {
           const category = product.category || '';
+          if (product.type === 'card') return true;
           return category.includes('卡') || category.toLowerCase().includes('card');
         }
 
